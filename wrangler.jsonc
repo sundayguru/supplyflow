@@ -1,0 +1,78 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "supplyflow",
+  "compatibility_date": "2025-04-04",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "./workers/app.ts",
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "supplyflow",
+      "database_id": "3701850f-7fe1-4a1b-a1ef-3837e4870b33",
+      "migrations_dir": "./drizzle",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "supplyflow",
+    },
+  ],
+  "routes": [
+    {
+      "pattern": "supplyflow.com",
+      "custom_domain": true,
+    },
+    {
+      "pattern": "www.supplyflow.com",
+      "custom_domain": true,
+    },
+  ],
+  "env": {
+    "production": {
+      "name": "prod-supplyflow",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "supplyflow",
+          "database_id": "3701850f-7fe1-4a1b-a1ef-3837e4870b33",
+          "migrations_dir": "./drizzle",
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "MEDIA",
+          "bucket_name": "supplyflow",
+        },
+      ],
+      "vars": {
+        "BASE_URL": "https://supplyflow.com",
+      },
+    },
+    "dev": {
+      "name": "dev-supplyflow",
+      "routes": [],
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "dev_supplyflow",
+          "database_id": "0504496b-6e16-4e44-aef5-50189a9c073e",
+          "migrations_dir": "./drizzle",
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "MEDIA",
+          "bucket_name": "supplyflow",
+        },
+      ],
+      "vars": {
+        "BASE_URL": "http://localhost:5173",
+      },
+    },
+  },
+}

@@ -1,0 +1,195 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-serif: 'Cormorant Garamond', serif;
+  --font-sans: 'Inter', sans-serif;
+}
+
+.markdown-body {
+  @apply font-serif text-lg leading-relaxed text-[#1a1a1a];
+}
+
+.markdown-body h1 {
+  @apply mb-8 text-4xl font-bold;
+}
+
+.markdown-body h2 {
+  @apply mt-12 mb-6 text-2xl font-bold;
+}
+
+.markdown-body p {
+  @apply mb-6;
+}
+
+.markdown-body ul {
+  @apply mb-6 list-disc pl-6;
+}
+
+.markdown-body li {
+  @apply mb-2;
+}
+
+.lesson-markdown {
+  @apply font-serif text-[1.08rem] leading-8 text-[#1f1d1a];
+}
+
+.lesson-markdown > *:first-child {
+  margin-top: 0;
+}
+
+.lesson-markdown > *:last-child {
+  margin-bottom: 0;
+}
+
+.lesson-markdown h1,
+.lesson-markdown h2,
+.lesson-markdown h3,
+.lesson-markdown h4 {
+  @apply font-serif font-semibold tracking-tight text-[#171512];
+}
+
+.lesson-markdown h1 {
+  @apply mt-0 mb-8 text-4xl leading-tight md:text-5xl;
+}
+
+.lesson-markdown h2 {
+  @apply mt-12 mb-5 border-t border-black/5 pt-8 text-3xl leading-tight;
+}
+
+.lesson-markdown h3 {
+  @apply mt-10 mb-4 text-2xl leading-snug;
+}
+
+.lesson-markdown h4 {
+  @apply mt-8 mb-3 text-xl leading-snug;
+}
+
+.lesson-markdown p {
+  @apply mb-6 text-[1.08rem] leading-8 text-[#2b2824];
+}
+
+.lesson-markdown strong {
+  @apply font-semibold text-[#171512];
+}
+
+.lesson-markdown em {
+  @apply text-[#514b43];
+}
+
+.lesson-markdown a {
+  @apply font-medium text-[#5A5A40] underline decoration-[#5A5A40]/30 underline-offset-4 transition-colors;
+}
+
+.lesson-markdown a:hover {
+  @apply text-[#3f402c] decoration-[#3f402c]/50;
+}
+
+.lesson-markdown ul,
+.lesson-markdown ol {
+  @apply my-6 space-y-3 pl-6 text-[#2b2824];
+}
+
+.lesson-markdown ul {
+  @apply list-disc marker:text-[#5A5A40];
+}
+
+.lesson-markdown ol {
+  @apply list-decimal marker:font-semibold marker:text-[#5A5A40];
+}
+
+.lesson-markdown li {
+  @apply pl-1 leading-8;
+}
+
+.lesson-markdown blockquote {
+  @apply my-8 rounded-l-[20px] rounded-r-[28px] border-l-4 border-[#5A5A40] bg-[#f6f2e8] px-6 py-5 text-[1.02rem] leading-8 text-[#3c372f] shadow-sm;
+}
+
+.lesson-markdown hr {
+  @apply my-10 border-0 border-t border-black/10;
+}
+
+.lesson-markdown code {
+  @apply rounded-md bg-[#f3efe3] px-2 py-1 font-mono text-[0.95rem] text-[#7a3e1d];
+}
+
+.lesson-markdown pre {
+  @apply my-8 overflow-x-auto rounded-[24px] border border-black/5 bg-[#191919] p-5 shadow-inner;
+}
+
+.lesson-markdown pre code {
+  @apply bg-transparent p-0 text-[0.92rem] leading-7 text-[#f7f3ea];
+}
+
+.lesson-markdown table {
+  @apply my-8 w-full overflow-hidden rounded-[24px] border border-black/10 bg-white text-left text-base shadow-sm;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.lesson-markdown thead {
+  @apply bg-[#f4f0e6];
+}
+
+.lesson-markdown th {
+  @apply px-4 py-3 text-sm font-semibold tracking-wide text-[#171512];
+}
+
+.lesson-markdown td {
+  @apply border-t border-black/5 px-4 py-3 align-top text-[#2b2824];
+}
+
+/* Navigation loading bar styles */
+.navigation-loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 9999;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(139, 92, 246, 0.1),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: loading-bar-shimmer 2s infinite;
+}
+
+.navigation-loading-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(139, 92, 246, 0.8),
+    rgba(139, 92, 246, 1),
+    rgba(139, 92, 246, 0.8)
+  );
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+  animation: loading-bar-pulse 1.5s infinite;
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #9171e8 #263047;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  background: #263047;
+  border-radius: 7px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #9171e8;
+  border-radius: 7px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a78bfa;
+}
