@@ -1,8 +1,9 @@
 import type { Route } from './+types/forgot-password';
 import { data, Form } from 'react-router';
 import { getUserByEmail, generatePasswordResetTokenForEmail } from '~/db/auth';
+import { Logo } from '~/components/Logo';
 import { motion } from 'motion/react';
-import { GraduationCap, KeyRound } from 'lucide-react';
+import { KeyRound } from 'lucide-react';
 
 export const action = async ({ request }: Route.ActionArgs) => {
   const formData = await request.formData();
@@ -59,10 +60,9 @@ export default function ForgotPasswordPage({
         className='w-full max-w-md rounded-[32px] border border-black/5 bg-white p-8 shadow-xl'
       >
         <div className='mb-8 flex flex-col items-center'>
-          <div className='mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#5A5A40]'>
-            <GraduationCap className='h-10 w-10 text-white' />
-          </div>
-          <img src='/logo.svg' className='w-30' />
+          <Logo size='lg' className='mb-4'>
+            Supplyflow
+          </Logo>
           <p className='font-serif text-black/60 italic'>Reset your password</p>
         </div>
 

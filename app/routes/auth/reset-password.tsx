@@ -1,8 +1,9 @@
 import type { Route } from './+types/reset-password';
 import { data, redirect, Form } from 'react-router';
 import { validatePasswordResetToken, updateUserPassword } from '~/db/auth';
+import { Logo } from '~/components/Logo';
 import { motion } from 'motion/react';
-import { GraduationCap, Lock } from 'lucide-react';
+import { Lock } from 'lucide-react';
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
@@ -79,10 +80,9 @@ export default function ResetPasswordPage({
         className='w-full max-w-md rounded-[32px] border border-black/5 bg-white p-8 shadow-xl'
       >
         <div className='mb-8 flex flex-col items-center'>
-          <div className='mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#5A5A40]'>
-            <GraduationCap className='h-10 w-10 text-white' />
-          </div>
-          <img src='/logo.svg' className='w-30' />
+          <Logo size='lg' className='mb-4'>
+            Supplyflow
+          </Logo>
           <p className='font-serif text-black/60 italic'>
             Set your new password
           </p>

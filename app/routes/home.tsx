@@ -12,7 +12,6 @@ import {
   Menu,
   Search,
   ShieldCheck,
-  Sparkles,
   TrendingUp,
   Users,
   X,
@@ -20,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
+import { Logo } from '~/components/Logo';
 
 import type { Route } from './+types/home';
 
@@ -145,16 +145,7 @@ const LandingPage = () => {
     <main className='min-h-screen overflow-hidden bg-[#f7f8f4] font-sans text-slate-950'>
       <header className='relative z-50 border-b border-slate-900/5 bg-[#f7f8f4]/90 backdrop-blur-xl'>
         <div className='mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10'>
-          <Link
-            to='/'
-            className='flex items-center gap-2.5'
-            aria-label='SupplyFlow home'
-          >
-            <span className='flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm'>
-              <Sparkles className='h-5 w-5' aria-hidden='true' />
-            </span>
-            <span className='text-lg font-bold tracking-tight'>SupplyFlow</span>
-          </Link>
+          <Logo>SupplyFlow</Logo>
 
           <nav
             className='hidden items-center gap-8 md:flex'
@@ -497,12 +488,7 @@ const LandingPage = () => {
 
       <footer className='border-t border-slate-200 bg-white'>
         <div className='mx-auto flex max-w-7xl flex-col gap-5 px-5 py-8 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10'>
-          <div className='flex items-center gap-2 font-semibold text-slate-800'>
-            <span className='flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-white'>
-              <Sparkles className='h-3.5 w-3.5' aria-hidden='true' />
-            </span>
-            SupplyFlow
-          </div>
+          <Logo size='sm'>SupplyFlow</Logo>
           <p>Quotation intelligence for modern supply teams.</p>
           <div className='flex gap-5'>
             <Link to='/privacy' className='hover:text-slate-900'>

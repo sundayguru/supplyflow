@@ -4,40 +4,69 @@ import type { ReactNode } from 'react';
 type LogoProps = {
   to?: string;
   children?: ReactNode;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
 };
 
-export const Logo = ({ to = '/', children }: LogoProps) => {
+const markSizeClasses = {
+  sm: 'h-7 w-7',
+  md: 'h-10 w-10',
+  lg: 'h-16 w-16',
+};
+
+const wordmarkSizeClasses = {
+  sm: 'text-base',
+  md: 'text-xl',
+  lg: 'text-2xl',
+};
+
+export const Logo = ({
+  to = '/',
+  children,
+  size = 'md',
+  className = '',
+}: LogoProps) => {
   return (
-    <Link to={to} className='flex items-center gap-3'>
-      <div className='flex h-10 w-10 items-center justify-center rounded-xl bg-[#5A5A40]'>
-        <svg
-          className='h-6 w-6 text-white'
-          fill='none'
-          viewBox='0 0 24 24'
-          stroke='currentColor'
-        >
-          <path
-            strokeLinecap='round'
-            strokeLinejoin='round'
-            strokeWidth={2}
-            d='M12 14l9-5-9-5-9 5 9 5z'
-          />
-          <path
-            strokeLinecap='round'
-            strokeLinejoin='round'
-            strokeWidth={2}
-            d='M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z'
-          />
-          <path
-            strokeLinecap='round'
-            strokeLinejoin='round'
-            strokeWidth={2}
-            d='M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.5'
-          />
-        </svg>
-      </div>
+    <Link
+      to={to}
+      aria-label={children ? undefined : 'Supplyflow home'}
+      className={`group flex items-center gap-3 ${className}`}
+    >
+      <svg
+        aria-hidden='true'
+        className={`${markSizeClasses[size]} shrink-0 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3`}
+        viewBox='0 0 40 40'
+        fill='none'
+      >
+        <rect width='40' height='40' rx='12' fill='#5A5A40' />
+        <path
+          d='M11 13.5C11 10.462 13.462 8 16.5 8H27'
+          stroke='#DDF7A7'
+          strokeWidth='3'
+          strokeLinecap='round'
+        />
+        <path
+          d='M29 13.5C29 16.538 26.538 19 23.5 19H16.5C13.462 19 11 21.462 11 24.5S13.462 30 16.5 30H27'
+          stroke='white'
+          strokeWidth='3'
+          strokeLinecap='round'
+        />
+        <path
+          d='M24 26.5 27.5 30 24 33.5'
+          stroke='#DDF7A7'
+          strokeWidth='3'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+        />
+        <circle cx='11' cy='13.5' r='2.5' fill='white' />
+        <circle cx='29' cy='13.5' r='2.5' fill='#DDF7A7' />
+      </svg>
       {children && (
-        <span className='font-serif text-xl text-[#1a1a1a]'>{children}</span>
+        <span
+          className={`${wordmarkSizeClasses[size]} font-serif font-semibold tracking-tight text-[#1a1a1a]`}
+        >
+          {children}
+        </span>
       )}
     </Link>
   );

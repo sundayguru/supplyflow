@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { motion } from 'motion/react';
-import { FileText, GraduationCap } from 'lucide-react';
+import { FileText } from 'lucide-react';
+import { Logo } from '~/components/Logo';
 
 const termsSections = [
   {
@@ -82,9 +83,7 @@ export default function TermsPage() {
 
         <div className='mt-10 flex flex-col items-center justify-between gap-4 rounded-[32px] border border-black/5 bg-[#1a1a1a] p-8 text-white md:flex-row'>
           <div className='flex items-center gap-3'>
-            <div className='flex h-10 w-10 items-center justify-center rounded-xl bg-white/10'>
-              <GraduationCap size={20} />
-            </div>
+            <Logo size='sm' />
             <p className='text-sm text-white/70'>
               Using CourseXQuiz means agreeing to these terms.
             </p>

@@ -1,16 +1,17 @@
 import { Link, useLocation } from 'react-router';
 import { useUser } from '~/utils/useUser';
 import { ProfileMenu } from '~/components/ProfileMenu';
+import { Logo } from '~/components/Logo';
 import {
-  GraduationCap,
   LayoutDashboard,
   BookOpen,
   PlusCircle,
   Bell,
   Settings,
+  Menu,
+  X,
 } from 'lucide-react';
 import { useState } from 'react';
-import { Menu, X } from 'lucide-react';
 
 type NavItem = {
   to: string;
@@ -64,12 +65,7 @@ export const Header = () => {
               {showMobileMenu ? <X size={24} /> : <Menu size={24} />}
             </button>
 
-            <Link to='/' className='flex items-center gap-3'>
-              <div className='flex h-10 w-10 items-center justify-center rounded-xl bg-[#5A5A40]'>
-                <GraduationCap className='h-6 w-6 text-white' />
-              </div>
-              <img src='/logo.svg' className='w-30' alt='CourseX' />
-            </Link>
+            <Logo>Supplyflow</Logo>
           </div>
 
           {/* Main Navigation - Desktop */}
