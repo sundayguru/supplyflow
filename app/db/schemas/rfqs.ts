@@ -1,0 +1,81 @@
+import { relations, sql } from 'drizzle-orm';
+import {
+  index,
+  integer,
+  real,
+  sqliteTable,
+  text,
+} from 'drizzle-orm/sqlite-core';
+import { users } from './users';
+import { rfqStatuses } from '../../types/rfq';
+
+export const rfqs = sqliteTable(
+  'rfqs',
+  {
+    id: text('id', { length: 36 }).primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    reference: text('reference', { length: 32 }).notNull().unique(),
+    customerName: text('customer_name', { length: 255 }).notNull(),
+    customerEmail: text('customer_email', { length: 255 }),
+    status: text('status', { enum: rfqStatuses }).notNull().default('new'),
+    dueDate: text('due_date'),
+    estimatedValue: integer('estimated_value').notNull().default(0),
+    currency: text('currency', { length: 3 }).notNull().default('EUR'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(CURRENT_TIMESTAMP)`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (table) => [
+    index('rfqs_user_id_idx').on(table.userId),
+    index('rfqs_user_status_idx').on(table.userId, table.status),
+    index('rfqs_created_at_idx').on(table.createdAt),
+  ],
+);
+
+export const rfqItems = sqliteTable(
+  'rfq_items',
+  {
+    id: text('id', { length: 36 }).primaryKey(),
+    rfqId: text('rfq_id')
+      .notNull()
+      .references(() => rfqs.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull().default(0),
+    quantity: real('quantity').notNull(),
+    unit: text('unit', { length: 32 }).notNull(),
+    description: text('description').notNull(),
+    manufacturer: text('manufacturer', { length: 255 }),
+    manufacturerPartNumber: text('manufacturer_part_number', { length: 255 }),
+    specifications: text('specifications'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(CURRENT_TIMESTAMP)`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (table) => [
+    index('rfq_items_rfq_id_idx').on(table.rfqId),
+    index('rfq_items_manufacturer_part_idx').on(table.manufacturerPartNumber),
+  ],
+);
+
+export const rfqsRelations = relations(rfqs, ({ many }) => ({
+  items: many(rfqItems),
+}));
+
+export const rfqItemsRelations = relations(rfqItems, ({ one }) => ({
+  rfq: one(rfqs, {
+    fields: [rfqItems.rfqId],
+    references: [rfqs.id],
+  }),
+}));
+
+export type SelectRfq = typeof rfqs.$inferSelect;
+export type InsertRfq = typeof rfqs.$inferInsert;
+export type SelectRfqItem = typeof rfqItems.$inferSelect;
+export type InsertRfqItem = typeof rfqItems.$inferInsert;

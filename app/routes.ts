@@ -22,10 +22,12 @@ export default [
   // Protected routes
   layout('./routes/layouts/ProtectedLayout.tsx', [
     route('dashboard', 'routes/dashboard.tsx'),
+    route('rfqs', 'routes/rfqs.tsx'),
     route('settings', 'routes/settings.tsx'),
     route('notifications', 'routes/notifications.tsx'),
     route('auth/logout', 'routes/auth/logout.tsx'),
     route('api/user', 'routes/api/user.ts'),
     route('api/user/avatar', 'routes/api/user.avatar.tsx'),
+    route('api/rfqs', 'routes/api/rfqs.ts'),
   ]),
 ] satisfies RouteConfig;

@@ -8,6 +8,20 @@
       "when": 1781817189611,
       "tag": "0000_gigantic_champions",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1782048785906,
+      "tag": "0001_flowery_obadiah_stane",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1782050047385,
+      "tag": "0002_fresh_captain_cross",
+      "breakpoints": true
     }
   ]
 }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import {
   Bell,
+  ClipboardList,
   LayoutDashboard,
   Menu,
   Settings,
@@ -35,6 +36,7 @@ export const Header = () => {
 
   const navItems: NavItem[] = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/rfqs', label: 'RFQ management', icon: ClipboardList },
     {
       to: '/notifications',
       label: 'Notifications',

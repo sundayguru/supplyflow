@@ -1,0 +1,242 @@
+import { useState, type FormEvent } from 'react';
+import { Plus, X } from 'lucide-react';
+import {
+  rfqStatuses,
+  type RfqInput,
+  type RfqItemInput,
+  type RfqStatus,
+} from '~/types/rfq';
+import { RfqItemFields } from './RfqItemFields';
+
+export type RfqFormValue = RfqInput & { id?: string };
+
+type RfqFormModalProps = {
+  initialValue?: RfqFormValue;
+  onClose: () => void;
+  onSubmit: (value: RfqFormValue) => void;
+};
+
+const statusLabels: Record<RfqStatus, string> = {
+  new: 'New',
+  pricing: 'Pricing',
+  quoted: 'Quoted',
+  won: 'Won',
+  lost: 'Lost',
+};
+
+const emptyItem = (): RfqItemInput => ({
+  quantity: 1,
+  unit: 'unit',
+  description: '',
+  manufacturer: null,
+  manufacturerPartNumber: null,
+  specifications: null,
+});
+
+export const RfqFormModal = ({
+  initialValue,
+  onClose,
+  onSubmit,
+}: RfqFormModalProps) => {
+  const [customerName, setCustomerName] = useState(
+    initialValue?.customerName ?? '',
+  );
+  const [customerEmail, setCustomerEmail] = useState(
+    initialValue?.customerEmail ?? '',
+  );
+  const [status, setStatus] = useState<RfqStatus>(
+    initialValue?.status ?? 'new',
+  );
+  const [dueDate, setDueDate] = useState(initialValue?.dueDate ?? '');
+  const [estimatedValue, setEstimatedValue] = useState(
+    initialValue ? String(initialValue.estimatedValue / 100) : '',
+  );
+  const [currency, setCurrency] = useState(initialValue?.currency ?? 'EUR');
+  const [items, setItems] = useState<RfqItemInput[]>(
+    initialValue?.items ?? [emptyItem()],
+  );
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    onSubmit({
+      id: initialValue?.id,
+      customerName,
+      customerEmail: customerEmail || null,
+      status,
+      dueDate: dueDate || null,
+      estimatedValue: Math.round(Number(estimatedValue || 0) * 100),
+      currency,
+      items,
+    });
+  };
+
+  const inputClass =
+    'mt-2 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10';
+
+  return (
+    <div className='fixed inset-0 z-[100] flex items-center justify-center p-4'>
+      <button
+        type='button'
+        onClick={onClose}
+        className='absolute inset-0 bg-slate-950/45 backdrop-blur-sm'
+        aria-label='Close RFQ form'
+      />
+      <div className='relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8'>
+        <div className='flex items-start justify-between gap-4'>
+          <div>
+            <p className='text-xs font-bold tracking-[0.16em] text-emerald-700 uppercase'>
+              {initialValue ? 'Update request' : 'New request'}
+            </p>
+            <h2 className='mt-2 font-serif text-3xl font-semibold text-slate-950'>
+              {initialValue ? 'Edit RFQ' : 'Create an RFQ'}
+            </h2>
+          </div>
+          <button
+            type='button'
+            onClick={onClose}
+            className='rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700'
+            aria-label='Close'
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className='mt-7 space-y-5'>
+          <div className='grid gap-5 sm:grid-cols-2'>
+            <label className='text-sm font-semibold text-slate-700'>
+              Customer name
+              <input
+                required
+                value={customerName}
+                onChange={(event) => setCustomerName(event.target.value)}
+                className={inputClass}
+                placeholder='Atlas Industrial'
+              />
+            </label>
+            <label className='text-sm font-semibold text-slate-700'>
+              Customer email
+              <input
+                type='email'
+                value={customerEmail}
+                onChange={(event) => setCustomerEmail(event.target.value)}
+                className={inputClass}
+                placeholder='buyer@example.com'
+              />
+            </label>
+          </div>
+
+          <div>
+            <div className='mb-3 flex items-end justify-between gap-3'>
+              <div>
+                <h3 className='text-sm font-bold text-slate-800'>RFQ items</h3>
+                <p className='mt-1 text-xs text-slate-400'>
+                  Add every requested product as a separate line item.
+                </p>
+              </div>
+              <button
+                type='button'
+                onClick={() => setItems((current) => [...current, emptyItem()])}
+                className='inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100'
+              >
+                <Plus size={14} /> Add item
+              </button>
+            </div>
+            <div className='space-y-4'>
+              {items.map((item, index) => (
+                <RfqItemFields
+                  key={index}
+                  index={index}
+                  value={item}
+                  canRemove={items.length > 1}
+                  onChange={(nextItem) =>
+                    setItems((current) =>
+                      current.map((currentItem, currentIndex) =>
+                        currentIndex === index ? nextItem : currentItem,
+                      ),
+                    )
+                  }
+                  onRemove={() =>
+                    setItems((current) =>
+                      current.filter(
+                        (_, currentIndex) => currentIndex !== index,
+                      ),
+                    )
+                  }
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className='grid gap-5 sm:grid-cols-2'>
+            <label className='text-sm font-semibold text-slate-700'>
+              Status
+              <select
+                value={status}
+                onChange={(event) => setStatus(event.target.value as RfqStatus)}
+                className={inputClass}
+              >
+                {rfqStatuses.map((value) => (
+                  <option key={value} value={value}>
+                    {statusLabels[value]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className='text-sm font-semibold text-slate-700'>
+              Due date
+              <input
+                type='date'
+                value={dueDate}
+                onChange={(event) => setDueDate(event.target.value)}
+                className={inputClass}
+              />
+            </label>
+          </div>
+
+          <div className='grid grid-cols-[1fr_110px] gap-5'>
+            <label className='text-sm font-semibold text-slate-700'>
+              Estimated value
+              <input
+                type='number'
+                min='0'
+                step='0.01'
+                value={estimatedValue}
+                onChange={(event) => setEstimatedValue(event.target.value)}
+                className={inputClass}
+                placeholder='0.00'
+              />
+            </label>
+            <label className='text-sm font-semibold text-slate-700'>
+              Currency
+              <input
+                required
+                maxLength={3}
+                value={currency}
+                onChange={(event) =>
+                  setCurrency(event.target.value.toUpperCase())
+                }
+                className={inputClass}
+              />
+            </label>
+          </div>
+
+          <div className='flex justify-end gap-3 border-t border-slate-100 pt-5'>
+            <button
+              type='button'
+              onClick={onClose}
+              className='rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50'
+            >
+              Cancel
+            </button>
+            <button
+              type='submit'
+              className='rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-500'
+            >
+              {initialValue ? 'Save changes' : 'Create RFQ'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
