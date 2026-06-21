@@ -7,6 +7,7 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core';
 import { rfqs } from './rfqs';
+import { connectedEmailAccounts } from './connectedEmailAccounts';
 
 const ingestionStatuses = [
   'processing',
@@ -19,6 +20,9 @@ export const emailIngestions = sqliteTable(
   'email_ingestions',
   {
     id: text('id', { length: 36 }).primaryKey(),
+    accountId: text('account_id').references(() => connectedEmailAccounts.id, {
+      onDelete: 'cascade',
+    }),
     provider: text('provider', { length: 32 }).notNull(),
     externalId: text('external_id', { length: 255 }).notNull(),
     threadId: text('thread_id', { length: 255 }),
@@ -39,8 +43,8 @@ export const emailIngestions = sqliteTable(
       .default(sql`(CURRENT_TIMESTAMP)`),
   },
   (table) => [
-    uniqueIndex('email_ingestions_provider_external_unique').on(
-      table.provider,
+    uniqueIndex('email_ingestions_account_external_unique').on(
+      table.accountId,
       table.externalId,
     ),
     index('email_ingestions_status_idx').on(table.status),
@@ -48,8 +52,10 @@ export const emailIngestions = sqliteTable(
   ],
 );
 
-export const emailSyncStates = sqliteTable('email_sync_states', {
-  provider: text('provider', { length: 32 }).primaryKey(),
+export const emailAccountSyncStates = sqliteTable('email_account_sync_states', {
+  accountId: text('account_id')
+    .primaryKey()
+    .references(() => connectedEmailAccounts.id, { onDelete: 'cascade' }),
   lastSuccessfulAt: text('last_successful_at').notNull(),
   updatedAt: text('updated_at')
     .notNull()

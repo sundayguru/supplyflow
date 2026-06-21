@@ -78,17 +78,21 @@ Required Worker secrets:
 ```sh
 npx wrangler secret put GOOGLE_CLIENT_ID --env production
 npx wrangler secret put GOOGLE_CLIENT_SECRET --env production
-npx wrangler secret put GMAIL_REFRESH_TOKEN --env production
 npx wrangler secret put GROQ_API_KEY --env production
-npx wrangler secret put RFQ_OWNER_EMAIL --env production
+npx wrangler secret put TOKEN_ENCRYPTION_KEY --env production
 ```
 
-The Gmail refresh token must be issued with the
-`https://www.googleapis.com/auth/gmail.readonly` scope. `RFQ_OWNER_EMAIL` must
-match an existing SupplyFlow user; extracted RFQs are assigned to that user.
-For local development, place the same names in the ignored `.dev.vars` file.
+`TOKEN_ENCRYPTION_KEY` must be a base64-encoded 32-byte key. Users connect
+Gmail from the Connected accounts page; refresh tokens are requested with the
+`https://www.googleapis.com/auth/gmail.readonly` scope and encrypted before
+being stored. Extracted RFQs belong to the user who connected the inbox. For
+local development, place the same secret names in the ignored `.dev.vars` file.
 The model is configured through the non-secret `RFQ_LLM_MODEL` Wrangler
 variable and defaults to `llama-3.3-70b-versatile`.
+
+Generate an encryption key with `openssl rand -base64 32`. In the Google OAuth
+client, register `https://supplyflow.com/api/email-accounts/google/callback`
+and the equivalent localhost callback as authorized redirect URIs.
 
 Test the scheduled handler locally with the Cloudflare Vite development server:
 

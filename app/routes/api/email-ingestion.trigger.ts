@@ -19,7 +19,7 @@ export const loader = async ({ request, context }: Route.ActionArgs) => {
   }
 
   try {
-    const summary = await runEmailIngestion(env);
+    const summary = await runEmailIngestion(env as Env);
     return data({ success: true, summary });
   } catch (error) {
     console.error(

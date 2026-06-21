@@ -1,36 +1,41 @@
 import { and, eq, lt, or, sql } from 'drizzle-orm';
 import type { EmailMessage } from '~/services/email/types';
 import { getDb } from './connection';
-import { emailIngestions, emailSyncStates } from './schemas';
+import { emailAccountSyncStates, emailIngestions } from './schemas';
 
 const now = () => new Date().toISOString();
 
-export const getEmailSyncTime = async (provider: string) => {
+export const getEmailSyncTime = async (accountId: string) => {
   const db = getDb();
-  const state = await db.query.emailSyncStates.findFirst({
-    where: eq(emailSyncStates.provider, provider),
+  const state = await db.query.emailAccountSyncStates.findFirst({
+    where: eq(emailAccountSyncStates.accountId, accountId),
   });
   return state ? new Date(state.lastSuccessfulAt) : null;
 };
 
-export const saveEmailSyncTime = async (provider: string, date: Date) => {
+export const saveEmailSyncTime = async (accountId: string, date: Date) => {
   const db = getDb();
   await db
-    .insert(emailSyncStates)
-    .values({ provider, lastSuccessfulAt: date.toISOString() })
+    .insert(emailAccountSyncStates)
+    .values({ accountId, lastSuccessfulAt: date.toISOString() })
     .onConflictDoUpdate({
-      target: emailSyncStates.provider,
+      target: emailAccountSyncStates.accountId,
       set: { lastSuccessfulAt: date.toISOString(), updatedAt: now() },
     });
 };
 
-export const claimEmail = async (provider: string, message: EmailMessage) => {
+export const claimEmail = async (
+  accountId: string,
+  provider: string,
+  message: EmailMessage,
+) => {
   const db = getDb();
   const id = crypto.randomUUID();
   const [created] = await db
     .insert(emailIngestions)
     .values({
       id,
+      accountId,
       provider,
       externalId: message.id,
       threadId: message.threadId,
@@ -55,7 +60,7 @@ export const claimEmail = async (provider: string, message: EmailMessage) => {
     })
     .where(
       and(
-        eq(emailIngestions.provider, provider),
+        eq(emailIngestions.accountId, accountId),
         eq(emailIngestions.externalId, message.id),
         or(
           eq(emailIngestions.status, 'failed'),

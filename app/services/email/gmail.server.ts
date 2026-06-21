@@ -5,7 +5,7 @@ import type {
   ListMessagesOptions,
 } from './types';
 
-type GmailClientConfig = {
+export type GmailClientConfig = {
   clientId: string;
   clientSecret: string;
   refreshToken: string;
@@ -34,11 +34,74 @@ type GmailMessageResponse = {
 
 type GoogleTokenResponse = {
   access_token?: string;
+  refresh_token?: string;
   expires_in?: number;
 };
 
 const GMAIL_API_URL = 'https://gmail.googleapis.com/gmail/v1/users/me';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+
+export const createGmailAuthorizationUrl = (input: {
+  clientId: string;
+  redirectUri: string;
+  state: string;
+}) => {
+  const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+  url.search = new URLSearchParams({
+    client_id: input.clientId,
+    redirect_uri: input.redirectUri,
+    response_type: 'code',
+    scope: 'https://www.googleapis.com/auth/gmail.readonly',
+    access_type: 'offline',
+    include_granted_scopes: 'true',
+    prompt: 'consent',
+    state: input.state,
+  }).toString();
+  return url.toString();
+};
+
+export const exchangeGmailAuthorizationCode = async (input: {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+  code: string;
+}) => {
+  const response = await fetch(GOOGLE_TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: input.clientId,
+      client_secret: input.clientSecret,
+      redirect_uri: input.redirectUri,
+      code: input.code,
+      grant_type: 'authorization_code',
+    }),
+  });
+  if (!response.ok) {
+    throw new Error(
+      `Google authorization exchange failed with status ${response.status}`,
+    );
+  }
+  const payload = (await response.json()) as GoogleTokenResponse;
+  if (!payload.access_token || !payload.refresh_token) {
+    throw new Error('Google did not return offline access credentials');
+  }
+  return {
+    accessToken: payload.access_token,
+    refreshToken: payload.refresh_token,
+  };
+};
+
+export const getGmailProfile = async (accessToken: string) => {
+  const profile = await gmailRequest<{ emailAddress?: string }>(
+    '/profile',
+    accessToken,
+  );
+  if (!profile.emailAddress) {
+    throw new Error('Gmail profile did not include an email address');
+  }
+  return { email: profile.emailAddress.toLowerCase() };
+};
 
 const decodeBase64Url = (value: string) => {
   const base64 = value.replace(/-/g, '+').replace(/_/g, '/');

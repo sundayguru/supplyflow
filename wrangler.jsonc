@@ -13,7 +13,6 @@
   },
   "vars": {
     "RFQ_LLM_MODEL": "llama-3.3-70b-versatile",
-    "RFQ_OWNER_EMAIL": "peculiar4ezeh@gmail.com",
   },
   "d1_databases": [
     {
@@ -87,7 +86,6 @@
       "vars": {
         "BASE_URL": "http://localhost:5173",
         "RFQ_LLM_MODEL": "llama-3.3-70b-versatile",
-        "RFQ_OWNER_EMAIL": "peculiar4ezeh@gmail.com",
       },
     },
   },

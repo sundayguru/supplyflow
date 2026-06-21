@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router';
 import {
   Bell,
   ClipboardList,
+  MailCheck,
   LayoutDashboard,
   Menu,
   Settings,
@@ -37,6 +38,7 @@ export const Header = () => {
   const navItems: NavItem[] = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/rfqs', label: 'RFQ management', icon: ClipboardList },
+    { to: '/connected-accounts', label: 'Connected accounts', icon: MailCheck },
     {
       to: '/notifications',
       label: 'Notifications',

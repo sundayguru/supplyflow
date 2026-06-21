@@ -23,6 +23,7 @@ export default [
   layout('./routes/layouts/ProtectedLayout.tsx', [
     route('dashboard', 'routes/dashboard.tsx'),
     route('rfqs', 'routes/rfqs.tsx'),
+    route('connected-accounts', 'routes/connected-accounts.tsx'),
     route('settings', 'routes/settings.tsx'),
     route('notifications', 'routes/notifications.tsx'),
     route('auth/logout', 'routes/auth/logout.tsx'),
@@ -32,6 +33,14 @@ export default [
     route(
       'api/email-ingestion/trigger',
       'routes/api/email-ingestion.trigger.ts',
+    ),
+    route(
+      'api/email-accounts/google/start',
+      'routes/api/email-accounts.google.start.ts',
+    ),
+    route(
+      'api/email-accounts/google/callback',
+      'routes/api/email-accounts.google.callback.ts',
     ),
   ]),
 ] satisfies RouteConfig;
