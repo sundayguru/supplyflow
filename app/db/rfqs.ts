@@ -1,16 +1,15 @@
 import { and, asc, desc, eq } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
 import type { RfqInput, RfqItemInput, RfqRecord } from '~/types/rfq';
 import { getDb } from './connection';
 import { rfqItems, rfqs } from './schemas';
 
 const createReference = () =>
-  `RFQ-${new Date().getFullYear()}-${uuidv4().slice(0, 6).toUpperCase()}`;
+  `RFQ-${new Date().getFullYear()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
 
 const createItemValues = (rfqId: string, items: RfqItemInput[]) =>
   items.map((item, position) => ({
     ...item,
-    id: uuidv4(),
+    id: crypto.randomUUID(),
     rfqId,
     position,
   }));
@@ -38,7 +37,7 @@ export const getRfq = async (
 
 export const createRfq = async (userId: string, input: RfqInput) => {
   const db = getDb();
-  const id = uuidv4();
+  const id = crypto.randomUUID();
   const { items, ...rfqInput } = input;
 
   await db.batch([

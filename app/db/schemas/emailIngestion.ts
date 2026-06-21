@@ -1,0 +1,59 @@
+import { sql } from 'drizzle-orm';
+import {
+  index,
+  integer,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from 'drizzle-orm/sqlite-core';
+import { rfqs } from './rfqs';
+
+const ingestionStatuses = [
+  'processing',
+  'processed',
+  'ignored',
+  'failed',
+] as const;
+
+export const emailIngestions = sqliteTable(
+  'email_ingestions',
+  {
+    id: text('id', { length: 36 }).primaryKey(),
+    provider: text('provider', { length: 32 }).notNull(),
+    externalId: text('external_id', { length: 255 }).notNull(),
+    threadId: text('thread_id', { length: 255 }),
+    status: text('status', { enum: ingestionStatuses })
+      .notNull()
+      .default('processing'),
+    subject: text('subject', { length: 511 }),
+    fromAddress: text('from_address', { length: 255 }),
+    receivedAt: text('received_at'),
+    rfqId: text('rfq_id').references(() => rfqs.id, { onDelete: 'set null' }),
+    error: text('error'),
+    attempts: integer('attempts').notNull().default(1),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(CURRENT_TIMESTAMP)`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (table) => [
+    uniqueIndex('email_ingestions_provider_external_unique').on(
+      table.provider,
+      table.externalId,
+    ),
+    index('email_ingestions_status_idx').on(table.status),
+    index('email_ingestions_received_at_idx').on(table.receivedAt),
+  ],
+);
+
+export const emailSyncStates = sqliteTable('email_sync_states', {
+  provider: text('provider', { length: 32 }).primaryKey(),
+  lastSuccessfulAt: text('last_successful_at').notNull(),
+  updatedAt: text('updated_at')
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
+});
+
+export type SelectEmailIngestion = typeof emailIngestions.$inferSelect;

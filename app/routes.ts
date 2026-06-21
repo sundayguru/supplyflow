@@ -29,5 +29,9 @@ export default [
     route('api/user', 'routes/api/user.ts'),
     route('api/user/avatar', 'routes/api/user.avatar.tsx'),
     route('api/rfqs', 'routes/api/rfqs.ts'),
+    route(
+      'api/email-ingestion/trigger',
+      'routes/api/email-ingestion.trigger.ts',
+    ),
   ]),
 ] satisfies RouteConfig;

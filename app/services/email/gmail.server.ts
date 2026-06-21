@@ -1,0 +1,193 @@
+import type {
+  EmailAddress,
+  EmailClient,
+  EmailMessage,
+  ListMessagesOptions,
+} from './types';
+
+type GmailClientConfig = {
+  clientId: string;
+  clientSecret: string;
+  refreshToken: string;
+};
+
+type GmailListResponse = {
+  messages?: Array<{ id: string; threadId?: string }>;
+  nextPageToken?: string;
+};
+
+type GmailHeader = { name?: string; value?: string };
+
+type GmailPart = {
+  mimeType?: string;
+  headers?: GmailHeader[];
+  body?: { data?: string };
+  parts?: GmailPart[];
+};
+
+type GmailMessageResponse = {
+  id: string;
+  threadId?: string;
+  internalDate?: string;
+  payload?: GmailPart;
+};
+
+type GoogleTokenResponse = {
+  access_token?: string;
+  expires_in?: number;
+};
+
+const GMAIL_API_URL = 'https://gmail.googleapis.com/gmail/v1/users/me';
+const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+
+const decodeBase64Url = (value: string) => {
+  const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+  const bytes = Uint8Array.from(atob(padded), (character) =>
+    character.charCodeAt(0),
+  );
+  return new TextDecoder().decode(bytes);
+};
+
+const stripHtml = (html: string) =>
+  html
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const findBody = (
+  part: GmailPart | undefined,
+  mimeType: string,
+): string | null => {
+  if (!part) {
+    return null;
+  }
+  if (part.mimeType === mimeType && part.body?.data) {
+    return decodeBase64Url(part.body.data);
+  }
+  for (const child of part.parts ?? []) {
+    const body = findBody(child, mimeType);
+    if (body) {
+      return body;
+    }
+  }
+  return null;
+};
+
+const getHeader = (headers: GmailHeader[] | undefined, name: string) =>
+  headers?.find((header) => header.name?.toLowerCase() === name.toLowerCase())
+    ?.value ?? '';
+
+const parseAddress = (value: string): EmailAddress => {
+  const match = value.match(/^(.*?)\s*<([^>]+)>$/);
+  if (match) {
+    return {
+      name: match[1].replace(/^"|"$/g, '').trim() || null,
+      address: match[2].trim().toLowerCase(),
+    };
+  }
+  return { name: null, address: value.trim().toLowerCase() };
+};
+
+const parseAddresses = (value: string) =>
+  value
+    .split(',')
+    .map((address) => parseAddress(address))
+    .filter((address) => address.address);
+
+const gmailRequest = async <ResponseBody>(
+  path: string,
+  accessToken: string,
+): Promise<ResponseBody> => {
+  const response = await fetch(`${GMAIL_API_URL}${path}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) {
+    throw new Error(`Gmail API request failed with status ${response.status}`);
+  }
+  return (await response.json()) as ResponseBody;
+};
+
+const getAccessToken = async (config: GmailClientConfig) => {
+  const response = await fetch(GOOGLE_TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: config.clientId,
+      client_secret: config.clientSecret,
+      refresh_token: config.refreshToken,
+      grant_type: 'refresh_token',
+    }),
+  });
+  if (!response.ok) {
+    throw new Error(
+      `Google token refresh failed with status ${response.status}`,
+    );
+  }
+  const payload = (await response.json()) as GoogleTokenResponse;
+  if (!payload.access_token) {
+    throw new Error('Google token response did not include an access token');
+  }
+  return payload.access_token;
+};
+
+const getMessage = async (
+  id: string,
+  accessToken: string,
+): Promise<EmailMessage> => {
+  const message = await gmailRequest<GmailMessageResponse>(
+    `/messages/${encodeURIComponent(id)}?format=full`,
+    accessToken,
+  );
+  const headers = message.payload?.headers;
+  const plainText = findBody(message.payload, 'text/plain');
+  const html = plainText ? null : findBody(message.payload, 'text/html');
+  const text = (plainText ?? (html ? stripHtml(html) : '')).trim();
+
+  return {
+    id: message.id,
+    threadId: message.threadId ?? null,
+    subject: getHeader(headers, 'Subject') || '(No subject)',
+    from: parseAddress(getHeader(headers, 'From')),
+    to: parseAddresses(getHeader(headers, 'To')),
+    receivedAt: new Date(Number(message.internalDate ?? Date.now())),
+    text: text.slice(0, 60_000),
+  };
+};
+
+export const createGmailClient = (config: GmailClientConfig): EmailClient => ({
+  provider: 'gmail',
+  async listMessages({ receivedAfter, limit }: ListMessagesOptions) {
+    const accessToken = await getAccessToken(config);
+    const messageIds: string[] = [];
+    let pageToken: string | undefined;
+
+    do {
+      const search = new URLSearchParams({
+        maxResults: String(Math.min(limit - messageIds.length, 100)),
+        q: `in:inbox after:${Math.floor(receivedAfter.getTime() / 1000)}`,
+      });
+      if (pageToken) {
+        search.set('pageToken', pageToken);
+      }
+      const page = await gmailRequest<GmailListResponse>(
+        `/messages?${search.toString()}`,
+        accessToken,
+      );
+      messageIds.push(...(page.messages ?? []).map((message) => message.id));
+      pageToken = page.nextPageToken;
+    } while (pageToken && messageIds.length < limit);
+
+    const messages: EmailMessage[] = [];
+    for (const id of messageIds.slice(0, limit)) {
+      messages.push(await getMessage(id, accessToken));
+    }
+    return messages.sort(
+      (left, right) => left.receivedAt.getTime() - right.receivedAt.getTime(),
+    );
+  },
+});
