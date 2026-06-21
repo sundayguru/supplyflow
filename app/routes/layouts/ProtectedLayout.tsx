@@ -22,9 +22,9 @@ export const loader = () => {
 
 export default function ProtectedLayout() {
   return (
-    <div className='min-h-screen bg-[#f5f5f0]'>
+    <div className='min-h-screen bg-[#f6f8f5]'>
       <Header />
-      <main className='mx-auto max-w-7xl px-2 py-6 sm:px-6 lg:px-8'>
+      <main className='px-4 py-6 sm:px-6 lg:ml-72 lg:px-8 lg:py-8'>
         <Outlet />
       </main>
     </div>

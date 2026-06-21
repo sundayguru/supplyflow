@@ -8,6 +8,7 @@ type ProfileMenuProps = {
   userId: string;
   avatarUrl: string | null;
   onClose: () => void;
+  placement?: 'above' | 'below';
 };
 
 export const ProfileMenu = ({
@@ -16,6 +17,7 @@ export const ProfileMenu = ({
   userId,
   avatarUrl,
   onClose,
+  placement = 'below',
 }: ProfileMenuProps) => {
   const logoutFetcher = useFetcher();
 
@@ -40,7 +42,9 @@ export const ProfileMenu = ({
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className='absolute right-0 z-50 mt-2 w-56 rounded-xl border border-black/5 bg-white py-2 shadow-lg'
+        className={`absolute right-0 z-50 w-56 rounded-xl border border-black/5 bg-white py-2 shadow-lg ${
+          placement === 'above' ? 'bottom-full mb-2' : 'mt-2'
+        }`}
       >
         {/* User Info */}
         <div className='flex items-center gap-3 border-b border-black/5 px-4 py-3'>
@@ -65,14 +69,6 @@ export const ProfileMenu = ({
 
         {/* Menu Items */}
         <div className='py-1'>
-          <Link
-            to={`/profile/${userId}`}
-            onClick={onClose}
-            className='flex items-center gap-3 px-4 py-2.5 text-sm text-black/70 transition-colors hover:bg-black/5'
-          >
-            <UserIcon size={16} />
-            Profile
-          </Link>
           <Link
             to='/settings'
             onClick={onClose}
