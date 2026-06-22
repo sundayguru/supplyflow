@@ -1,15 +1,19 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useFetcher } from 'react-router';
 import {
   CalendarDays,
   CircleDollarSign,
   Mail,
   Package,
   Pencil,
+  Trash2,
   UserRound,
   X,
 } from 'lucide-react';
-import type { RfqRecord } from '~/types/rfq';
+import type { RfqItemInput, RfqItemRecord, RfqRecord } from '~/types/rfq';
 import { formatRfqMoney } from '~/utils/rfq';
+import { ConfirmModal } from '../ConfirmModal';
+import { RfqItemEditModal } from './RfqItemEditModal';
 import { RfqStatusBadge } from './RfqStatusBadge';
 
 type RfqDetailDrawerProps = {
@@ -18,6 +22,10 @@ type RfqDetailDrawerProps = {
   onEdit: () => void;
 };
 
+type ItemMutationResponse =
+  | { success: true; rfq: RfqRecord }
+  | { error: string };
+
 const formatDate = (value: string) => new Date(value).toLocaleDateString();
 
 export const RfqDetailDrawer = ({
@@ -25,6 +33,40 @@ export const RfqDetailDrawer = ({
   onClose,
   onEdit,
 }: RfqDetailDrawerProps) => {
+  const itemMutation = useFetcher<ItemMutationResponse>();
+  const [editItem, setEditItem] = useState<RfqItemRecord | null>(null);
+  const [deleteItem, setDeleteItem] = useState<RfqItemRecord | null>(null);
+
+  const submitItem = (value: RfqItemInput) => {
+    if (!editItem) {
+      return;
+    }
+    itemMutation.submit(
+      { id: editItem.id, ...value },
+      {
+        method: 'patch',
+        action: '/api/rfq-items',
+        encType: 'application/json',
+      },
+    );
+    setEditItem(null);
+  };
+
+  const confirmDeleteItem = () => {
+    if (!deleteItem) {
+      return;
+    }
+    itemMutation.submit(
+      { id: deleteItem.id },
+      {
+        method: 'delete',
+        action: '/api/rfq-items',
+        encType: 'application/json',
+      },
+    );
+    setDeleteItem(null);
+  };
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -81,6 +123,11 @@ export const RfqDetailDrawer = ({
         </header>
 
         <div className='flex-1 overflow-y-auto px-5 py-6 sm:px-7'>
+          {itemMutation.data && 'error' in itemMutation.data && (
+            <p className='mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'>
+              {itemMutation.data.error}
+            </p>
+          )}
           <section
             className='grid gap-3 sm:grid-cols-2'
             aria-label='RFQ summary'
@@ -154,15 +201,39 @@ export const RfqDetailDrawer = ({
                       {index + 1}
                     </span>
                     <div className='min-w-0 flex-1'>
-                      <div className='flex flex-wrap items-center justify-between gap-2'>
+                      <div className='flex flex-wrap items-start justify-between gap-2'>
                         <p className='font-semibold text-slate-900'>
                           {item.quantity} {item.unit}
                         </p>
-                        {item.manufacturerPartNumber && (
-                          <span className='rounded-lg bg-slate-100 px-2.5 py-1 font-mono text-xs text-slate-600'>
-                            {item.manufacturerPartNumber}
-                          </span>
-                        )}
+                        <div className='flex items-center gap-1'>
+                          {item.manufacturerPartNumber && (
+                            <span className='mr-1 rounded-lg bg-slate-100 px-2.5 py-1 font-mono text-xs text-slate-600'>
+                              {item.manufacturerPartNumber}
+                            </span>
+                          )}
+                          <button
+                            type='button'
+                            onClick={() => setEditItem(item)}
+                            className='rounded-lg p-2 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-700'
+                            aria-label={`Edit item ${index + 1}`}
+                          >
+                            <Pencil size={15} />
+                          </button>
+                          <button
+                            type='button'
+                            onClick={() => setDeleteItem(item)}
+                            disabled={rfq.items.length <= 1}
+                            title={
+                              rfq.items.length <= 1
+                                ? 'An RFQ must contain at least one item'
+                                : undefined
+                            }
+                            className='rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-30'
+                            aria-label={`Delete item ${index + 1}`}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
                       </div>
                       <p className='mt-3 text-sm leading-6 whitespace-pre-wrap text-slate-700'>
                         {item.description}
@@ -202,6 +273,25 @@ export const RfqDetailDrawer = ({
           </button>
         </footer>
       </aside>
+
+      {editItem && (
+        <RfqItemEditModal
+          key={editItem.id}
+          item={editItem}
+          isSaving={itemMutation.state !== 'idle'}
+          onClose={() => setEditItem(null)}
+          onSubmit={submitItem}
+        />
+      )}
+      <ConfirmModal
+        isOpen={!!deleteItem}
+        title='Delete this RFQ item?'
+        description='This line item will be permanently removed from the request.'
+        onClose={() => setDeleteItem(null)}
+        onConfirm={confirmDeleteItem}
+        isLoading={itemMutation.state !== 'idle'}
+        confirmVariant='danger'
+      />
     </div>
   );
 };

@@ -9,8 +9,51 @@ type ParseResult =
   | { success: true; value: RfqInput }
   | { success: false; error: string };
 
+type ParseItemResult =
+  | { success: true; value: RfqItemInput }
+  | { success: false; error: string };
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
+
+export const parseRfqItemInput = (value: unknown): ParseItemResult => {
+  if (!isRecord(value)) {
+    return { success: false, error: 'Invalid RFQ item' };
+  }
+
+  const quantity = Number(value.quantity);
+  const unit = typeof value.unit === 'string' ? value.unit.trim() : '';
+  const description =
+    typeof value.description === 'string' ? value.description.trim() : '';
+  if (!Number.isFinite(quantity) || quantity <= 0 || !unit || !description) {
+    return {
+      success: false,
+      error: 'The item requires a positive quantity, unit, and description',
+    };
+  }
+
+  return {
+    success: true,
+    value: {
+      quantity,
+      unit,
+      description,
+      manufacturer:
+        typeof value.manufacturer === 'string' && value.manufacturer.trim()
+          ? value.manufacturer.trim()
+          : null,
+      manufacturerPartNumber:
+        typeof value.manufacturerPartNumber === 'string' &&
+        value.manufacturerPartNumber.trim()
+          ? value.manufacturerPartNumber.trim()
+          : null,
+      specifications:
+        typeof value.specifications === 'string' && value.specifications.trim()
+          ? value.specifications.trim()
+          : null,
+    },
+  };
+};
 
 export const parseRfqInput = (value: unknown): ParseResult => {
   if (!isRecord(value)) {
@@ -52,38 +95,11 @@ export const parseRfqInput = (value: unknown): ParseResult => {
 
   const items: RfqItemInput[] = [];
   for (const rawItem of rawItems) {
-    if (!isRecord(rawItem)) {
-      return { success: false, error: 'Invalid RFQ item' };
+    const parsedItem = parseRfqItemInput(rawItem);
+    if (!parsedItem.success) {
+      return { success: false, error: parsedItem.error };
     }
-    const quantity = Number(rawItem.quantity);
-    const unit = typeof rawItem.unit === 'string' ? rawItem.unit.trim() : '';
-    const description =
-      typeof rawItem.description === 'string' ? rawItem.description.trim() : '';
-    if (!Number.isFinite(quantity) || quantity <= 0 || !unit || !description) {
-      return {
-        success: false,
-        error: 'Every item requires a positive quantity, unit, and description',
-      };
-    }
-    items.push({
-      quantity,
-      unit,
-      description,
-      manufacturer:
-        typeof rawItem.manufacturer === 'string' && rawItem.manufacturer.trim()
-          ? rawItem.manufacturer.trim()
-          : null,
-      manufacturerPartNumber:
-        typeof rawItem.manufacturerPartNumber === 'string' &&
-        rawItem.manufacturerPartNumber.trim()
-          ? rawItem.manufacturerPartNumber.trim()
-          : null,
-      specifications:
-        typeof rawItem.specifications === 'string' &&
-        rawItem.specifications.trim()
-          ? rawItem.specifications.trim()
-          : null,
-    });
+    items.push(parsedItem.value);
   }
 
   return {
