@@ -11,6 +11,7 @@ import {
   type EmailIngestionStatus,
 } from '~/db/schemas';
 import { getUserFromRequest } from '~/utils/session.server';
+import { getOrganizationForUser } from '~/db/organizations';
 
 const PAGE_SIZE = 20;
 
@@ -37,6 +38,10 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!user) {
     return redirect('/auth/login');
   }
+  const organization = await getOrganizationForUser(user.id);
+  if (!organization) {
+    return redirect('/organization');
+  }
 
   const url = new URL(request.url);
   const requestedPage = Number.parseInt(
@@ -52,16 +57,16 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   const status = isEmailIngestionStatus(rawStatus) ? rawStatus : undefined;
 
   const [accounts, result, counts] = await Promise.all([
-    listConnectedEmailAccounts(user.id),
+    listConnectedEmailAccounts(organization.id),
     listEmailIngestions({
-      userId: user.id,
+      organizationId: organization.id,
       accountId,
       status,
       query,
       page,
       pageSize: PAGE_SIZE,
     }),
-    getEmailIngestionCounts(user.id),
+    getEmailIngestionCounts(organization.id),
   ]);
   const pageCount = Math.max(1, Math.ceil(result.total / PAGE_SIZE));
   if (page > pageCount) {

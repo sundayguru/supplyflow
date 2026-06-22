@@ -18,7 +18,7 @@ export type EmailIngestionFilters = {
 export type EmailIngestionPageInput = EmailIngestionFilters & {
   page: number;
   pageSize: number;
-  userId: string;
+  organizationId: string;
 };
 
 const now = () => new Date().toISOString();
@@ -29,10 +29,12 @@ export const listEmailIngestions = async ({
   pageSize,
   query,
   status,
-  userId,
+  organizationId,
 }: EmailIngestionPageInput) => {
   const db = getDb();
-  const conditions: SQL[] = [eq(connectedEmailAccounts.userId, userId)];
+  const conditions: SQL[] = [
+    eq(connectedEmailAccounts.organizationId, organizationId),
+  ];
 
   if (accountId) {
     conditions.push(eq(emailIngestions.accountId, accountId));
@@ -92,7 +94,7 @@ export const listEmailIngestions = async ({
   return { rows, total: totalResult?.total ?? 0 };
 };
 
-export const getEmailIngestionCounts = async (userId: string) => {
+export const getEmailIngestionCounts = async (organizationId: string) => {
   const db = getDb();
   const grouped = await db
     .select({ status: emailIngestions.status, total: count() })
@@ -101,7 +103,7 @@ export const getEmailIngestionCounts = async (userId: string) => {
       connectedEmailAccounts,
       eq(emailIngestions.accountId, connectedEmailAccounts.id),
     )
-    .where(eq(connectedEmailAccounts.userId, userId))
+    .where(eq(connectedEmailAccounts.organizationId, organizationId))
     .groupBy(emailIngestions.status);
 
   const counts: Record<EmailIngestionStatus, number> = {

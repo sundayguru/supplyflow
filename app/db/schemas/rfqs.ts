@@ -7,6 +7,7 @@ import {
   text,
 } from 'drizzle-orm/sqlite-core';
 import { users } from './users';
+import { organizations } from './organizations';
 import { rfqStatuses } from '../../types/rfq';
 
 export const rfqs = sqliteTable(
@@ -16,6 +17,9 @@ export const rfqs = sqliteTable(
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    organizationId: text('organization_id').references(() => organizations.id, {
+      onDelete: 'cascade',
+    }),
     reference: text('reference', { length: 32 }).notNull().unique(),
     customerName: text('customer_name', { length: 255 }).notNull(),
     customerEmail: text('customer_email', { length: 255 }),
@@ -32,6 +36,11 @@ export const rfqs = sqliteTable(
   },
   (table) => [
     index('rfqs_user_id_idx').on(table.userId),
+    index('rfqs_organization_id_idx').on(table.organizationId),
+    index('rfqs_organization_status_idx').on(
+      table.organizationId,
+      table.status,
+    ),
     index('rfqs_user_status_idx').on(table.userId, table.status),
     index('rfqs_created_at_idx').on(table.createdAt),
   ],

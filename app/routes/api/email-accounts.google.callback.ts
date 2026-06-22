@@ -11,11 +11,16 @@ import {
 } from '~/services/email/gmail.server';
 import { getUserFromRequest } from '~/utils/session.server';
 import { encryptToken } from '~/utils/tokenEncryption.server';
+import { getOrganizationForUser } from '~/db/organizations';
 
 export const loader = async ({ request, context }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
   if (!user) {
     return redirect('/auth/login');
+  }
+  const organization = await getOrganizationForUser(user.id);
+  if (!organization || organization.createdBy !== user.id) {
+    return redirect('/connected-accounts?error=owner_required');
   }
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
@@ -47,6 +52,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     const profile = await getGmailProfile(credentials.accessToken);
     await upsertConnectedEmailAccount({
       userId: user.id,
+      organizationId: organization.id,
       provider: 'gmail',
       providerAccountId: profile.email,
       email: profile.email,

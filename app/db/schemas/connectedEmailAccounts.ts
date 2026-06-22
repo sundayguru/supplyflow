@@ -7,6 +7,7 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core';
 import { users } from './users';
+import { organizations } from './organizations';
 
 export const connectedEmailAccounts = sqliteTable(
   'connected_email_accounts',
@@ -15,6 +16,9 @@ export const connectedEmailAccounts = sqliteTable(
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    organizationId: text('organization_id').references(() => organizations.id, {
+      onDelete: 'cascade',
+    }),
     provider: text('provider', { enum: ['gmail'] }).notNull(),
     providerAccountId: text('provider_account_id', { length: 255 }).notNull(),
     email: text('email', { length: 255 }).notNull(),
@@ -29,13 +33,14 @@ export const connectedEmailAccounts = sqliteTable(
       .default(sql`(CURRENT_TIMESTAMP)`),
   },
   (table) => [
-    uniqueIndex('connected_email_accounts_user_provider_unique').on(
-      table.userId,
+    uniqueIndex('connected_email_accounts_org_provider_unique').on(
+      table.organizationId,
       table.provider,
       table.providerAccountId,
     ),
     index('connected_email_accounts_active_idx').on(table.isActive),
     index('connected_email_accounts_user_idx').on(table.userId),
+    index('connected_email_accounts_org_idx').on(table.organizationId),
   ],
 );
 

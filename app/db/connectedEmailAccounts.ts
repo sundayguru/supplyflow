@@ -2,7 +2,7 @@ import { and, desc, eq, gt } from 'drizzle-orm';
 import { getDb } from './connection';
 import { connectedEmailAccounts, emailAccountOauthStates } from './schemas';
 
-export const listConnectedEmailAccounts = (userId: string) => {
+export const listConnectedEmailAccounts = (organizationId: string) => {
   const db = getDb();
   return db
     .select({
@@ -15,20 +15,28 @@ export const listConnectedEmailAccounts = (userId: string) => {
       updatedAt: connectedEmailAccounts.updatedAt,
     })
     .from(connectedEmailAccounts)
-    .where(eq(connectedEmailAccounts.userId, userId))
+    .where(eq(connectedEmailAccounts.organizationId, organizationId))
     .orderBy(desc(connectedEmailAccounts.createdAt));
 };
 
-export const listActiveConnectedEmailAccounts = () => {
+export const listActiveConnectedEmailAccounts = (organizationId?: string) => {
   const db = getDb();
   return db
     .select()
     .from(connectedEmailAccounts)
-    .where(eq(connectedEmailAccounts.isActive, true));
+    .where(
+      organizationId
+        ? and(
+            eq(connectedEmailAccounts.isActive, true),
+            eq(connectedEmailAccounts.organizationId, organizationId),
+          )
+        : eq(connectedEmailAccounts.isActive, true),
+    );
 };
 
 export const upsertConnectedEmailAccount = async (input: {
   userId: string;
+  organizationId: string;
   provider: 'gmail';
   providerAccountId: string;
   email: string;
@@ -42,7 +50,7 @@ export const upsertConnectedEmailAccount = async (input: {
     .values({ ...input, id })
     .onConflictDoUpdate({
       target: [
-        connectedEmailAccounts.userId,
+        connectedEmailAccounts.organizationId,
         connectedEmailAccounts.provider,
         connectedEmailAccounts.providerAccountId,
       ],
@@ -60,7 +68,7 @@ export const upsertConnectedEmailAccount = async (input: {
 
 export const setConnectedEmailAccountActive = async (
   id: string,
-  userId: string,
+  organizationId: string,
   isActive: boolean,
 ) => {
   const db = getDb();
@@ -70,7 +78,7 @@ export const setConnectedEmailAccountActive = async (
     .where(
       and(
         eq(connectedEmailAccounts.id, id),
-        eq(connectedEmailAccounts.userId, userId),
+        eq(connectedEmailAccounts.organizationId, organizationId),
       ),
     )
     .returning({ id: connectedEmailAccounts.id });
@@ -79,7 +87,7 @@ export const setConnectedEmailAccountActive = async (
 
 export const deleteConnectedEmailAccount = async (
   id: string,
-  userId: string,
+  organizationId: string,
 ) => {
   const db = getDb();
   const [account] = await db
@@ -87,7 +95,7 @@ export const deleteConnectedEmailAccount = async (
     .where(
       and(
         eq(connectedEmailAccounts.id, id),
-        eq(connectedEmailAccounts.userId, userId),
+        eq(connectedEmailAccounts.organizationId, organizationId),
       ),
     )
     .returning({ id: connectedEmailAccounts.id });

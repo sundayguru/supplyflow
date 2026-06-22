@@ -32,6 +32,7 @@ export type RfqItemRecord = RfqItemInput & {
 export type RfqRecord = Omit<RfqInput, 'items'> & {
   id: string;
   userId: string;
+  organizationId: string | null;
   reference: string;
   createdAt: string;
   updatedAt: string;

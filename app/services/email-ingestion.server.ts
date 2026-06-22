@@ -49,6 +49,9 @@ const processAccount = async (
   env: Env,
   extractor: RfqExtractor,
 ): Promise<AccountResult> => {
+  if (!account.organizationId) {
+    throw new Error('Connected account is not linked to an organization');
+  }
   const startedAt = new Date();
   const refreshToken = await decryptToken(
     account.encryptedRefreshToken,
@@ -92,7 +95,11 @@ const processAccount = async (
         ignored += 1;
         continue;
       }
-      const rfq = await createRfq(account.userId, result.rfq);
+      const rfq = await createRfq(
+        account.organizationId,
+        account.userId,
+        result.rfq,
+      );
       if (!rfq) {
         throw new Error('RFQ could not be created');
       }
@@ -120,8 +127,8 @@ const processAccount = async (
   };
 };
 
-export const runEmailIngestion = async (env: Env) => {
-  const accounts = await listActiveConnectedEmailAccounts();
+export const runEmailIngestion = async (env: Env, organizationId?: string) => {
+  const accounts = await listActiveConnectedEmailAccounts(organizationId);
   const extractor = createRfqExtractor({
     provider: 'groq',
     apiKey: requireSetting('GROQ_API_KEY', env.GROQ_API_KEY),

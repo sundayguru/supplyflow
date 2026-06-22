@@ -13,19 +13,34 @@ import {
   setConnectedEmailAccountActive,
 } from '~/db/connectedEmailAccounts';
 import { getUserFromRequest } from '~/utils/session.server';
+import { getOrganizationForUser } from '~/db/organizations';
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
   if (!user) {
     return redirect('/auth/login');
   }
-  return { accounts: await listConnectedEmailAccounts(user.id) };
+  const organization = await getOrganizationForUser(user.id);
+  if (!organization) {
+    return redirect('/organization');
+  }
+  return {
+    accounts: await listConnectedEmailAccounts(organization.id),
+    isOwner: organization.createdBy === user.id,
+  };
 };
 
 export const action = async ({ request }: Route.ActionArgs) => {
   const user = await getUserFromRequest(request);
   if (!user) {
     return data({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const organization = await getOrganizationForUser(user.id);
+  if (!organization || organization.createdBy !== user.id) {
+    return data(
+      { error: 'Only the organization owner can manage connected accounts' },
+      { status: 403 },
+    );
   }
   const form = await request.formData();
   const id = form.get('id');
@@ -37,7 +52,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
   if (intent === 'toggle') {
     const account = await setConnectedEmailAccountActive(
       id,
-      user.id,
+      organization.id,
       form.get('isActive') === 'true',
     );
     return account
@@ -45,7 +60,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
       : data({ error: 'Account not found' }, { status: 404 });
   }
   if (intent === 'delete') {
-    const account = await deleteConnectedEmailAccount(id, user.id);
+    const account = await deleteConnectedEmailAccount(id, organization.id);
     return account
       ? data({ success: true })
       : data({ error: 'Account not found' }, { status: 404 });
@@ -79,12 +94,14 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
             Connect multiple inboxes and choose which ones SupplyFlow monitors.
           </p>
         </div>
-        <Link
-          to='/api/email-accounts/google/start'
-          className='inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 hover:bg-emerald-500'
-        >
-          <Plus size={18} /> Connect Gmail
-        </Link>
+        {loaderData.isOwner && (
+          <Link
+            to='/api/email-accounts/google/start'
+            className='inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 hover:bg-emerald-500'
+          >
+            <Plus size={18} /> Connect Gmail
+          </Link>
+        )}
       </div>
 
       {errorMessage && (
@@ -125,32 +142,42 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
                   {new Date(account.createdAt).toLocaleDateString()}
                 </p>
               </div>
-              <fetcher.Form method='post'>
-                <input type='hidden' name='id' value={account.id} />
-                <input type='hidden' name='intent' value='toggle' />
-                <input
-                  type='hidden'
-                  name='isActive'
-                  value={String(!account.isActive)}
-                />
-                <button
-                  type='submit'
+              {loaderData.isOwner ? (
+                <>
+                  <fetcher.Form method='post'>
+                    <input type='hidden' name='id' value={account.id} />
+                    <input type='hidden' name='intent' value='toggle' />
+                    <input
+                      type='hidden'
+                      name='isActive'
+                      value={String(!account.isActive)}
+                    />
+                    <button
+                      type='submit'
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold ${account.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}
+                    >
+                      {account.isActive ? 'Active' : 'Inactive'}
+                    </button>
+                  </fetcher.Form>
+                  <fetcher.Form method='post'>
+                    <input type='hidden' name='id' value={account.id} />
+                    <input type='hidden' name='intent' value='delete' />
+                    <button
+                      type='submit'
+                      aria-label={`Remove ${account.email}`}
+                      className='rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-700'
+                    >
+                      <Trash2 size={17} />
+                    </button>
+                  </fetcher.Form>
+                </>
+              ) : (
+                <span
                   className={`rounded-full px-3 py-1.5 text-xs font-semibold ${account.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}
                 >
                   {account.isActive ? 'Active' : 'Inactive'}
-                </button>
-              </fetcher.Form>
-              <fetcher.Form method='post'>
-                <input type='hidden' name='id' value={account.id} />
-                <input type='hidden' name='intent' value='delete' />
-                <button
-                  type='submit'
-                  aria-label={`Remove ${account.email}`}
-                  className='rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-700'
-                >
-                  <Trash2 size={17} />
-                </button>
-              </fetcher.Form>
+                </span>
+              )}
             </article>
           ))
         )}

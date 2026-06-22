@@ -30,6 +30,7 @@ import { getRfqs } from '~/db/rfqs';
 import { getUserFromRequest } from '~/utils/session.server';
 import type { RfqRecord, RfqStatus } from '~/types/rfq';
 import { formatRfqMoney } from '~/utils/rfq';
+import { getOrganizationForUser } from '~/db/organizations';
 
 type ApiResponse =
   | { success: true; rfq?: RfqRecord; id?: string }
@@ -40,9 +41,16 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!user) {
     return redirect('/auth/login');
   }
+  const organization = await getOrganizationForUser(user.id);
+  if (!organization) {
+    return redirect('/organization');
+  }
 
   try {
-    return data({ rfqs: await getRfqs(user.id), loadError: null });
+    return data({
+      rfqs: await getRfqs(organization.id),
+      loadError: null,
+    });
   } catch (error) {
     console.error('Unable to load RFQs', error);
     return data({ rfqs: [], loadError: 'Unable to load RFQs' });

@@ -14,10 +14,10 @@ const createItemValues = (rfqId: string, items: RfqItemInput[]) =>
     position,
   }));
 
-export const getRfqs = (userId: string): Promise<RfqRecord[]> => {
+export const getRfqs = (organizationId: string): Promise<RfqRecord[]> => {
   const db = getDb();
   return db.query.rfqs.findMany({
-    where: eq(rfqs.userId, userId),
+    where: eq(rfqs.organizationId, organizationId),
     orderBy: [desc(rfqs.createdAt)],
     with: { items: { orderBy: [asc(rfqItems.position)] } },
   });
@@ -25,17 +25,21 @@ export const getRfqs = (userId: string): Promise<RfqRecord[]> => {
 
 export const getRfq = async (
   id: string,
-  userId: string,
+  organizationId: string,
 ): Promise<RfqRecord | null> => {
   const db = getDb();
   const rfq = await db.query.rfqs.findFirst({
-    where: and(eq(rfqs.id, id), eq(rfqs.userId, userId)),
+    where: and(eq(rfqs.id, id), eq(rfqs.organizationId, organizationId)),
     with: { items: { orderBy: [asc(rfqItems.position)] } },
   });
   return rfq ?? null;
 };
 
-export const createRfq = async (userId: string, input: RfqInput) => {
+export const createRfq = async (
+  organizationId: string,
+  userId: string,
+  input: RfqInput,
+) => {
   const db = getDb();
   const id = crypto.randomUUID();
   const { items, ...rfqInput } = input;
@@ -45,20 +49,21 @@ export const createRfq = async (userId: string, input: RfqInput) => {
       ...rfqInput,
       id,
       userId,
+      organizationId,
       reference: createReference(),
     }),
     db.insert(rfqItems).values(createItemValues(id, items)),
   ]);
 
-  return getRfq(id, userId);
+  return getRfq(id, organizationId);
 };
 
 export const updateRfq = async (
   id: string,
-  userId: string,
+  organizationId: string,
   input: RfqInput,
 ) => {
-  const existing = await getRfq(id, userId);
+  const existing = await getRfq(id, organizationId);
   if (!existing) {
     return null;
   }
@@ -71,7 +76,7 @@ export const updateRfq = async (
     db
       .update(rfqs)
       .set({ ...rfqInput, updatedAt })
-      .where(and(eq(rfqs.id, id), eq(rfqs.userId, userId))),
+      .where(and(eq(rfqs.id, id), eq(rfqs.organizationId, organizationId))),
     db.delete(rfqItems).where(eq(rfqItems.rfqId, id)),
     db.insert(rfqItems).values(
       createItemValues(id, items).map((item) => ({
@@ -81,35 +86,35 @@ export const updateRfq = async (
     ),
   ]);
 
-  return getRfq(id, userId);
+  return getRfq(id, organizationId);
 };
 
-export const deleteRfq = async (id: string, userId: string) => {
+export const deleteRfq = async (id: string, organizationId: string) => {
   const db = getDb();
   const [rfq] = await db
     .delete(rfqs)
-    .where(and(eq(rfqs.id, id), eq(rfqs.userId, userId)))
+    .where(and(eq(rfqs.id, id), eq(rfqs.organizationId, organizationId)))
     .returning({ id: rfqs.id });
   return rfq ?? null;
 };
 
-const getOwnedRfqItem = async (id: string, userId: string) => {
+const getOrganizationRfqItem = async (id: string, organizationId: string) => {
   const db = getDb();
   const [item] = await db
     .select({ id: rfqItems.id, rfqId: rfqItems.rfqId })
     .from(rfqItems)
     .innerJoin(rfqs, eq(rfqItems.rfqId, rfqs.id))
-    .where(and(eq(rfqItems.id, id), eq(rfqs.userId, userId)))
+    .where(and(eq(rfqItems.id, id), eq(rfqs.organizationId, organizationId)))
     .limit(1);
   return item ?? null;
 };
 
 export const updateRfqItem = async (
   id: string,
-  userId: string,
+  organizationId: string,
   input: RfqItemInput,
 ) => {
-  const existing = await getOwnedRfqItem(id, userId);
+  const existing = await getOrganizationRfqItem(id, organizationId);
   if (!existing) {
     return null;
   }
@@ -124,9 +129,14 @@ export const updateRfqItem = async (
     db
       .update(rfqs)
       .set({ updatedAt })
-      .where(and(eq(rfqs.id, existing.rfqId), eq(rfqs.userId, userId))),
+      .where(
+        and(
+          eq(rfqs.id, existing.rfqId),
+          eq(rfqs.organizationId, organizationId),
+        ),
+      ),
   ]);
-  return getRfq(existing.rfqId, userId);
+  return getRfq(existing.rfqId, organizationId);
 };
 
 export type DeleteRfqItemResult =
@@ -136,9 +146,9 @@ export type DeleteRfqItemResult =
 
 export const deleteRfqItem = async (
   id: string,
-  userId: string,
+  organizationId: string,
 ): Promise<DeleteRfqItemResult> => {
-  const existing = await getOwnedRfqItem(id, userId);
+  const existing = await getOrganizationRfqItem(id, organizationId);
   if (!existing) {
     return { status: 'not-found' };
   }
@@ -161,8 +171,10 @@ export const deleteRfqItem = async (
   await db
     .update(rfqs)
     .set({ updatedAt })
-    .where(and(eq(rfqs.id, existing.rfqId), eq(rfqs.userId, userId)));
-  const updatedRfq = await getRfq(existing.rfqId, userId);
+    .where(
+      and(eq(rfqs.id, existing.rfqId), eq(rfqs.organizationId, organizationId)),
+    );
+  const updatedRfq = await getRfq(existing.rfqId, organizationId);
   return updatedRfq
     ? { status: 'deleted', rfq: updatedRfq }
     : { status: 'not-found' };

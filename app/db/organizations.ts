@@ -1,10 +1,12 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { getDb } from './connection';
 import {
   organizationInvitations,
   organizationMembers,
   organizations,
+  connectedEmailAccounts,
+  rfqs,
   users,
   type InsertOrganization,
 } from './schemas';
@@ -43,6 +45,21 @@ export const createOrganization = async (
     userId: createdBy,
     role: 'owner',
   });
+  await Promise.all([
+    db
+      .update(rfqs)
+      .set({ organizationId: id })
+      .where(and(eq(rfqs.userId, createdBy), isNull(rfqs.organizationId))),
+    db
+      .update(connectedEmailAccounts)
+      .set({ organizationId: id })
+      .where(
+        and(
+          eq(connectedEmailAccounts.userId, createdBy),
+          isNull(connectedEmailAccounts.organizationId),
+        ),
+      ),
+  ]);
   return getOrganizationForUser(createdBy);
 };
 
@@ -240,6 +257,21 @@ export const acceptOrganizationInvitation = async (
     userId,
     role: 'member',
   });
+  await Promise.all([
+    db
+      .update(rfqs)
+      .set({ organizationId: invitation.organizationId })
+      .where(and(eq(rfqs.userId, userId), isNull(rfqs.organizationId))),
+    db
+      .update(connectedEmailAccounts)
+      .set({ organizationId: invitation.organizationId })
+      .where(
+        and(
+          eq(connectedEmailAccounts.userId, userId),
+          isNull(connectedEmailAccounts.organizationId),
+        ),
+      ),
+  ]);
   await db
     .update(organizationInvitations)
     .set({ status: 'accepted', acceptedBy: userId, updatedAt: now() })

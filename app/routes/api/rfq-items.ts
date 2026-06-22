@@ -3,6 +3,7 @@ import type { Route } from './+types/rfq-items';
 import { deleteRfqItem, updateRfqItem } from '~/db/rfqs';
 import { parseRfqItemInput } from '~/utils/rfq.server';
 import { getUserFromRequest } from '~/utils/session.server';
+import { getOrganizationForUser } from '~/db/organizations';
 
 const getItemId = (value: unknown) => {
   if (
@@ -21,6 +22,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
   if (!user) {
     return data({ error: 'Unauthorized' }, { status: 401 });
   }
+  const organization = await getOrganizationForUser(user.id);
+  if (!organization) {
+    return data({ error: 'Organization required' }, { status: 409 });
+  }
 
   try {
     const body: unknown = await request.json();
@@ -34,14 +39,14 @@ export const action = async ({ request }: Route.ActionArgs) => {
       if (!parsed.success) {
         return data({ error: parsed.error }, { status: 400 });
       }
-      const rfq = await updateRfqItem(id, user.id, parsed.value);
+      const rfq = await updateRfqItem(id, organization.id, parsed.value);
       return rfq
         ? data({ success: true, rfq })
         : data({ error: 'RFQ item not found' }, { status: 404 });
     }
 
     if (request.method === 'DELETE') {
-      const result = await deleteRfqItem(id, user.id);
+      const result = await deleteRfqItem(id, organization.id);
       if (result.status === 'not-found') {
         return data({ error: 'RFQ item not found' }, { status: 404 });
       }
