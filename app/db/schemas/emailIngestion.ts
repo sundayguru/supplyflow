@@ -9,7 +9,7 @@ import {
 import { rfqs } from './rfqs';
 import { connectedEmailAccounts } from './connectedEmailAccounts';
 
-const ingestionStatuses = [
+export const emailIngestionStatuses = [
   'processing',
   'processed',
   'ignored',
@@ -26,7 +26,7 @@ export const emailIngestions = sqliteTable(
     provider: text('provider', { length: 32 }).notNull(),
     externalId: text('external_id', { length: 255 }).notNull(),
     threadId: text('thread_id', { length: 255 }),
-    status: text('status', { enum: ingestionStatuses })
+    status: text('status', { enum: emailIngestionStatuses })
       .notNull()
       .default('processing'),
     subject: text('subject', { length: 511 }),
@@ -63,3 +63,4 @@ export const emailAccountSyncStates = sqliteTable('email_account_sync_states', {
 });
 
 export type SelectEmailIngestion = typeof emailIngestions.$inferSelect;
+export type EmailIngestionStatus = (typeof emailIngestionStatuses)[number];

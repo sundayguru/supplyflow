@@ -24,6 +24,7 @@ export default [
     route('dashboard', 'routes/dashboard.tsx'),
     route('rfqs', 'routes/rfqs.tsx'),
     route('connected-accounts', 'routes/connected-accounts.tsx'),
+    route('email-ingestions', 'routes/email-ingestions.tsx'),
     route('settings', 'routes/settings.tsx'),
     route('notifications', 'routes/notifications.tsx'),
     route('auth/logout', 'routes/auth/logout.tsx'),

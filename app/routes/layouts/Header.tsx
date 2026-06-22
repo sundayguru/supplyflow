@@ -4,6 +4,7 @@ import {
   Bell,
   ClipboardList,
   MailCheck,
+  MailSearch,
   LayoutDashboard,
   Menu,
   Settings,
@@ -39,6 +40,7 @@ export const Header = () => {
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/rfqs', label: 'RFQ management', icon: ClipboardList },
     { to: '/connected-accounts', label: 'Connected accounts', icon: MailCheck },
+    { to: '/email-ingestions', label: 'Email ingestions', icon: MailSearch },
     {
       to: '/notifications',
       label: 'Notifications',

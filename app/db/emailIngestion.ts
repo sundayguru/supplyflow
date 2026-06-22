@@ -1,9 +1,120 @@
-import { and, eq, lt, or, sql } from 'drizzle-orm';
+import { and, count, desc, eq, like, lt, or, sql, type SQL } from 'drizzle-orm';
 import type { EmailMessage } from '~/services/email/types';
 import { getDb } from './connection';
-import { emailAccountSyncStates, emailIngestions } from './schemas';
+import {
+  connectedEmailAccounts,
+  emailAccountSyncStates,
+  emailIngestions,
+  rfqs,
+  type EmailIngestionStatus,
+} from './schemas';
+
+export type EmailIngestionFilters = {
+  accountId?: string;
+  query?: string;
+  status?: EmailIngestionStatus;
+};
+
+export type EmailIngestionPageInput = EmailIngestionFilters & {
+  page: number;
+  pageSize: number;
+  userId: string;
+};
 
 const now = () => new Date().toISOString();
+
+export const listEmailIngestions = async ({
+  accountId,
+  page,
+  pageSize,
+  query,
+  status,
+  userId,
+}: EmailIngestionPageInput) => {
+  const db = getDb();
+  const conditions: SQL[] = [eq(connectedEmailAccounts.userId, userId)];
+
+  if (accountId) {
+    conditions.push(eq(emailIngestions.accountId, accountId));
+  }
+  if (status) {
+    conditions.push(eq(emailIngestions.status, status));
+  }
+  if (query) {
+    const search = `%${query}%`;
+    const searchCondition = or(
+      like(emailIngestions.subject, search),
+      like(emailIngestions.fromAddress, search),
+      like(emailIngestions.externalId, search),
+    );
+    if (searchCondition) {
+      conditions.push(searchCondition);
+    }
+  }
+
+  const where = and(...conditions);
+  const baseQuery = db
+    .select({ total: count() })
+    .from(emailIngestions)
+    .innerJoin(
+      connectedEmailAccounts,
+      eq(emailIngestions.accountId, connectedEmailAccounts.id),
+    )
+    .where(where);
+  const rowsQuery = db
+    .select({
+      id: emailIngestions.id,
+      provider: emailIngestions.provider,
+      externalId: emailIngestions.externalId,
+      status: emailIngestions.status,
+      subject: emailIngestions.subject,
+      fromAddress: emailIngestions.fromAddress,
+      receivedAt: emailIngestions.receivedAt,
+      error: emailIngestions.error,
+      attempts: emailIngestions.attempts,
+      createdAt: emailIngestions.createdAt,
+      accountEmail: connectedEmailAccounts.email,
+      rfqId: emailIngestions.rfqId,
+      rfqReference: rfqs.reference,
+    })
+    .from(emailIngestions)
+    .innerJoin(
+      connectedEmailAccounts,
+      eq(emailIngestions.accountId, connectedEmailAccounts.id),
+    )
+    .leftJoin(rfqs, eq(emailIngestions.rfqId, rfqs.id))
+    .where(where)
+    .orderBy(desc(emailIngestions.receivedAt), desc(emailIngestions.createdAt))
+    .limit(pageSize)
+    .offset((page - 1) * pageSize);
+
+  const [[totalResult], rows] = await Promise.all([baseQuery, rowsQuery]);
+  return { rows, total: totalResult?.total ?? 0 };
+};
+
+export const getEmailIngestionCounts = async (userId: string) => {
+  const db = getDb();
+  const grouped = await db
+    .select({ status: emailIngestions.status, total: count() })
+    .from(emailIngestions)
+    .innerJoin(
+      connectedEmailAccounts,
+      eq(emailIngestions.accountId, connectedEmailAccounts.id),
+    )
+    .where(eq(connectedEmailAccounts.userId, userId))
+    .groupBy(emailIngestions.status);
+
+  const counts: Record<EmailIngestionStatus, number> = {
+    processing: 0,
+    processed: 0,
+    ignored: 0,
+    failed: 0,
+  };
+  grouped.forEach((row) => {
+    counts[row.status] = row.total;
+  });
+  return counts;
+};
 
 export const getEmailSyncTime = async (accountId: string) => {
   const db = getDb();

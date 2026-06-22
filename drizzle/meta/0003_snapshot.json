@@ -101,9 +101,7 @@
       "indexes": {
         "users_email_unique": {
           "name": "users_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         }
       },
@@ -174,12 +172,8 @@
           "name": "profile_user_id_users_id_fk",
           "tableFrom": "profile",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -291,12 +285,8 @@
           "name": "accounts_user_id_users_id_fk",
           "tableFrom": "accounts",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -352,12 +342,8 @@
           "name": "sessions_user_id_users_id_fk",
           "tableFrom": "sessions",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -444,12 +430,8 @@
           "name": "password_reset_tokens_user_id_users_id_fk",
           "tableFrom": "password_reset_tokens",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -519,12 +501,8 @@
           "name": "notifications_user_id_users_id_fk",
           "tableFrom": "notifications",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -620,16 +598,12 @@
       "indexes": {
         "rfq_items_rfq_id_idx": {
           "name": "rfq_items_rfq_id_idx",
-          "columns": [
-            "rfq_id"
-          ],
+          "columns": ["rfq_id"],
           "isUnique": false
         },
         "rfq_items_manufacturer_part_idx": {
           "name": "rfq_items_manufacturer_part_idx",
-          "columns": [
-            "manufacturer_part_number"
-          ],
+          "columns": ["manufacturer_part_number"],
           "isUnique": false
         }
       },
@@ -638,12 +612,8 @@
           "name": "rfq_items_rfq_id_rfqs_id_fk",
           "tableFrom": "rfq_items",
           "tableTo": "rfqs",
-          "columnsFrom": [
-            "rfq_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["rfq_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -741,31 +711,22 @@
       "indexes": {
         "rfqs_reference_unique": {
           "name": "rfqs_reference_unique",
-          "columns": [
-            "reference"
-          ],
+          "columns": ["reference"],
           "isUnique": true
         },
         "rfqs_user_id_idx": {
           "name": "rfqs_user_id_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         },
         "rfqs_user_status_idx": {
           "name": "rfqs_user_status_idx",
-          "columns": [
-            "user_id",
-            "status"
-          ],
+          "columns": ["user_id", "status"],
           "isUnique": false
         },
         "rfqs_created_at_idx": {
           "name": "rfqs_created_at_idx",
-          "columns": [
-            "created_at"
-          ],
+          "columns": ["created_at"],
           "isUnique": false
         }
       },
@@ -774,12 +735,8 @@
           "name": "rfqs_user_id_users_id_fk",
           "tableFrom": "rfqs",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -890,24 +847,17 @@
       "indexes": {
         "email_ingestions_provider_external_unique": {
           "name": "email_ingestions_provider_external_unique",
-          "columns": [
-            "provider",
-            "external_id"
-          ],
+          "columns": ["provider", "external_id"],
           "isUnique": true
         },
         "email_ingestions_status_idx": {
           "name": "email_ingestions_status_idx",
-          "columns": [
-            "status"
-          ],
+          "columns": ["status"],
           "isUnique": false
         },
         "email_ingestions_received_at_idx": {
           "name": "email_ingestions_received_at_idx",
-          "columns": [
-            "received_at"
-          ],
+          "columns": ["received_at"],
           "isUnique": false
         }
       },
@@ -916,12 +866,8 @@
           "name": "email_ingestions_rfq_id_rfqs_id_fk",
           "tableFrom": "email_ingestions",
           "tableTo": "rfqs",
-          "columnsFrom": [
-            "rfq_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["rfq_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
