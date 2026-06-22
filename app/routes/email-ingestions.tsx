@@ -253,7 +253,7 @@ const EmailIngestionsPage = ({ loaderData }: Route.ComponentProps) => {
                     <td className='max-w-xs px-5 py-4 text-sm'>
                       {ingestion.rfqId ? (
                         <Link
-                          to='/rfqs'
+                          to={`/rfqs?rfq=${encodeURIComponent(ingestion.rfqId)}`}
                           className='font-semibold text-emerald-700 hover:text-emerald-600'
                         >
                           {ingestion.rfqReference ?? 'View RFQ'}

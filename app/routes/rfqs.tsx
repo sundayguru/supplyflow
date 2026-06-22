@@ -1,7 +1,14 @@
 import { useMemo, useState } from 'react';
-import { data, redirect, useFetcher } from 'react-router';
+import {
+  data,
+  Link,
+  redirect,
+  useFetcher,
+  useSearchParams,
+} from 'react-router';
 import {
   CalendarDays,
+  Eye,
   FileText,
   Pencil,
   Plus,
@@ -10,33 +17,23 @@ import {
 } from 'lucide-react';
 import type { Route } from './+types/rfqs';
 import { ConfirmModal } from '~/components/ConfirmModal';
+import { RfqDetailDrawer } from '~/components/rfqs/RfqDetailDrawer';
 import {
   RfqFormModal,
   type RfqFormValue,
 } from '~/components/rfqs/RfqFormModal';
+import {
+  RfqStatusBadge,
+  rfqStatusLabels,
+} from '~/components/rfqs/RfqStatusBadge';
 import { getRfqs } from '~/db/rfqs';
 import { getUserFromRequest } from '~/utils/session.server';
 import type { RfqRecord, RfqStatus } from '~/types/rfq';
+import { formatRfqMoney } from '~/utils/rfq';
 
 type ApiResponse =
   | { success: true; rfq?: RfqRecord; id?: string }
   | { error: string };
-
-const statusLabels: Record<RfqStatus, string> = {
-  new: 'New',
-  pricing: 'Pricing',
-  quoted: 'Quoted',
-  won: 'Won',
-  lost: 'Lost',
-};
-
-const statusStyles: Record<RfqStatus, string> = {
-  new: 'bg-sky-50 text-sky-700',
-  pricing: 'bg-amber-50 text-amber-700',
-  quoted: 'bg-violet-50 text-violet-700',
-  won: 'bg-emerald-50 text-emerald-700',
-  lost: 'bg-rose-50 text-rose-700',
-};
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
@@ -52,20 +49,29 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   }
 };
 
-const formatMoney = (value: number, currency: string) =>
-  new Intl.NumberFormat('en', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value / 100);
-
 const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
   const { rfqs } = loaderData;
   const mutation = useFetcher<ApiResponse>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | RfqStatus>('all');
   const [formRfq, setFormRfq] = useState<RfqRecord | 'new' | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<RfqRecord | null>(null);
+  const selectedRfq = rfqs.find((rfq) => rfq.id === searchParams.get('rfq'));
+
+  const closeDetails = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('rfq');
+    setSearchParams(next, { replace: true });
+  };
+
+  const editFromDetails = () => {
+    if (!selectedRfq) {
+      return;
+    }
+    setFormRfq(selectedRfq);
+    closeDetails();
+  };
 
   const filteredRfqs = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -150,7 +156,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
         <div className='rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'>
           <p className='text-sm text-slate-500'>Won value</p>
           <p className='mt-2 text-3xl font-bold'>
-            {formatMoney(wonValue, 'EUR')}
+            {formatRfqMoney(wonValue, 'EUR')}
           </p>
         </div>
       </section>
@@ -189,7 +195,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
             aria-label='Filter by status'
           >
             <option value='all'>All statuses</option>
-            {Object.entries(statusLabels).map(([value, label]) => (
+            {Object.entries(rfqStatusLabels).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
               </option>
@@ -226,8 +232,13 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
               <tbody className='divide-y divide-slate-100'>
                 {filteredRfqs.map((rfq) => (
                   <tr key={rfq.id} className='transition hover:bg-slate-50/60'>
-                    <td className='px-5 py-4 font-semibold text-slate-900'>
-                      {rfq.reference}
+                    <td className='px-5 py-4 font-semibold'>
+                      <Link
+                        to={`?rfq=${encodeURIComponent(rfq.id)}`}
+                        className='text-slate-900 hover:text-emerald-700'
+                      >
+                        {rfq.reference}
+                      </Link>
                     </td>
                     <td className='px-5 py-4'>
                       <p className='font-medium text-slate-800'>
@@ -259,17 +270,20 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
                       )}
                     </td>
                     <td className='px-5 py-4 font-medium'>
-                      {formatMoney(rfq.estimatedValue, rfq.currency)}
+                      {formatRfqMoney(rfq.estimatedValue, rfq.currency)}
                     </td>
                     <td className='px-5 py-4'>
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyles[rfq.status]}`}
-                      >
-                        {statusLabels[rfq.status]}
-                      </span>
+                      <RfqStatusBadge status={rfq.status} />
                     </td>
                     <td className='px-5 py-4'>
                       <div className='flex justify-end gap-1'>
+                        <Link
+                          to={`?rfq=${encodeURIComponent(rfq.id)}`}
+                          className='rounded-lg p-2 text-slate-400 transition hover:bg-sky-50 hover:text-sky-700'
+                          aria-label={`View ${rfq.reference}`}
+                        >
+                          <Eye size={16} />
+                        </Link>
                         <button
                           type='button'
                           onClick={() => setFormRfq(rfq)}
@@ -295,6 +309,14 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
           </div>
         )}
       </section>
+
+      {selectedRfq && (
+        <RfqDetailDrawer
+          rfq={selectedRfq}
+          onClose={closeDetails}
+          onEdit={editFromDetails}
+        />
+      )}
 
       {formRfq && (
         <RfqFormModal
