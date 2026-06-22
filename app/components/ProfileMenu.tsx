@@ -1,11 +1,10 @@
-import { Link, Form, useFetcher, href } from 'react-router';
+import { Link, Form } from 'react-router';
 import { motion } from 'motion/react';
-import { LogOut, Settings, User as UserIcon } from 'lucide-react';
+import { Building2, LogOut, Settings } from 'lucide-react';
 
 type ProfileMenuProps = {
   userName: string;
   userEmail: string;
-  userId: string;
   avatarUrl: string | null;
   onClose: () => void;
   placement?: 'above' | 'below';
@@ -14,19 +13,10 @@ type ProfileMenuProps = {
 export const ProfileMenu = ({
   userName,
   userEmail,
-  userId,
   avatarUrl,
   onClose,
   placement = 'below',
 }: ProfileMenuProps) => {
-  const logoutFetcher = useFetcher();
-
-  const handleLogout = () => {
-    logoutFetcher.submit(null, {
-      action: href('/auth/logout'),
-    });
-  };
-
   const initials = userName
     .split(' ')
     .map((n) => n[0])
@@ -70,6 +60,14 @@ export const ProfileMenu = ({
         {/* Menu Items */}
         <div className='py-1'>
           <Link
+            to='/organization'
+            onClick={onClose}
+            className='flex items-center gap-3 px-4 py-2.5 text-sm text-black/70 transition-colors hover:bg-black/5'
+          >
+            <Building2 size={16} />
+            Organization
+          </Link>
+          <Link
             to='/settings'
             onClick={onClose}
             className='flex items-center gap-3 px-4 py-2.5 text-sm text-black/70 transition-colors hover:bg-black/5'
@@ -82,7 +80,6 @@ export const ProfileMenu = ({
             <button
               type='submit'
               className='flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-600 transition-colors hover:bg-red-50'
-              onClick={handleLogout}
             >
               <LogOut size={16} />
               Sign out

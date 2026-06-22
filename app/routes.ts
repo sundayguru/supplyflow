@@ -26,6 +26,12 @@ export default [
     route('connected-accounts', 'routes/connected-accounts.tsx'),
     route('email-ingestions', 'routes/email-ingestions.tsx'),
     route('settings', 'routes/settings.tsx'),
+    route('organization', 'routes/organization.tsx'),
+    route('organization/users', 'routes/organization-users.tsx'),
+    route(
+      'organization/invitations/:token',
+      'routes/organization-invitation.tsx',
+    ),
     route('notifications', 'routes/notifications.tsx'),
     route('auth/logout', 'routes/auth/logout.tsx'),
     route('api/user', 'routes/api/user.ts'),

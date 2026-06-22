@@ -167,7 +167,6 @@ export const Header = () => {
             <ProfileMenu
               userName={user.name}
               userEmail={user.email}
-              userId={user.id}
               avatarUrl={user.avatarUrl}
               onClose={() => setShowProfileMenu(false)}
               placement='above'

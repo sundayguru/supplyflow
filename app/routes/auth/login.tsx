@@ -130,7 +130,7 @@ export default function LoginPage({ loaderData }: Route.ComponentProps) {
       <div className='mt-6 text-center text-sm text-slate-500'>
         Don&apos;t have an account?{' '}
         <a
-          href='/auth/register'
+          href={`/auth/register?callbackUrl=${encodeURIComponent(callbackUrl)}`}
           className='font-semibold text-emerald-700 underline-offset-4 hover:underline'
         >
           Create one
