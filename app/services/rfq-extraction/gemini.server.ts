@@ -1,4 +1,4 @@
-import { GroqService } from '~/utils/groq.server';
+import { GeminiService } from '~/utils/gemini.server';
 import type { RfqExtractor } from './types';
 import {
   buildRfqExtractionPrompt,
@@ -6,17 +6,17 @@ import {
   RFQ_EXTRACTION_SYSTEM_PROMPT,
 } from './shared.server';
 
-type GroqRfqExtractorConfig = {
+type GeminiRfqExtractorConfig = {
   apiKey: string;
   model: string;
   defaultPriceMarkup: number;
 };
 
-export const createGroqRfqExtractor = (
-  config: GroqRfqExtractorConfig,
+export const createGeminiRfqExtractor = (
+  config: GeminiRfqExtractorConfig,
 ): RfqExtractor => ({
   async extract(message) {
-    const response = await GroqService.generate({
+    const response = await GeminiService.generate({
       apiKey: config.apiKey,
       model: config.model,
       systemPrompt: RFQ_EXTRACTION_SYSTEM_PROMPT,

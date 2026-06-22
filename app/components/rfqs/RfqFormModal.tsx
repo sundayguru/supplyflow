@@ -14,6 +14,7 @@ type RfqFormModalProps = {
   initialValue?: RfqFormValue;
   onClose: () => void;
   onSubmit: (value: RfqFormValue) => void;
+  defaultPriceMarkup: number;
 };
 
 const statusLabels: Record<RfqStatus, string> = {
@@ -24,8 +25,10 @@ const statusLabels: Record<RfqStatus, string> = {
   lost: 'Lost',
 };
 
-const emptyItem = (): RfqItemInput => ({
+const emptyItem = (priceMarkup: number): RfqItemInput => ({
   quantity: 1,
+  price: 0,
+  priceMarkup,
   unit: 'unit',
   description: '',
   manufacturer: null,
@@ -37,6 +40,7 @@ export const RfqFormModal = ({
   initialValue,
   onClose,
   onSubmit,
+  defaultPriceMarkup,
 }: RfqFormModalProps) => {
   const [customerName, setCustomerName] = useState(
     initialValue?.customerName ?? '',
@@ -53,7 +57,7 @@ export const RfqFormModal = ({
   );
   const [currency, setCurrency] = useState(initialValue?.currency ?? 'EUR');
   const [items, setItems] = useState<RfqItemInput[]>(
-    initialValue?.items ?? [emptyItem()],
+    initialValue?.items ?? [emptyItem(defaultPriceMarkup)],
   );
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -135,7 +139,12 @@ export const RfqFormModal = ({
               </div>
               <button
                 type='button'
-                onClick={() => setItems((current) => [...current, emptyItem()])}
+                onClick={() =>
+                  setItems((current) => [
+                    ...current,
+                    emptyItem(defaultPriceMarkup),
+                  ])
+                }
                 className='inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100'
               >
                 <Plus size={14} /> Add item

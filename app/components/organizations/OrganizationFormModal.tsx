@@ -4,6 +4,10 @@ import { useFetcher } from 'react-router';
 import { Button } from '~/components/Button';
 import { Input, TextArea } from '~/components/FormFields';
 import { Modal } from '~/components/Modal';
+import {
+  organizationAiModels,
+  type OrganizationAiModel,
+} from '~/types/organization';
 
 type OrganizationFormValues = {
   name: string;
@@ -11,6 +15,9 @@ type OrganizationFormValues = {
   website: string | null;
   phone: string | null;
   address: string | null;
+  preferredModel: OrganizationAiModel;
+  vat: number;
+  priceMarkup: number;
 };
 
 type OrganizationFormModalProps = {
@@ -89,6 +96,52 @@ export const OrganizationFormModal = ({
           label='Address'
           defaultValue={organization?.address ?? ''}
         />
+        <div className='grid gap-4 sm:grid-cols-2'>
+          <Input
+            id='organization-vat'
+            name='vat'
+            label='VAT (%)'
+            type='number'
+            min='0'
+            max='100'
+            step='0.01'
+            defaultValue={organization?.vat ?? 0}
+            required
+          />
+          <Input
+            id='organization-price-markup'
+            name='priceMarkup'
+            label='Default price markup (%)'
+            type='number'
+            min='0'
+            max='1000'
+            step='0.01'
+            defaultValue={organization?.priceMarkup ?? 0}
+            required
+          />
+        </div>
+        <div>
+          <label
+            htmlFor='organization-preferred-model'
+            className='mb-2 block text-xs font-bold tracking-widest text-black/50 uppercase'
+          >
+            Preferred AI model
+          </label>
+          <select
+            id='organization-preferred-model'
+            name='preferredModel'
+            defaultValue={
+              organization?.preferredModel ?? 'llama-3.3-70b-versatile'
+            }
+            className='w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm font-medium text-[#1a1a1a] outline-none focus:border-[#5A5A40]'
+          >
+            {organizationAiModels.map((model) => (
+              <option key={model.value} value={model.value}>
+                {model.label}
+              </option>
+            ))}
+          </select>
+        </div>
         {fetcher.data && 'error' in fetcher.data && (
           <p className='rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700'>
             {fetcher.data.error}

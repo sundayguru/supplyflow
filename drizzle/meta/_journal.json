@@ -50,6 +50,13 @@
       "when": 1782129852036,
       "tag": "0006_supreme_miracleman",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1782158686316,
+      "tag": "0007_far_nemesis",
+      "breakpoints": true
     }
   ]
 }

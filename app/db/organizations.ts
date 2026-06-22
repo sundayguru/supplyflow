@@ -27,6 +27,15 @@ export const getOrganizationForUser = async (userId: string) => {
   return result ? { ...result.organization, role: result.role } : null;
 };
 
+export const getOrganizationById = async (organizationId: string) => {
+  const db = getDb();
+  const [organization] = await db
+    .select()
+    .from(organizations)
+    .where(eq(organizations.id, organizationId));
+  return organization ?? null;
+};
+
 export const createOrganization = async (
   createdBy: string,
   values: Omit<InsertOrganization, 'id' | 'createdBy'>,
@@ -68,7 +77,14 @@ export const updateOrganization = async (
   values: Partial<
     Pick<
       InsertOrganization,
-      'name' | 'description' | 'website' | 'phone' | 'address'
+      | 'name'
+      | 'description'
+      | 'website'
+      | 'phone'
+      | 'address'
+      | 'preferredModel'
+      | 'vat'
+      | 'priceMarkup'
     >
   >,
 ) => {

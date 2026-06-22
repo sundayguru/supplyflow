@@ -4,6 +4,8 @@ export type RfqStatus = (typeof rfqStatuses)[number];
 
 export type RfqItemInput = {
   quantity: number;
+  price: number;
+  priceMarkup: number;
   unit: string;
   description: string;
   manufacturer: string | null;

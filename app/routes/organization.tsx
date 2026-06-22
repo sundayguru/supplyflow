@@ -1,9 +1,11 @@
 import { useCallback, useState } from 'react';
 import {
+  Bot,
   Building2,
   ExternalLink,
   MapPin,
   Pencil,
+  Percent,
   Phone,
   Users,
 } from 'lucide-react';
@@ -18,6 +20,10 @@ import {
   updateOrganization,
 } from '~/db/organizations';
 import { getUserFromRequest } from '~/utils/session.server';
+import {
+  isOrganizationAiModel,
+  organizationAiModels,
+} from '~/types/organization';
 
 const optionalField = (formData: FormData, name: string) => {
   const value = formData.get(name);
@@ -44,8 +50,23 @@ export const action = async ({ request }: Route.ActionArgs) => {
   const formData = await request.formData();
   const intent = formData.get('intent');
   const name = optionalField(formData, 'name');
+  const preferredModel = formData.get('preferredModel');
+  const vat = Number(formData.get('vat'));
+  const priceMarkup = Number(formData.get('priceMarkup'));
   if (!name) {
     return data({ error: 'Organization name is required' }, { status: 400 });
+  }
+  if (!isOrganizationAiModel(preferredModel)) {
+    return data({ error: 'Select a supported AI model' }, { status: 400 });
+  }
+  if (!Number.isFinite(vat) || vat < 0 || vat > 100) {
+    return data({ error: 'VAT must be between 0 and 100' }, { status: 400 });
+  }
+  if (!Number.isFinite(priceMarkup) || priceMarkup < 0 || priceMarkup > 1000) {
+    return data(
+      { error: 'Price markup must be between 0 and 1000' },
+      { status: 400 },
+    );
   }
   const values = {
     name,
@@ -53,6 +74,9 @@ export const action = async ({ request }: Route.ActionArgs) => {
     website: optionalField(formData, 'website'),
     phone: optionalField(formData, 'phone'),
     address: optionalField(formData, 'address'),
+    preferredModel,
+    vat,
+    priceMarkup,
   };
 
   if (values.website) {
@@ -127,6 +151,10 @@ export default function OrganizationPage({ loaderData }: Route.ComponentProps) {
   }
 
   const isOwner = organization.role === 'owner';
+  const preferredModelLabel =
+    organizationAiModels.find(
+      (model) => model.value === organization.preferredModel,
+    )?.label ?? organization.preferredModel;
 
   return (
     <div className='mx-auto max-w-5xl space-y-6'>
@@ -187,6 +215,22 @@ export default function OrganizationPage({ loaderData }: Route.ComponentProps) {
               </dt>
               <dd className='mt-2 text-sm text-slate-700'>
                 {organization.address || 'Not provided'}
+              </dd>
+            </div>
+            <div>
+              <dt className='flex items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase'>
+                <Bot size={14} /> Preferred AI model
+              </dt>
+              <dd className='mt-2 text-sm text-slate-700'>
+                {preferredModelLabel}
+              </dd>
+            </div>
+            <div>
+              <dt className='flex items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase'>
+                <Percent size={14} /> Pricing defaults
+              </dt>
+              <dd className='mt-2 text-sm text-slate-700'>
+                {organization.vat}% VAT · {organization.priceMarkup}% markup
               </dd>
             </div>
           </dl>

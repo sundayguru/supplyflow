@@ -39,7 +39,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
   try {
     if (request.method === 'POST') {
-      const parsed = parseRfqInput(await request.json());
+      const parsed = parseRfqInput(
+        await request.json(),
+        organization.priceMarkup,
+      );
       if (!parsed.success) {
         return data({ error: parsed.error }, { status: 400 });
       }
@@ -62,7 +65,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
       ) {
         return data({ error: 'RFQ id is required' }, { status: 400 });
       }
-      const parsed = parseRfqInput(body);
+      const parsed = parseRfqInput(body, organization.priceMarkup);
       if (!parsed.success) {
         return data({ error: parsed.error }, { status: 400 });
       }

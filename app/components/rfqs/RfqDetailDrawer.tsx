@@ -205,6 +205,10 @@ export const RfqDetailDrawer = ({
                         <p className='font-semibold text-slate-900'>
                           {item.quantity} {item.unit}
                         </p>
+                        <p className='text-sm font-semibold text-emerald-700'>
+                          {formatRfqMoney(item.price, rfq.currency)} ·{' '}
+                          {item.priceMarkup}% markup
+                        </p>
                         <div className='flex items-center gap-1'>
                           {item.manufacturerPartNumber && (
                             <span className='mr-1 rounded-lg bg-slate-100 px-2.5 py-1 font-mono text-xs text-slate-600'>

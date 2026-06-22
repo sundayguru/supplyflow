@@ -68,7 +68,8 @@ This template comes with [Tailwind CSS](https://tailwindcss.com/) already config
 
 ## Gmail RFQ ingestion
 
-The Worker checks Gmail every minute, classifies new messages with Groq, and
+The Worker checks Gmail every minute, classifies new messages with the
+organization's preferred Groq or Gemini model, and
 creates RFQs for messages that contain quotation requests. The ingestion layer
 uses provider-neutral email and extraction interfaces so either provider can be
 replaced without changing the scheduling or database workflow.
@@ -79,16 +80,16 @@ Required Worker secrets:
 npx wrangler secret put GOOGLE_CLIENT_ID --env production
 npx wrangler secret put GOOGLE_CLIENT_SECRET --env production
 npx wrangler secret put GROQ_API_KEY --env production
+npx wrangler secret put GEMINI_API_KEY --env production
 npx wrangler secret put TOKEN_ENCRYPTION_KEY --env production
 ```
 
 `TOKEN_ENCRYPTION_KEY` must be a base64-encoded 32-byte key. Users connect
 Gmail from the Connected accounts page; refresh tokens are requested with the
 `https://www.googleapis.com/auth/gmail.readonly` scope and encrypted before
-being stored. Extracted RFQs belong to the user who connected the inbox. For
+being stored. Extracted RFQs belong to the connected inbox's organization. For
 local development, place the same secret names in the ignored `.dev.vars` file.
-The model is configured through the non-secret `RFQ_LLM_MODEL` Wrangler
-variable and defaults to `llama-3.3-70b-versatile`.
+Organization owners choose the preferred model on the organization page.
 
 Generate an encryption key with `openssl rand -base64 32`. In the Google OAuth
 client, register `https://supplyflow.com/api/email-accounts/google/callback`

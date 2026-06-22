@@ -1,6 +1,20 @@
 import { sql } from 'drizzle-orm';
-import { index, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import {
+  index,
+  real,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from 'drizzle-orm/sqlite-core';
 import { users } from './users';
+import { organizationAiModels } from '../../types/organization';
+
+const organizationAiModelValues = organizationAiModels.map(
+  (model) => model.value,
+) as [
+  (typeof organizationAiModels)[number]['value'],
+  ...(typeof organizationAiModels)[number]['value'][],
+];
 
 export const organizations = sqliteTable(
   'organizations',
@@ -11,6 +25,13 @@ export const organizations = sqliteTable(
     website: text('website', { length: 511 }),
     phone: text('phone', { length: 64 }),
     address: text('address', { length: 511 }),
+    preferredModel: text('preferred_model', {
+      enum: organizationAiModelValues,
+    })
+      .notNull()
+      .default('llama-3.3-70b-versatile'),
+    vat: real('vat').notNull().default(0),
+    priceMarkup: real('price_markup').notNull().default(0),
     createdBy: text('created_by')
       .notNull()
       .references(() => users.id, { onDelete: 'restrict' }),

@@ -16,12 +16,20 @@ type ParseItemResult =
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
-export const parseRfqItemInput = (value: unknown): ParseItemResult => {
+export const parseRfqItemInput = (
+  value: unknown,
+  defaultPriceMarkup = 0,
+): ParseItemResult => {
   if (!isRecord(value)) {
     return { success: false, error: 'Invalid RFQ item' };
   }
 
   const quantity = Number(value.quantity);
+  const price = value.price === undefined ? 0 : Number(value.price);
+  const priceMarkup =
+    value.priceMarkup === undefined
+      ? defaultPriceMarkup
+      : Number(value.priceMarkup);
   const unit = typeof value.unit === 'string' ? value.unit.trim() : '';
   const description =
     typeof value.description === 'string' ? value.description.trim() : '';
@@ -31,11 +39,22 @@ export const parseRfqItemInput = (value: unknown): ParseItemResult => {
       error: 'The item requires a positive quantity, unit, and description',
     };
   }
+  if (!Number.isInteger(price) || price < 0) {
+    return { success: false, error: 'Item price must be zero or more' };
+  }
+  if (!Number.isFinite(priceMarkup) || priceMarkup < 0 || priceMarkup > 1000) {
+    return {
+      success: false,
+      error: 'Item price markup must be between 0 and 1000',
+    };
+  }
 
   return {
     success: true,
     value: {
       quantity,
+      price,
+      priceMarkup,
       unit,
       description,
       manufacturer:
@@ -55,7 +74,10 @@ export const parseRfqItemInput = (value: unknown): ParseItemResult => {
   };
 };
 
-export const parseRfqInput = (value: unknown): ParseResult => {
+export const parseRfqInput = (
+  value: unknown,
+  defaultPriceMarkup = 0,
+): ParseResult => {
   if (!isRecord(value)) {
     return { success: false, error: 'Invalid request body' };
   }
@@ -95,7 +117,7 @@ export const parseRfqInput = (value: unknown): ParseResult => {
 
   const items: RfqItemInput[] = [];
   for (const rawItem of rawItems) {
-    const parsedItem = parseRfqItemInput(rawItem);
+    const parsedItem = parseRfqItemInput(rawItem, defaultPriceMarkup);
     if (!parsedItem.success) {
       return { success: false, error: parsedItem.error };
     }

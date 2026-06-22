@@ -49,11 +49,16 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   try {
     return data({
       rfqs: await getRfqs(organization.id),
+      defaultPriceMarkup: organization.priceMarkup,
       loadError: null,
     });
   } catch (error) {
     console.error('Unable to load RFQs', error);
-    return data({ rfqs: [], loadError: 'Unable to load RFQs' });
+    return data({
+      rfqs: [],
+      defaultPriceMarkup: organization.priceMarkup,
+      loadError: 'Unable to load RFQs',
+    });
   }
 };
 
@@ -330,6 +335,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
         <RfqFormModal
           key={formRfq === 'new' ? 'new' : formRfq.id}
           initialValue={formRfq === 'new' ? undefined : formRfq}
+          defaultPriceMarkup={loaderData.defaultPriceMarkup}
           onClose={() => setFormRfq(null)}
           onSubmit={submitRfq}
         />

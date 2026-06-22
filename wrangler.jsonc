@@ -11,9 +11,6 @@
   "triggers": {
     "crons": ["* * * * *"],
   },
-  "vars": {
-    "RFQ_LLM_MODEL": "llama-3.3-70b-versatile",
-  },
   "d1_databases": [
     {
       "binding": "DB",
@@ -60,7 +57,6 @@
       ],
       "vars": {
         "BASE_URL": "https://supplyflow.com",
-        "RFQ_LLM_MODEL": "llama-3.3-70b-versatile",
       },
     },
     "dev": {
@@ -85,7 +81,6 @@
       ],
       "vars": {
         "BASE_URL": "http://localhost:5173",
-        "RFQ_LLM_MODEL": "llama-3.3-70b-versatile",
       },
     },
   },

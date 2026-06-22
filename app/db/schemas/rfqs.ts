@@ -55,6 +55,8 @@ export const rfqItems = sqliteTable(
       .references(() => rfqs.id, { onDelete: 'cascade' }),
     position: integer('position').notNull().default(0),
     quantity: real('quantity').notNull(),
+    price: integer('price').notNull().default(0),
+    priceMarkup: real('price_markup').notNull().default(0),
     unit: text('unit', { length: 32 }).notNull(),
     description: text('description').notNull(),
     manufacturer: text('manufacturer', { length: 255 }),

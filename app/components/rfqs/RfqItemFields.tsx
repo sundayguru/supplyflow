@@ -71,6 +71,37 @@ export const RfqItemFields = ({
         </label>
       </div>
 
+      <div className='mt-4 grid gap-4 sm:grid-cols-2'>
+        <label className='text-sm font-semibold text-slate-700'>
+          Unit price
+          <input
+            type='number'
+            min='0'
+            step='0.01'
+            value={value.price ? value.price / 100 : ''}
+            onChange={(event) =>
+              update('price', Math.round(Number(event.target.value || 0) * 100))
+            }
+            className={inputClass}
+            placeholder='0.00'
+          />
+        </label>
+        <label className='text-sm font-semibold text-slate-700'>
+          Price markup (%)
+          <input
+            type='number'
+            min='0'
+            max='1000'
+            step='0.01'
+            value={value.priceMarkup}
+            onChange={(event) =>
+              update('priceMarkup', Number(event.target.value))
+            }
+            className={inputClass}
+          />
+        </label>
+      </div>
+
       <label className='mt-4 block text-sm font-semibold text-slate-700'>
         Item description
         <textarea

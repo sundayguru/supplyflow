@@ -35,7 +35,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
     }
 
     if (request.method === 'PATCH') {
-      const parsed = parseRfqItemInput(body);
+      const parsed = parseRfqItemInput(body, organization.priceMarkup);
       if (!parsed.success) {
         return data({ error: parsed.error }, { status: 400 });
       }

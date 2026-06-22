@@ -12,8 +12,9 @@ import { createRfqExtractor } from '~/services/rfq-extraction/index.server';
 import type { RfqExtractor } from '~/services/rfq-extraction/types';
 import { decryptToken } from '~/utils/tokenEncryption.server';
 import type { SelectConnectedEmailAccount } from '~/db/schemas';
+import { getOrganizationById } from '~/db/organizations';
+import { organizationAiModels } from '~/types/organization';
 
-const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
 const FIRST_SYNC_LOOKBACK_MS = 24 * 60 * 60 * 1000;
 const OVERLAP_MS = 5 * 60 * 1000;
 const MAX_MESSAGES_PER_RUN = 25;
@@ -47,11 +48,29 @@ const requireSetting = (name: string, value: string | undefined) => {
 const processAccount = async (
   account: SelectConnectedEmailAccount,
   env: Env,
-  extractor: RfqExtractor,
 ): Promise<AccountResult> => {
   if (!account.organizationId) {
     throw new Error('Connected account is not linked to an organization');
   }
+  const organization = await getOrganizationById(account.organizationId);
+  if (!organization) {
+    throw new Error('Connected account organization was not found');
+  }
+  const model = organizationAiModels.find(
+    (candidate) => candidate.value === organization.preferredModel,
+  );
+  if (!model) {
+    throw new Error('Organization AI model is not supported');
+  }
+  const extractor: RfqExtractor = createRfqExtractor({
+    provider: model.provider,
+    apiKey: requireSetting(
+      model.provider === 'gemini' ? 'GEMINI_API_KEY' : 'GROQ_API_KEY',
+      model.provider === 'gemini' ? env.GEMINI_API_KEY : env.GROQ_API_KEY,
+    ),
+    model: model.value,
+    defaultPriceMarkup: organization.priceMarkup,
+  });
   const startedAt = new Date();
   const refreshToken = await decryptToken(
     account.encryptedRefreshToken,
@@ -129,16 +148,11 @@ const processAccount = async (
 
 export const runEmailIngestion = async (env: Env, organizationId?: string) => {
   const accounts = await listActiveConnectedEmailAccounts(organizationId);
-  const extractor = createRfqExtractor({
-    provider: 'groq',
-    apiKey: requireSetting('GROQ_API_KEY', env.GROQ_API_KEY),
-    model: env.RFQ_LLM_MODEL || DEFAULT_MODEL,
-  });
   const results: AccountResult[] = [];
 
   for (const account of accounts) {
     try {
-      results.push(await processAccount(account, env, extractor));
+      results.push(await processAccount(account, env));
     } catch (error) {
       results.push({
         accountId: account.id,
