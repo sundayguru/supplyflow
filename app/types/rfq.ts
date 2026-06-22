@@ -18,7 +18,8 @@ export type RfqInput = {
   customerEmail: string | null;
   status: RfqStatus;
   dueDate: string | null;
-  estimatedValue: number;
+  applyVat: boolean;
+  templateId: string | null;
   currency: string;
   items: RfqItemInput[];
 };
@@ -39,4 +40,8 @@ export type RfqRecord = Omit<RfqInput, 'items'> & {
   createdAt: string;
   updatedAt: string;
   items: RfqItemRecord[];
+  subtotal: number;
+  markupValue: number;
+  vatValue: number;
+  totalValue: number;
 };

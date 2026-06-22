@@ -57,6 +57,20 @@
       "when": 1782158686316,
       "tag": "0007_far_nemesis",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1782160399768,
+      "tag": "0008_steady_iron_fist",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1782164640499,
+      "tag": "0009_loud_human_torch",
+      "breakpoints": true
     }
   ]
 }

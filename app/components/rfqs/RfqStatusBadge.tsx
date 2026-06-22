@@ -20,10 +20,11 @@ const statusStyles: Record<RfqStatus, string> = {
   lost: 'bg-rose-50 text-rose-700 ring-rose-200',
 };
 
+export const getRfqStatusBadgeClassName = (status: RfqStatus) =>
+  `inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${statusStyles[status]}`;
+
 export const RfqStatusBadge = ({ status }: RfqStatusBadgeProps) => (
-  <span
-    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${statusStyles[status]}`}
-  >
+  <span className={getRfqStatusBadgeClassName(status)}>
     {rfqStatusLabels[status]}
   </span>
 );

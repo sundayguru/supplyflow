@@ -7,6 +7,7 @@ import {
   type RfqStatus,
 } from '~/types/rfq';
 import { RfqItemFields } from './RfqItemFields';
+import type { RfqPdfTemplateOption } from '~/types';
 
 export type RfqFormValue = RfqInput & { id?: string };
 
@@ -15,6 +16,7 @@ type RfqFormModalProps = {
   onClose: () => void;
   onSubmit: (value: RfqFormValue) => void;
   defaultPriceMarkup: number;
+  templates: RfqPdfTemplateOption[];
 };
 
 const statusLabels: Record<RfqStatus, string> = {
@@ -41,6 +43,7 @@ export const RfqFormModal = ({
   onClose,
   onSubmit,
   defaultPriceMarkup,
+  templates,
 }: RfqFormModalProps) => {
   const [customerName, setCustomerName] = useState(
     initialValue?.customerName ?? '',
@@ -52,9 +55,8 @@ export const RfqFormModal = ({
     initialValue?.status ?? 'new',
   );
   const [dueDate, setDueDate] = useState(initialValue?.dueDate ?? '');
-  const [estimatedValue, setEstimatedValue] = useState(
-    initialValue ? String(initialValue.estimatedValue / 100) : '',
-  );
+  const [applyVat, setApplyVat] = useState(initialValue?.applyVat ?? false);
+  const [templateId, setTemplateId] = useState(initialValue?.templateId ?? '');
   const [currency, setCurrency] = useState(initialValue?.currency ?? 'EUR');
   const [items, setItems] = useState<RfqItemInput[]>(
     initialValue?.items ?? [emptyItem(defaultPriceMarkup)],
@@ -68,7 +70,8 @@ export const RfqFormModal = ({
       customerEmail: customerEmail || null,
       status,
       dueDate: dueDate || null,
-      estimatedValue: Math.round(Number(estimatedValue || 0) * 100),
+      applyVat,
+      templateId: templateId || null,
       currency,
       items,
     });
@@ -128,6 +131,22 @@ export const RfqFormModal = ({
               />
             </label>
           </div>
+
+          <label className='block text-sm font-semibold text-slate-700'>
+            PDF template
+            <select
+              value={templateId}
+              onChange={(event) => setTemplateId(event.target.value)}
+              className={inputClass}
+            >
+              <option value=''>No template selected</option>
+              {templates.map((template) => (
+                <option key={template.id} value={template.id}>
+                  {template.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
           <div>
             <div className='mb-3 flex items-end justify-between gap-3'>
@@ -202,19 +221,7 @@ export const RfqFormModal = ({
             </label>
           </div>
 
-          <div className='grid grid-cols-[1fr_110px] gap-5'>
-            <label className='text-sm font-semibold text-slate-700'>
-              Estimated value
-              <input
-                type='number'
-                min='0'
-                step='0.01'
-                value={estimatedValue}
-                onChange={(event) => setEstimatedValue(event.target.value)}
-                className={inputClass}
-                placeholder='0.00'
-              />
-            </label>
+          <div className='grid gap-5 sm:grid-cols-2'>
             <label className='text-sm font-semibold text-slate-700'>
               Currency
               <input
@@ -226,6 +233,15 @@ export const RfqFormModal = ({
                 }
                 className={inputClass}
               />
+            </label>
+            <label className='flex items-center gap-3 self-end rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-700'>
+              <input
+                type='checkbox'
+                checked={applyVat}
+                onChange={(event) => setApplyVat(event.target.checked)}
+                className='h-4 w-4 rounded border-slate-300 text-emerald-600'
+              />
+              Apply organization VAT
             </label>
           </div>
 

@@ -23,6 +23,7 @@ export default [
   layout('./routes/layouts/ProtectedLayout.tsx', [
     route('dashboard', 'routes/dashboard.tsx'),
     route('rfqs', 'routes/rfqs.tsx'),
+    route('rfq-pdf-templates', 'routes/rfq-pdf-templates.tsx'),
     route('connected-accounts', 'routes/connected-accounts.tsx'),
     route('email-ingestions', 'routes/email-ingestions.tsx'),
     route('settings', 'routes/settings.tsx'),
@@ -38,6 +39,14 @@ export default [
     route('api/user/avatar', 'routes/api/user.avatar.tsx'),
     route('api/rfqs', 'routes/api/rfqs.ts'),
     route('api/rfq-items', 'routes/api/rfq-items.ts'),
+    route(
+      'api/rfq-pdf-templates/:templateId/banner/:position',
+      'routes/api/rfq-pdf-template-banner.ts',
+    ),
+    route(
+      'api/rfq-pdf-templates/:templateId/sample',
+      'routes/api/rfq-pdf-template-sample.ts',
+    ),
     route(
       'api/email-ingestion/trigger',
       'routes/api/email-ingestion.trigger.ts',

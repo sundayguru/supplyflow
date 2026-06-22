@@ -91,7 +91,11 @@ export const parseRfqInput = (
   const status = value.status;
   const dueDate =
     typeof value.dueDate === 'string' && value.dueDate ? value.dueDate : null;
-  const estimatedValue = Number(value.estimatedValue);
+  const applyVat = value.applyVat === true;
+  const templateId =
+    typeof value.templateId === 'string' && value.templateId.trim()
+      ? value.templateId.trim()
+      : null;
   const currency =
     typeof value.currency === 'string' ? value.currency.toUpperCase() : 'EUR';
   const rawItems = Array.isArray(value.items) ? value.items : [];
@@ -104,9 +108,6 @@ export const parseRfqInput = (
   }
   if (!rfqStatuses.includes(status as RfqStatus)) {
     return { success: false, error: 'Select a valid RFQ status' };
-  }
-  if (!Number.isInteger(estimatedValue) || estimatedValue < 0) {
-    return { success: false, error: 'Estimated value must be zero or more' };
   }
   if (!/^[A-Z]{3}$/.test(currency)) {
     return { success: false, error: 'Currency must use a three-letter code' };
@@ -131,7 +132,8 @@ export const parseRfqInput = (
       customerEmail,
       status: status as RfqStatus,
       dueDate,
-      estimatedValue,
+      applyVat,
+      templateId,
       currency,
       items,
     },

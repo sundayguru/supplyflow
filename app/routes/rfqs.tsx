@@ -22,19 +22,31 @@ import {
   RfqFormModal,
   type RfqFormValue,
 } from '~/components/rfqs/RfqFormModal';
-import {
-  RfqStatusBadge,
-  rfqStatusLabels,
-} from '~/components/rfqs/RfqStatusBadge';
+import { rfqStatusLabels } from '~/components/rfqs/RfqStatusBadge';
+import { RfqStatusMenu } from '~/components/rfqs/RfqStatusMenu';
 import { getRfqs } from '~/db/rfqs';
 import { getUserFromRequest } from '~/utils/session.server';
 import type { RfqRecord, RfqStatus } from '~/types/rfq';
 import { formatRfqMoney } from '~/utils/rfq';
 import { getOrganizationForUser } from '~/db/organizations';
+import { listRfqPdfTemplates } from '~/db/rfqPdfTemplates';
 
 type ApiResponse =
   | { success: true; rfq?: RfqRecord; id?: string }
   | { error: string };
+
+const pendingStatuses: RfqStatus[] = ['new', 'pricing', 'quoted'];
+
+const formatCombinedValue = (records: RfqRecord[]) => {
+  const totals = records.reduce<Record<string, number>>((byCurrency, rfq) => {
+    byCurrency[rfq.currency] = (byCurrency[rfq.currency] ?? 0) + rfq.totalValue;
+    return byCurrency;
+  }, {});
+  const values = Object.entries(totals).map(([currency, value]) =>
+    formatRfqMoney(value, currency),
+  );
+  return values.length ? values.join(' · ') : formatRfqMoney(0, 'EUR');
+};
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
@@ -47,9 +59,12 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   }
 
   try {
+    const templates = await listRfqPdfTemplates(organization.id);
     return data({
-      rfqs: await getRfqs(organization.id),
+      rfqs: await getRfqs(organization.id, organization.vat),
       defaultPriceMarkup: organization.priceMarkup,
+      vatRate: organization.vat,
+      templates: templates.map(({ id, name }) => ({ id, name })),
       loadError: null,
     });
   } catch (error) {
@@ -57,6 +72,8 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     return data({
       rfqs: [],
       defaultPriceMarkup: organization.priceMarkup,
+      vatRate: organization.vat,
+      templates: [],
       loadError: 'Unable to load RFQs',
     });
   }
@@ -124,9 +141,10 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
     setDeleteTarget(null);
   };
 
-  const wonValue = rfqs
-    .filter((rfq) => rfq.status === 'won')
-    .reduce((sum, rfq) => sum + rfq.estimatedValue, 0);
+  const wonRfqs = rfqs.filter((rfq) => rfq.status === 'won');
+  const pendingRfqs = rfqs.filter((rfq) =>
+    pendingStatuses.includes(rfq.status),
+  );
   const activeCount = rfqs.filter(
     (rfq) => !['won', 'lost'].includes(rfq.status),
   ).length;
@@ -155,7 +173,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
       </div>
 
       <section
-        className='mt-8 grid gap-4 sm:grid-cols-3'
+        className='mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4'
         aria-label='RFQ summary'
       >
         <div className='rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'>
@@ -167,9 +185,15 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
           <p className='mt-2 text-3xl font-bold'>{activeCount}</p>
         </div>
         <div className='rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'>
+          <p className='text-sm text-slate-500'>Pending value</p>
+          <p className='mt-2 text-2xl font-bold'>
+            {formatCombinedValue(pendingRfqs)}
+          </p>
+        </div>
+        <div className='rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'>
           <p className='text-sm text-slate-500'>Won value</p>
-          <p className='mt-2 text-3xl font-bold'>
-            {formatRfqMoney(wonValue, 'EUR')}
+          <p className='mt-2 text-2xl font-bold'>
+            {formatCombinedValue(wonRfqs)}
           </p>
         </div>
       </section>
@@ -283,10 +307,10 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
                       )}
                     </td>
                     <td className='px-5 py-4 font-medium'>
-                      {formatRfqMoney(rfq.estimatedValue, rfq.currency)}
+                      {formatRfqMoney(rfq.totalValue, rfq.currency)}
                     </td>
                     <td className='px-5 py-4'>
-                      <RfqStatusBadge status={rfq.status} />
+                      <RfqStatusMenu rfqId={rfq.id} status={rfq.status} />
                     </td>
                     <td className='px-5 py-4'>
                       <div className='flex justify-end gap-1'>
@@ -326,6 +350,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
       {selectedRfq && (
         <RfqDetailDrawer
           rfq={selectedRfq}
+          vatRate={loaderData.vatRate}
           onClose={closeDetails}
           onEdit={editFromDetails}
         />
@@ -336,6 +361,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
           key={formRfq === 'new' ? 'new' : formRfq.id}
           initialValue={formRfq === 'new' ? undefined : formRfq}
           defaultPriceMarkup={loaderData.defaultPriceMarkup}
+          templates={loaderData.templates}
           onClose={() => setFormRfq(null)}
           onSubmit={submitRfq}
         />

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router';
 import {
   Bell,
   ClipboardList,
+  FileText,
   MailCheck,
   MailSearch,
   LayoutDashboard,
@@ -39,6 +40,7 @@ export const Header = () => {
   const navItems: NavItem[] = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/rfqs', label: 'RFQ management', icon: ClipboardList },
+    { to: '/rfq-pdf-templates', label: 'PDF templates', icon: FileText },
     { to: '/connected-accounts', label: 'Connected accounts', icon: MailCheck },
     {
       to: '/notifications',

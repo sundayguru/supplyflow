@@ -18,6 +18,7 @@ import { RfqStatusBadge } from './RfqStatusBadge';
 
 type RfqDetailDrawerProps = {
   rfq: RfqRecord;
+  vatRate: number;
   onClose: () => void;
   onEdit: () => void;
 };
@@ -30,6 +31,7 @@ const formatDate = (value: string) => new Date(value).toLocaleDateString();
 
 export const RfqDetailDrawer = ({
   rfq,
+  vatRate,
   onClose,
   onEdit,
 }: RfqDetailDrawerProps) => {
@@ -145,10 +147,10 @@ export const RfqDetailDrawer = ({
             </div>
             <div className='rounded-2xl border border-slate-200 bg-white p-4'>
               <p className='flex items-center gap-2 text-xs font-bold tracking-wide text-slate-400 uppercase'>
-                <CircleDollarSign size={14} /> Estimated value
+                <CircleDollarSign size={14} /> Total value
               </p>
               <p className='mt-3 text-2xl font-semibold text-slate-900'>
-                {formatRfqMoney(rfq.estimatedValue, rfq.currency)}
+                {formatRfqMoney(rfq.totalValue, rfq.currency)}
               </p>
             </div>
             <div className='rounded-2xl border border-slate-200 bg-white p-4'>
@@ -264,6 +266,30 @@ export const RfqDetailDrawer = ({
                 </article>
               ))}
             </div>
+          </section>
+
+          <section className='mt-7 rounded-2xl border border-slate-200 bg-slate-50 p-5'>
+            <h3 className='font-semibold text-slate-900'>Pricing summary</h3>
+            <dl className='mt-4 space-y-3 text-sm'>
+              <div className='flex items-center justify-between text-slate-600'>
+                <dt>Items subtotal</dt>
+                <dd>{formatRfqMoney(rfq.subtotal, rfq.currency)}</dd>
+              </div>
+              <div className='flex items-center justify-between text-slate-600'>
+                <dt>Markup</dt>
+                <dd>{formatRfqMoney(rfq.markupValue, rfq.currency)}</dd>
+              </div>
+              {rfq.applyVat && (
+                <div className='flex items-center justify-between text-slate-600'>
+                  <dt>VAT ({vatRate}%)</dt>
+                  <dd>{formatRfqMoney(rfq.vatValue, rfq.currency)}</dd>
+                </div>
+              )}
+              <div className='flex items-center justify-between border-t border-slate-200 pt-3 text-base font-bold text-slate-950'>
+                <dt>Total</dt>
+                <dd>{formatRfqMoney(rfq.totalValue, rfq.currency)}</dd>
+              </div>
+            </dl>
           </section>
         </div>
 

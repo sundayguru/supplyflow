@@ -8,6 +8,7 @@ import {
 } from 'drizzle-orm/sqlite-core';
 import { users } from './users';
 import { organizations } from './organizations';
+import { rfqPdfTemplates } from './rfqPdfTemplates';
 import { rfqStatuses } from '../../types/rfq';
 
 export const rfqs = sqliteTable(
@@ -20,12 +21,17 @@ export const rfqs = sqliteTable(
     organizationId: text('organization_id').references(() => organizations.id, {
       onDelete: 'cascade',
     }),
+    templateId: text('template_id').references(() => rfqPdfTemplates.id, {
+      onDelete: 'set null',
+    }),
     reference: text('reference', { length: 32 }).notNull().unique(),
     customerName: text('customer_name', { length: 255 }).notNull(),
     customerEmail: text('customer_email', { length: 255 }),
     status: text('status', { enum: rfqStatuses }).notNull().default('new'),
     dueDate: text('due_date'),
-    estimatedValue: integer('estimated_value').notNull().default(0),
+    applyVat: integer('apply_vat', { mode: 'boolean' })
+      .notNull()
+      .default(false),
     currency: text('currency', { length: 3 }).notNull().default('EUR'),
     createdAt: text('created_at')
       .notNull()

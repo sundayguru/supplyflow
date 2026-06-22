@@ -22,7 +22,8 @@ Return exactly one JSON object with this shape:
     "customerEmail": string or null,
     "status": "new",
     "dueDate": "YYYY-MM-DD" or null,
-    "estimatedValue": non-negative integer in the smallest currency unit (for example cents),
+    "applyVat": false,
+    "templateId": null,
     "currency": three-letter ISO code, default "EUR",
     "items": [{
       "quantity": positive number,

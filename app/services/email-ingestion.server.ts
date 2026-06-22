@@ -118,6 +118,7 @@ const processAccount = async (
         account.organizationId,
         account.userId,
         result.rfq,
+        organization.vat,
       );
       if (!rfq) {
         throw new Error('RFQ could not be created');

@@ -1,7 +1,8 @@
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
-import type { RfqInput, RfqItemInput, RfqRecord } from '~/types/rfq';
+import type { RfqInput, RfqItemInput, RfqRecord, RfqStatus } from '~/types/rfq';
 import { getDb } from './connection';
 import { rfqItems, rfqs } from './schemas';
+import { calculateRfqTotals } from '~/utils/rfq';
 
 const createReference = () =>
   `RFQ-${new Date().getFullYear()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
@@ -14,31 +15,45 @@ const createItemValues = (rfqId: string, items: RfqItemInput[]) =>
     position,
   }));
 
-export const getRfqs = (organizationId: string): Promise<RfqRecord[]> => {
+const withTotals = <Rfq extends { items: RfqItemInput[]; applyVat: boolean }>(
+  rfq: Rfq,
+  vatRate: number,
+): Rfq & ReturnType<typeof calculateRfqTotals> => ({
+  ...rfq,
+  ...calculateRfqTotals(rfq.items, vatRate, rfq.applyVat),
+});
+
+export const getRfqs = async (
+  organizationId: string,
+  vatRate: number,
+): Promise<RfqRecord[]> => {
   const db = getDb();
-  return db.query.rfqs.findMany({
+  const records = await db.query.rfqs.findMany({
     where: eq(rfqs.organizationId, organizationId),
     orderBy: [desc(rfqs.createdAt)],
     with: { items: { orderBy: [asc(rfqItems.position)] } },
   });
+  return records.map((rfq) => withTotals(rfq, vatRate));
 };
 
 export const getRfq = async (
   id: string,
   organizationId: string,
+  vatRate: number,
 ): Promise<RfqRecord | null> => {
   const db = getDb();
   const rfq = await db.query.rfqs.findFirst({
     where: and(eq(rfqs.id, id), eq(rfqs.organizationId, organizationId)),
     with: { items: { orderBy: [asc(rfqItems.position)] } },
   });
-  return rfq ?? null;
+  return rfq ? withTotals(rfq, vatRate) : null;
 };
 
 export const createRfq = async (
   organizationId: string,
   userId: string,
   input: RfqInput,
+  vatRate: number,
 ) => {
   const db = getDb();
   const id = crypto.randomUUID();
@@ -55,15 +70,16 @@ export const createRfq = async (
     db.insert(rfqItems).values(createItemValues(id, items)),
   ]);
 
-  return getRfq(id, organizationId);
+  return getRfq(id, organizationId, vatRate);
 };
 
 export const updateRfq = async (
   id: string,
   organizationId: string,
   input: RfqInput,
+  vatRate: number,
 ) => {
-  const existing = await getRfq(id, organizationId);
+  const existing = await getRfq(id, organizationId, vatRate);
   if (!existing) {
     return null;
   }
@@ -86,7 +102,22 @@ export const updateRfq = async (
     ),
   ]);
 
-  return getRfq(id, organizationId);
+  return getRfq(id, organizationId, vatRate);
+};
+
+export const updateRfqStatus = async (
+  id: string,
+  organizationId: string,
+  status: RfqStatus,
+  vatRate: number,
+) => {
+  const db = getDb();
+  const [updated] = await db
+    .update(rfqs)
+    .set({ status, updatedAt: new Date().toISOString() })
+    .where(and(eq(rfqs.id, id), eq(rfqs.organizationId, organizationId)))
+    .returning({ id: rfqs.id });
+  return updated ? getRfq(updated.id, organizationId, vatRate) : null;
 };
 
 export const deleteRfq = async (id: string, organizationId: string) => {
@@ -113,6 +144,7 @@ export const updateRfqItem = async (
   id: string,
   organizationId: string,
   input: RfqItemInput,
+  vatRate: number,
 ) => {
   const existing = await getOrganizationRfqItem(id, organizationId);
   if (!existing) {
@@ -136,7 +168,7 @@ export const updateRfqItem = async (
         ),
       ),
   ]);
-  return getRfq(existing.rfqId, organizationId);
+  return getRfq(existing.rfqId, organizationId, vatRate);
 };
 
 export type DeleteRfqItemResult =
@@ -147,6 +179,7 @@ export type DeleteRfqItemResult =
 export const deleteRfqItem = async (
   id: string,
   organizationId: string,
+  vatRate: number,
 ): Promise<DeleteRfqItemResult> => {
   const existing = await getOrganizationRfqItem(id, organizationId);
   if (!existing) {
@@ -174,7 +207,7 @@ export const deleteRfqItem = async (
     .where(
       and(eq(rfqs.id, existing.rfqId), eq(rfqs.organizationId, organizationId)),
     );
-  const updatedRfq = await getRfq(existing.rfqId, organizationId);
+  const updatedRfq = await getRfq(existing.rfqId, organizationId, vatRate);
   return updatedRfq
     ? { status: 'deleted', rfq: updatedRfq }
     : { status: 'not-found' };

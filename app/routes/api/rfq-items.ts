@@ -39,14 +39,19 @@ export const action = async ({ request }: Route.ActionArgs) => {
       if (!parsed.success) {
         return data({ error: parsed.error }, { status: 400 });
       }
-      const rfq = await updateRfqItem(id, organization.id, parsed.value);
+      const rfq = await updateRfqItem(
+        id,
+        organization.id,
+        parsed.value,
+        organization.vat,
+      );
       return rfq
         ? data({ success: true, rfq })
         : data({ error: 'RFQ item not found' }, { status: 404 });
     }
 
     if (request.method === 'DELETE') {
-      const result = await deleteRfqItem(id, organization.id);
+      const result = await deleteRfqItem(id, organization.id, organization.vat);
       if (result.status === 'not-found') {
         return data({ error: 'RFQ item not found' }, { status: 404 });
       }
