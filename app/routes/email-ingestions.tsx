@@ -42,6 +42,14 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
+  if (organization.createdBy !== user.id) {
+    throw new Response(
+      'Only the organization owner can view email ingestions',
+      {
+        status: 403,
+      },
+    );
+  }
 
   const url = new URL(request.url);
   const requestedPage = Number.parseInt(

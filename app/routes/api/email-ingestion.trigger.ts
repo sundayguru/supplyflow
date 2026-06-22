@@ -14,6 +14,12 @@ export const loader = async ({ request, context }: Route.ActionArgs) => {
   if (!organization) {
     return data({ error: 'Organization required' }, { status: 409 });
   }
+  if (organization.createdBy !== user.id) {
+    return data(
+      { error: 'Only the organization owner can trigger email ingestion' },
+      { status: 403 },
+    );
+  }
 
   const { env } = context.get(cloudflareContext);
   if (!('DB' in env)) {

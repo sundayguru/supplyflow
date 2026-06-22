@@ -40,7 +40,6 @@ export const Header = () => {
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/rfqs', label: 'RFQ management', icon: ClipboardList },
     { to: '/connected-accounts', label: 'Connected accounts', icon: MailCheck },
-    { to: '/email-ingestions', label: 'Email ingestions', icon: MailSearch },
     {
       to: '/notifications',
       label: 'Notifications',
@@ -49,6 +48,14 @@ export const Header = () => {
     },
     { to: '/settings', label: 'Settings', icon: Settings },
   ];
+
+  if (user?.isOrganizationOwner) {
+    navItems.splice(3, 0, {
+      to: '/email-ingestions',
+      label: 'Email ingestions',
+      icon: MailSearch,
+    });
+  }
 
   if (user?.isAdmin) {
     navItems.push({

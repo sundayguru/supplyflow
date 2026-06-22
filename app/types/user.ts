@@ -10,4 +10,5 @@ export type User = {
   isDeactivated: boolean;
   isBanned: boolean;
   isAdmin: boolean;
+  isOrganizationOwner: boolean;
 };

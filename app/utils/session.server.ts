@@ -3,6 +3,7 @@ import { getProfileByUserId } from '~/db/profile';
 import { getUnreadNotificationCount } from '~/db/notifications';
 import { verifySessionToken } from '~/utils/auth.server';
 import type { User } from '~/types';
+import { getOrganizationForUser } from '~/db/organizations';
 
 /**
  * Extracts the session cookie from the request headers and returns the user data.
@@ -44,6 +45,7 @@ export const getUserFromRequest = async (
   // Fetch the profile to get the avatar URL
   const profile = await getProfileByUserId(dbUser.id);
   const unreadNotifications = await getUnreadNotificationCount(dbUser.id);
+  const organization = await getOrganizationForUser(dbUser.id);
 
   if (dbUser.isDeactivated) {
     return null;
@@ -62,6 +64,7 @@ export const getUserFromRequest = async (
     isDeactivated: dbUser.isDeactivated || false,
     isBanned: dbUser.isBanned || false,
     isAdmin: dbUser.isAdmin || false,
+    isOrganizationOwner: organization?.createdBy === dbUser.id,
   };
 
   return user;
