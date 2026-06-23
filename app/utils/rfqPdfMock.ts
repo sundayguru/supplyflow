@@ -34,6 +34,7 @@ export const createMockRfqForTemplate = (organization: {
     currency: 'EUR',
     dueDate: '2026-07-15',
     applyVat: true,
+    sourcePdfKey: null,
     items,
     ...calculateRfqTotals(items, organization.vat, true),
   };

@@ -3,6 +3,8 @@ import { useFetcher } from 'react-router';
 import {
   CalendarDays,
   CircleDollarSign,
+  ExternalLink,
+  FileText,
   Mail,
   Package,
   Pencil,
@@ -38,6 +40,9 @@ export const RfqDetailDrawer = ({
   const itemMutation = useFetcher<ItemMutationResponse>();
   const [editItem, setEditItem] = useState<RfqItemRecord | null>(null);
   const [deleteItem, setDeleteItem] = useState<RfqItemRecord | null>(null);
+  const sourcePdfUrl = rfq.sourcePdfKey
+    ? `/api/rfqs/${encodeURIComponent(rfq.id)}/source-pdf`
+    : null;
 
   const submitItem = (value: RfqItemInput) => {
     if (!editItem) {
@@ -175,6 +180,34 @@ export const RfqDetailDrawer = ({
               </p>
             </div>
           </section>
+
+          {sourcePdfUrl && (
+            <section className='mt-7 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm'>
+              <div className='flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4'>
+                <div>
+                  <p className='flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-emerald-700 uppercase'>
+                    <FileText size={14} /> Source PDF
+                  </p>
+                  <h3 className='mt-1 text-lg font-bold text-slate-900'>
+                    Original request
+                  </h3>
+                </div>
+                <a
+                  href={sourcePdfUrl}
+                  target='_blank'
+                  rel='noreferrer'
+                  className='inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900'
+                >
+                  <ExternalLink size={14} /> Open
+                </a>
+              </div>
+              <iframe
+                src={sourcePdfUrl}
+                title={`${rfq.reference} source PDF`}
+                className='h-[520px] w-full bg-slate-100'
+              />
+            </section>
+          )}
 
           <section className='mt-7'>
             <div className='flex items-center justify-between gap-3'>

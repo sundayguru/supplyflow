@@ -36,6 +36,7 @@ import { cloudflareContext } from '~/contexts.server/cloudflareContext.server';
 import { organizationAiModels } from '~/types/organization';
 import { createRfqExtractor } from '~/services/rfq-extraction/index.server';
 import { extractRfqPdfText } from '~/utils/rfqPdfExtraction.server';
+import { uploadRfqSourcePdf } from '~/utils/rfqSourcePdf.server';
 import type { EmailMessage } from '~/services/email/types';
 
 type ApiResponse =
@@ -132,7 +133,8 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       );
     }
 
-    const text = await extractRfqPdfText(pdf);
+    const bytes = await pdf.arrayBuffer();
+    const text = await extractRfqPdfText(pdf, bytes);
     const extractor = createRfqExtractor({
       provider: model.provider,
       apiKey: requireSetting(
@@ -152,6 +154,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       to: [],
       receivedAt: new Date(),
       text,
+      attachments: [],
     } satisfies EmailMessage);
 
     if (!extracted.isRfq) {
@@ -166,7 +169,14 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     const rfq = await createRfq(
       organization.id,
       user.id,
-      extracted.rfq,
+      {
+        ...extracted.rfq,
+        sourcePdfKey: await uploadRfqSourcePdf(
+          organization.id,
+          bytes,
+          pdf.name,
+        ),
+      },
       organization.vat,
     );
     if (!rfq) {

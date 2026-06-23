@@ -11,6 +11,14 @@ export type EmailMessage = {
   to: EmailAddress[];
   receivedAt: Date;
   text: string;
+  attachments: EmailAttachment[];
+};
+
+export type EmailAttachment = {
+  id: string;
+  filename: string;
+  contentType: string;
+  bytes: ArrayBuffer;
 };
 
 export type ListMessagesOptions = {

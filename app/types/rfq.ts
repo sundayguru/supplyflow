@@ -20,6 +20,7 @@ export type RfqInput = {
   dueDate: string | null;
   applyVat: boolean;
   templateId: string | null;
+  sourcePdfKey: string | null;
   currency: string;
   items: RfqItemInput[];
 };

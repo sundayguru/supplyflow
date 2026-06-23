@@ -67,7 +67,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
           rfq: await createRfq(
             organization.id,
             user.id,
-            parsed.value,
+            { ...parsed.value, sourcePdfKey: null },
             organization.vat,
           ),
         },
@@ -113,10 +113,14 @@ export const action = async ({ request }: Route.ActionArgs) => {
       ) {
         return data({ error: 'PDF template not found' }, { status: 400 });
       }
+      const existing = await getRfq(body.id, organization.id, organization.vat);
+      if (!existing) {
+        return data({ error: 'RFQ not found' }, { status: 404 });
+      }
       const rfq = await updateRfq(
         body.id,
         organization.id,
-        parsed.value,
+        { ...parsed.value, sourcePdfKey: existing.sourcePdfKey },
         organization.vat,
       );
       if (!rfq) {

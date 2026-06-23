@@ -1,0 +1,1 @@
+ALTER TABLE `rfqs` ADD `source_pdf_key` text(511);

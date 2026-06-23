@@ -9,11 +9,17 @@ import {
 import { createRfq } from '~/db/rfqs';
 import { createEmailClient } from '~/services/email/index.server';
 import { createRfqExtractor } from '~/services/rfq-extraction/index.server';
-import type { RfqExtractor } from '~/services/rfq-extraction/types';
+import type {
+  RfqExtractionResult,
+  RfqExtractor,
+} from '~/services/rfq-extraction/types';
 import { decryptToken } from '~/utils/tokenEncryption.server';
 import type { SelectConnectedEmailAccount } from '~/db/schemas';
 import { getOrganizationById } from '~/db/organizations';
 import { organizationAiModels } from '~/types/organization';
+import type { EmailAttachment, EmailMessage } from '~/services/email/types';
+import { extractRfqPdfText } from '~/utils/rfqPdfExtraction.server';
+import { uploadRfqSourcePdf } from '~/utils/rfqSourcePdf.server';
 
 const FIRST_SYNC_LOOKBACK_MS = 24 * 60 * 60 * 1000;
 const OVERLAP_MS = 5 * 60 * 1000;
@@ -43,6 +49,59 @@ const requireSetting = (name: string, value: string | undefined) => {
     throw new Error(`Missing required email ingestion setting: ${name}`);
   }
   return value;
+};
+
+type ExtractedMessageRfq = {
+  result: Extract<RfqExtractionResult, { isRfq: true }>;
+  sourcePdf: EmailAttachment | null;
+};
+
+const extractPdfAttachmentRfq = async (
+  message: EmailMessage,
+  extractor: RfqExtractor,
+): Promise<ExtractedMessageRfq | null> => {
+  for (const attachment of message.attachments) {
+    if (
+      attachment.contentType !== 'application/pdf' &&
+      !attachment.filename.toLowerCase().endsWith('.pdf')
+    ) {
+      continue;
+    }
+    const file = new File([attachment.bytes], attachment.filename, {
+      type: 'application/pdf',
+    });
+    const text = await extractRfqPdfText(file, attachment.bytes);
+    const result = await extractor.extract({
+      ...message,
+      id: `${message.id}:${attachment.id}`,
+      subject: `PDF attachment: ${attachment.filename}`,
+      text,
+      attachments: [],
+    });
+    if (result.isRfq) {
+      return { result, sourcePdf: attachment };
+    }
+  }
+  return null;
+};
+
+const extractMessageRfq = async (
+  message: EmailMessage,
+  extractor: RfqExtractor,
+): Promise<ExtractedMessageRfq | null> => {
+  try {
+    const result = await extractor.extract(message);
+    if (result.isRfq) {
+      return { result, sourcePdf: null };
+    }
+    return await extractPdfAttachmentRfq(message, extractor);
+  } catch (error) {
+    const pdfResult = await extractPdfAttachmentRfq(message, extractor);
+    if (pdfResult) {
+      return pdfResult;
+    }
+    throw error;
+  }
 };
 
 const processAccount = async (
@@ -108,16 +167,23 @@ const processAccount = async (
       continue;
     }
     try {
-      const result = await extractor.extract(message);
-      if (!result.isRfq) {
+      const extraction = await extractMessageRfq(message, extractor);
+      if (!extraction) {
         await completeEmailIngestion(ingestionId, { status: 'ignored' });
         ignored += 1;
         continue;
       }
+      const sourcePdfKey = extraction.sourcePdf
+        ? await uploadRfqSourcePdf(
+            account.organizationId,
+            extraction.sourcePdf.bytes,
+            extraction.sourcePdf.filename,
+          )
+        : null;
       const rfq = await createRfq(
         account.organizationId,
         account.userId,
-        result.rfq,
+        { ...extraction.result.rfq, sourcePdfKey },
         organization.vat,
       );
       if (!rfq) {

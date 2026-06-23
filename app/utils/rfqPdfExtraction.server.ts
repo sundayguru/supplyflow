@@ -3,7 +3,7 @@ import { extractText } from 'unpdf';
 const MAX_RFQ_PDF_SIZE = 10 * 1024 * 1024;
 const MAX_EXTRACTED_TEXT_LENGTH = 30000;
 
-export const extractRfqPdfText = async (file: File) => {
+export const extractRfqPdfText = async (file: File, bytes?: ArrayBuffer) => {
   if (file.type !== 'application/pdf') {
     throw new Error('Upload a PDF file');
   }
@@ -11,7 +11,7 @@ export const extractRfqPdfText = async (file: File) => {
     throw new Error('PDF must be 10 MB or smaller');
   }
 
-  const buffer = await file.arrayBuffer();
+  const buffer = bytes ?? (await file.arrayBuffer());
   const { text } = await extractText(new Uint8Array(buffer), {
     mergePages: true,
   });

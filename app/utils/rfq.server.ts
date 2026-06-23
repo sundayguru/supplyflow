@@ -96,6 +96,10 @@ export const parseRfqInput = (
     typeof value.templateId === 'string' && value.templateId.trim()
       ? value.templateId.trim()
       : null;
+  const sourcePdfKey =
+    typeof value.sourcePdfKey === 'string' && value.sourcePdfKey.trim()
+      ? value.sourcePdfKey.trim()
+      : null;
   const currency =
     typeof value.currency === 'string' ? value.currency.toUpperCase() : 'EUR';
   const rawItems = Array.isArray(value.items) ? value.items : [];
@@ -134,6 +138,7 @@ export const parseRfqInput = (
       dueDate,
       applyVat,
       templateId,
+      sourcePdfKey,
       currency,
       items,
     },

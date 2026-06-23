@@ -1,5 +1,6 @@
 import type {
   EmailAddress,
+  EmailAttachment,
   EmailClient,
   EmailMessage,
   ListMessagesOptions,
@@ -19,9 +20,11 @@ type GmailListResponse = {
 type GmailHeader = { name?: string; value?: string };
 
 type GmailPart = {
+  partId?: string;
+  filename?: string;
   mimeType?: string;
   headers?: GmailHeader[];
-  body?: { data?: string };
+  body?: { attachmentId?: string; data?: string; size?: number };
   parts?: GmailPart[];
 };
 
@@ -36,6 +39,11 @@ type GoogleTokenResponse = {
   access_token?: string;
   refresh_token?: string;
   expires_in?: number;
+};
+
+type GmailAttachmentResponse = {
+  data?: string;
+  size?: number;
 };
 
 const GMAIL_API_URL = 'https://gmail.googleapis.com/gmail/v1/users/me';
@@ -103,12 +111,14 @@ export const getGmailProfile = async (accessToken: string) => {
   return { email: profile.emailAddress.toLowerCase() };
 };
 
-const decodeBase64Url = (value: string) => {
+const decodeBase64UrlBytes = (value: string) => {
   const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
   const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
-  const bytes = Uint8Array.from(atob(padded), (character) =>
-    character.charCodeAt(0),
-  );
+  return Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
+};
+
+const decodeBase64Url = (value: string) => {
+  const bytes = decodeBase64UrlBytes(value);
   return new TextDecoder().decode(bytes);
 };
 
@@ -162,6 +172,18 @@ const parseAddresses = (value: string) =>
     .map((address) => parseAddress(address))
     .filter((address) => address.address);
 
+const isPdfPart = (part: GmailPart) =>
+  part.mimeType === 'application/pdf' ||
+  part.filename?.toLowerCase().endsWith('.pdf');
+
+const collectPdfParts = (part: GmailPart | undefined): GmailPart[] => {
+  if (!part) {
+    return [];
+  }
+  const parts = part.parts?.flatMap(collectPdfParts) ?? [];
+  return isPdfPart(part) ? [part, ...parts] : parts;
+};
+
 const gmailRequest = async <ResponseBody>(
   path: string,
   accessToken: string,
@@ -210,6 +232,30 @@ const getMessage = async (
   const plainText = findBody(message.payload, 'text/plain');
   const html = plainText ? null : findBody(message.payload, 'text/html');
   const text = (plainText ?? (html ? stripHtml(html) : '')).trim();
+  const attachments: EmailAttachment[] = [];
+  for (const part of collectPdfParts(message.payload)) {
+    const attachmentId = part.body?.attachmentId;
+    const data = attachmentId
+      ? (
+          await gmailRequest<GmailAttachmentResponse>(
+            `/messages/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachmentId)}`,
+            accessToken,
+          )
+        ).data
+      : part.body?.data;
+    if (!data) {
+      continue;
+    }
+    const bytes = decodeBase64UrlBytes(data);
+    const attachmentBytes = new Uint8Array(bytes.byteLength);
+    attachmentBytes.set(bytes);
+    attachments.push({
+      id: attachmentId ?? part.partId ?? crypto.randomUUID(),
+      filename: part.filename || 'attachment.pdf',
+      contentType: 'application/pdf',
+      bytes: attachmentBytes.buffer,
+    });
+  }
 
   return {
     id: message.id,
@@ -219,6 +265,7 @@ const getMessage = async (
     to: parseAddresses(getHeader(headers, 'To')),
     receivedAt: new Date(Number(message.internalDate ?? Date.now())),
     text: text.slice(0, 60_000),
+    attachments,
   };
 };
 

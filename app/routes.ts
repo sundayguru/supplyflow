@@ -38,6 +38,7 @@ export default [
     route('api/user', 'routes/api/user.ts'),
     route('api/user/avatar', 'routes/api/user.avatar.tsx'),
     route('api/rfqs', 'routes/api/rfqs.ts'),
+    route('api/rfqs/:rfqId/source-pdf', 'routes/api/rfq-source-pdf.ts'),
     route('api/rfq-items', 'routes/api/rfq-items.ts'),
     route(
       'api/rfq-pdf-templates/:templateId/banner/:position',

@@ -24,6 +24,7 @@ export const rfqs = sqliteTable(
     templateId: text('template_id').references(() => rfqPdfTemplates.id, {
       onDelete: 'set null',
     }),
+    sourcePdfKey: text('source_pdf_key', { length: 511 }),
     reference: text('reference', { length: 32 }).notNull().unique(),
     customerName: text('customer_name', { length: 255 }).notNull(),
     customerEmail: text('customer_email', { length: 255 }),

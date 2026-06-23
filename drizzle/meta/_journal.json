@@ -71,6 +71,13 @@
       "when": 1782164640499,
       "tag": "0009_loud_human_torch",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1782248485503,
+      "tag": "0010_chubby_morlun",
+      "breakpoints": true
     }
   ]
 }

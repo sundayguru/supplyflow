@@ -72,6 +72,7 @@ export const RfqFormModal = ({
       dueDate: dueDate || null,
       applyVat,
       templateId: templateId || null,
+      sourcePdfKey: initialValue?.sourcePdfKey ?? null,
       currency,
       items,
     });
