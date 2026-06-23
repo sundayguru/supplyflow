@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   data,
   Link,
@@ -10,10 +10,12 @@ import {
   CalendarDays,
   Eye,
   FileText,
+  LoaderCircle,
   Pencil,
   Plus,
   Search,
   Trash2,
+  Upload,
 } from 'lucide-react';
 import type { Route } from './+types/rfqs';
 import { ConfirmModal } from '~/components/ConfirmModal';
@@ -24,18 +26,30 @@ import {
 } from '~/components/rfqs/RfqFormModal';
 import { rfqStatusLabels } from '~/components/rfqs/RfqStatusBadge';
 import { RfqStatusMenu } from '~/components/rfqs/RfqStatusMenu';
-import { getRfqs } from '~/db/rfqs';
+import { createRfq, getRfqs } from '~/db/rfqs';
 import { getUserFromRequest } from '~/utils/session.server';
 import type { RfqRecord, RfqStatus } from '~/types/rfq';
 import { formatRfqMoney } from '~/utils/rfq';
 import { getOrganizationForUser } from '~/db/organizations';
 import { listRfqPdfTemplates } from '~/db/rfqPdfTemplates';
+import { cloudflareContext } from '~/contexts.server/cloudflareContext.server';
+import { organizationAiModels } from '~/types/organization';
+import { createRfqExtractor } from '~/services/rfq-extraction/index.server';
+import { extractRfqPdfText } from '~/utils/rfqPdfExtraction.server';
+import type { EmailMessage } from '~/services/email/types';
 
 type ApiResponse =
   | { success: true; rfq?: RfqRecord; id?: string }
   | { error: string };
 
 const pendingStatuses: RfqStatus[] = ['new', 'pricing', 'quoted'];
+
+const requireSetting = (name: string, value: string | undefined) => {
+  if (!value) {
+    throw new Error(`Missing required AI setting: ${name}`);
+  }
+  return value;
+};
 
 const formatCombinedValue = (records: RfqRecord[]) => {
   const totals = records.reduce<Record<string, number>>((byCurrency, rfq) => {
@@ -79,15 +93,123 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   }
 };
 
+export const action = async ({ request, context }: Route.ActionArgs) => {
+  const user = await getUserFromRequest(request);
+  if (!user) {
+    return data({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const organization = await getOrganizationForUser(user.id);
+  if (!organization) {
+    return data({ error: 'Organization required' }, { status: 409 });
+  }
+
+  try {
+    const formData = await request.formData();
+    if (formData.get('intent') !== 'uploadPdf') {
+      return data({ error: 'Unknown RFQ action' }, { status: 400 });
+    }
+
+    const pdf = formData.get('rfqPdf');
+    if (!(pdf instanceof File) || !pdf.size) {
+      return data({ error: 'Choose an RFQ PDF to upload' }, { status: 400 });
+    }
+
+    const { env } = context.get(cloudflareContext);
+    if (!('DB' in env)) {
+      return data(
+        { error: 'Cloudflare environment is unavailable' },
+        { status: 503 },
+      );
+    }
+
+    const model = organizationAiModels.find(
+      (candidate) => candidate.value === organization.preferredModel,
+    );
+    if (!model) {
+      return data(
+        { error: 'Organization AI model is not supported' },
+        { status: 400 },
+      );
+    }
+
+    const text = await extractRfqPdfText(pdf);
+    const extractor = createRfqExtractor({
+      provider: model.provider,
+      apiKey: requireSetting(
+        model.provider === 'gemini' ? 'GEMINI_API_KEY' : 'GROQ_API_KEY',
+        model.provider === 'gemini'
+          ? (env as Env).GEMINI_API_KEY
+          : (env as Env).GROQ_API_KEY,
+      ),
+      model: model.value,
+      defaultPriceMarkup: organization.priceMarkup,
+    });
+    const extracted = await extractor.extract({
+      id: crypto.randomUUID(),
+      threadId: null,
+      subject: `Uploaded RFQ PDF: ${pdf.name}`,
+      from: { name: null, address: '' },
+      to: [],
+      receivedAt: new Date(),
+      text,
+    } satisfies EmailMessage);
+
+    if (!extracted.isRfq) {
+      return data(
+        {
+          error: `The uploaded PDF was not recognized as an RFQ. ${extracted.reason}`,
+        },
+        { status: 422 },
+      );
+    }
+
+    const rfq = await createRfq(
+      organization.id,
+      user.id,
+      extracted.rfq,
+      organization.vat,
+    );
+    if (!rfq) {
+      throw new Error('RFQ could not be created');
+    }
+
+    return data({ success: true, rfq }, { status: 201 });
+  } catch (error) {
+    console.error('RFQ PDF upload failed', error);
+    return data(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to extract RFQ details from this PDF',
+      },
+      { status: 500 },
+    );
+  }
+};
+
 const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
   const { rfqs } = loaderData;
   const mutation = useFetcher<ApiResponse>();
+  const pdfUpload = useFetcher<ApiResponse>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | RfqStatus>('all');
   const [formRfq, setFormRfq] = useState<RfqRecord | 'new' | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<RfqRecord | null>(null);
   const selectedRfq = rfqs.find((rfq) => rfq.id === searchParams.get('rfq'));
+  const isUploadingPdf = pdfUpload.state !== 'idle';
+
+  useEffect(() => {
+    if (pdfUpload.data && 'success' in pdfUpload.data && pdfUpload.data.rfq) {
+      setSearchParams(
+        { rfq: pdfUpload.data.rfq.id },
+        {
+          replace: true,
+        },
+      );
+    }
+  }, [pdfUpload.data, setSearchParams]);
 
   const closeDetails = () => {
     const next = new URLSearchParams(searchParams);
@@ -163,13 +285,36 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
             Create, track, and update every customer request in one place.
           </p>
         </div>
-        <button
-          type='button'
-          onClick={() => setFormRfq('new')}
-          className='inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-500'
-        >
-          <Plus size={18} /> New RFQ
-        </button>
+        <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
+          <pdfUpload.Form method='post' encType='multipart/form-data'>
+            <input type='hidden' name='intent' value='uploadPdf' />
+            <label className='inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700'>
+              {isUploadingPdf ? (
+                <LoaderCircle size={18} className='animate-spin' />
+              ) : (
+                <Upload size={18} />
+              )}
+              Upload PDF
+              <input
+                type='file'
+                name='rfqPdf'
+                accept='application/pdf'
+                className='sr-only'
+                disabled={isUploadingPdf}
+                onChange={(event) => {
+                  event.currentTarget.form?.requestSubmit();
+                }}
+              />
+            </label>
+          </pdfUpload.Form>
+          <button
+            type='button'
+            onClick={() => setFormRfq('new')}
+            className='inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-500'
+          >
+            <Plus size={18} /> New RFQ
+          </button>
+        </div>
       </div>
 
       <section
@@ -206,6 +351,11 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
       {mutation.data && 'error' in mutation.data && (
         <p className='mt-4 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700'>
           {mutation.data.error}
+        </p>
+      )}
+      {pdfUpload.data && 'error' in pdfUpload.data && (
+        <p className='mt-4 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700'>
+          {pdfUpload.data.error}
         </p>
       )}
 
