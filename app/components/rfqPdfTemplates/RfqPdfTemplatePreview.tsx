@@ -24,7 +24,7 @@ const Banner = ({
     <img
       src={url}
       alt={`${position} banner preview`}
-      className={`w-full object-contain ${position === 'header' ? 'h-12' : 'h-8'}`}
+      className={`w-full object-fill ${position === 'header' ? 'h-12' : 'h-8'}`}
     />
   ) : (
     <div

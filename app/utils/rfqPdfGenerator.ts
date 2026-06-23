@@ -1,4 +1,11 @@
-import { PDFDocument, PDFImage, PDFFont, StandardFonts, rgb } from 'pdf-lib';
+import {
+  PDFDocument,
+  PDFImage,
+  PDFPage,
+  PDFFont,
+  StandardFonts,
+  rgb,
+} from 'pdf-lib';
 import type { SelectOrganization, SelectRfqPdfTemplate } from '~/db/schemas';
 import { richTextToPlainText } from './richText';
 import { createMockRfqForTemplate } from './rfqPdfMock';
@@ -65,12 +72,26 @@ const loadBanner = async (
     return null;
   }
   if (asset.contentType === 'image/png') {
-    return document.embedPng(asset.bytes);
+    return await document.embedPng(asset.bytes);
   }
   if (asset.contentType === 'image/jpeg') {
-    return document.embedJpg(asset.bytes);
+    return await document.embedJpg(asset.bytes);
   }
   return null;
+};
+
+const drawFullWidthBanner = (
+  page: PDFPage,
+  banner: PDFImage,
+  y: number,
+  height: number,
+) => {
+  page.drawImage(banner, {
+    x: 0,
+    y,
+    width: PAGE_WIDTH,
+    height,
+  });
 };
 
 export const generateRfqTemplateSamplePdf = async (
@@ -93,18 +114,12 @@ export const generateRfqTemplateSamplePdf = async (
   const addPage = () => {
     const page = document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
     if (headerBanner) {
-      const scale = Math.min(
-        (PAGE_WIDTH - SIDE_MARGIN * 2) / headerBanner.width,
-        HEADER_HEIGHT / headerBanner.height,
+      drawFullWidthBanner(
+        page,
+        headerBanner,
+        PAGE_HEIGHT - HEADER_HEIGHT,
+        HEADER_HEIGHT,
       );
-      const width = headerBanner.width * scale;
-      const height = headerBanner.height * scale;
-      page.drawImage(headerBanner, {
-        x: (PAGE_WIDTH - width) / 2,
-        y: PAGE_HEIGHT - 24 - height,
-        width,
-        height,
-      });
     } else {
       page.drawText(safePdfText(organization.name), {
         x: SIDE_MARGIN,
@@ -115,18 +130,7 @@ export const generateRfqTemplateSamplePdf = async (
       });
     }
     if (footerBanner) {
-      const scale = Math.min(
-        (PAGE_WIDTH - SIDE_MARGIN * 2) / footerBanner.width,
-        FOOTER_HEIGHT / footerBanner.height,
-      );
-      const width = footerBanner.width * scale;
-      const height = footerBanner.height * scale;
-      page.drawImage(footerBanner, {
-        x: (PAGE_WIDTH - width) / 2,
-        y: 18,
-        width,
-        height,
-      });
+      drawFullWidthBanner(page, footerBanner, 0, FOOTER_HEIGHT);
     } else {
       page.drawText('SupplyFlow quotation sample', {
         x: SIDE_MARGIN,
