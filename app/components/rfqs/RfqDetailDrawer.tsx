@@ -201,11 +201,26 @@ export const RfqDetailDrawer = ({
                   <ExternalLink size={14} /> Open
                 </a>
               </div>
-              <iframe
-                src={sourcePdfUrl}
-                title={`${rfq.reference} source PDF`}
+              <object
+                data={sourcePdfUrl}
+                type='application/pdf'
                 className='h-[520px] w-full bg-slate-100'
-              />
+                aria-label={`${rfq.reference} source PDF`}
+              >
+                <div className='flex h-64 flex-col items-center justify-center px-6 text-center'>
+                  <p className='text-sm font-semibold text-slate-700'>
+                    PDF preview is not available in this browser.
+                  </p>
+                  <a
+                    href={sourcePdfUrl}
+                    target='_blank'
+                    rel='noreferrer'
+                    className='mt-3 inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white'
+                  >
+                    <ExternalLink size={14} /> Open PDF
+                  </a>
+                </div>
+              </object>
             </section>
           )}
 

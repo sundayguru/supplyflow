@@ -52,7 +52,7 @@ export const deleteFromR2 = async (key: string): Promise<boolean> => {
 /**
  * Gets a file from the R2 course content bucket.
  */
-export const getFromR2 = async (key: string) => {
+export const getFromR2 = async (key: string, options?: R2GetOptions) => {
   try {
     const bucket = env.MEDIA;
 
@@ -61,7 +61,7 @@ export const getFromR2 = async (key: string) => {
       return null;
     }
 
-    return await bucket.get(key);
+    return await bucket.get(key, options);
   } catch (e) {
     console.error('Error getting from R2:', e);
     return null;
