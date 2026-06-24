@@ -1,10 +1,24 @@
-export const getGAId = () =>
-  typeof window !== 'undefined' ? (window as any).GA_TRACKING_ID : undefined;
+type Gtag = (
+  command: 'config' | 'event',
+  target: string,
+  parameters?: Record<string, string | number | undefined>,
+) => void;
+
+type AnalyticsWindow = Window & {
+  GA_TRACKING_ID?: string;
+  gtag?: Gtag;
+};
+
+const getAnalyticsWindow = () =>
+  typeof window !== 'undefined' ? (window as AnalyticsWindow) : null;
+
+export const getGAId = () => getAnalyticsWindow()?.GA_TRACKING_ID;
 
 export const pageview = (url: string) => {
   const gaId = getGAId();
-  if (typeof window !== 'undefined' && (window as any).gtag && gaId) {
-    (window as any).gtag('config', gaId, {
+  const analyticsWindow = getAnalyticsWindow();
+  if (analyticsWindow?.gtag && gaId) {
+    analyticsWindow.gtag('config', gaId, {
       page_path: url,
     });
   }
@@ -21,8 +35,9 @@ export const event = ({
   label?: string;
   value?: number;
 }) => {
-  if (typeof window !== 'undefined' && (window as any).gtag) {
-    (window as any).gtag('event', action, {
+  const analyticsWindow = getAnalyticsWindow();
+  if (analyticsWindow?.gtag) {
+    analyticsWindow.gtag('event', action, {
       event_category: category,
       event_label: label,
       value: value,

@@ -3,14 +3,12 @@ import type { ReactNode } from 'react';
 
 type DropdownMenuProps = {
   isOpen: boolean;
-  anchor: ReactNode;
   onClose: () => void;
   children: ReactNode;
 };
 
 export const DropdownMenu = ({
   isOpen,
-  anchor,
   onClose,
   children,
 }: DropdownMenuProps) => {

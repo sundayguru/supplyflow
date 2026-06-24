@@ -10,5 +10,3 @@ export const middleware: Route.MiddlewareFunction[] = [
     }
   },
 ];
-
-export const loader = () => {};

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 type WarningModalProps = {
   isOpen: boolean;

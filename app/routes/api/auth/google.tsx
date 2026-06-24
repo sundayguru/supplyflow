@@ -10,12 +10,16 @@ import { ensureProfileForUser } from '~/db/profile';
 import { generateSessionToken } from '~/utils/auth.server';
 import { v4 as uuidv4 } from 'uuid';
 
-const GOOGLE_CLIENT_ID =
-  (globalThis as any).process?.env?.GOOGLE_CLIENT_ID || '';
-const GOOGLE_CLIENT_SECRET =
-  (globalThis as any).process?.env?.GOOGLE_CLIENT_SECRET || '';
-const BASE_URL =
-  (globalThis as any).process?.env?.BASE_URL || 'http://localhost:5173';
+type GlobalWithProcess = typeof globalThis & {
+  process?: {
+    env?: Record<string, string | undefined>;
+  };
+};
+
+const processEnv = (globalThis as GlobalWithProcess).process?.env;
+const GOOGLE_CLIENT_ID = processEnv?.GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_SECRET = processEnv?.GOOGLE_CLIENT_SECRET || '';
+const BASE_URL = processEnv?.BASE_URL || 'http://localhost:5173';
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';

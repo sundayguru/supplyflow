@@ -10,14 +10,14 @@ const SALT_ROUNDS = 10;
 const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 export const hashPassword = async (password: string): Promise<string> => {
-  return bcrypt.hash(password, SALT_ROUNDS);
+  return await bcrypt.hash(password, SALT_ROUNDS);
 };
 
 export const verifyPassword = async (
   password: string,
   hash: string,
 ): Promise<boolean> => {
-  return bcrypt.compare(password, hash);
+  return await bcrypt.compare(password, hash);
 };
 
 export const generateSessionToken = async (

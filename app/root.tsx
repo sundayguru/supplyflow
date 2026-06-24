@@ -6,6 +6,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
 } from 'react-router';
 
 import type { Route } from './+types/root';
@@ -14,9 +15,12 @@ import { CurrentUserProvider } from './providers/CurrentUserProvider';
 import { userDataContext } from './contexts.server/userDataContext.server';
 import { cloudflareContext } from './contexts.server/cloudflareContext.server';
 import { ToastProvider } from './components/ToastViewport';
-import { useLocation } from 'react-router';
 import { useEffect } from 'react';
 import * as analytics from './utils/analytics';
+
+type AnalyticsEnv = {
+  GA_TRACKING_ID?: string;
+};
 
 export const links: Route.LinksFunction = () => [
   { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -97,9 +101,10 @@ export default function App({ loaderData }: Route.ComponentProps) {
 
 export const loader = ({ context }: Route.LoaderArgs) => {
   const cf = context.get(cloudflareContext);
+  const env = cf.env as AnalyticsEnv;
   return {
     user: context.get(userDataContext),
-    gaId: (cf.env as any).GA_TRACKING_ID || 'G-XXXXXXXXXX', // Fallback to placeholder
+    gaId: env.GA_TRACKING_ID || 'G-XXXXXXXXXX', // Fallback to placeholder
   };
 };
 

@@ -1,5 +1,3 @@
-import type { SelectHTMLAttributes, ReactNode } from 'react';
-
 type SelectOption = {
   value: string;
   label: string;
