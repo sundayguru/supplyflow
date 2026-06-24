@@ -1,4 +1,11 @@
-export const rfqStatuses = ['new', 'pricing', 'quoted', 'won', 'lost'] as const;
+export const rfqStatuses = [
+  'new',
+  'pricing',
+  'review',
+  'quoted',
+  'won',
+  'lost',
+] as const;
 
 export type RfqStatus = (typeof rfqStatuses)[number];
 
@@ -49,6 +56,8 @@ export type RfqRecord = Omit<RfqInput, 'items'> & {
   createdAt: string;
   updatedAt: string;
   items: RfqItemRecord[];
+  generatedReply: string | null;
+  generatedReplyDraftId: string | null;
   subtotal: number;
   markupValue: number;
   vatValue: number;

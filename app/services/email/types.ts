@@ -40,6 +40,10 @@ export type CreateDraftReplyInput = {
   };
 };
 
+export type UpdateDraftReplyInput = CreateDraftReplyInput & {
+  draftId: string;
+};
+
 export type DraftReplyResult = {
   id: string;
   url: string;
@@ -51,5 +55,8 @@ export type EmailClient = {
   getMessage?: (id: string) => Promise<EmailMessage>;
   createDraftReply?: (
     input: CreateDraftReplyInput,
+  ) => Promise<DraftReplyResult>;
+  updateDraftReply?: (
+    input: UpdateDraftReplyInput,
   ) => Promise<DraftReplyResult>;
 };

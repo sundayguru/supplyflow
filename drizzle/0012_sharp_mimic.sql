@@ -1,0 +1,1 @@
+ALTER TABLE `rfqs` ADD `generated_reply_draft_id` text(255);

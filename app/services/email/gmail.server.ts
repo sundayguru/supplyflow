@@ -5,6 +5,7 @@ import type {
   EmailMessage,
   CreateDraftReplyInput,
   ListMessagesOptions,
+  UpdateDraftReplyInput,
 } from './types';
 
 export type GmailClientConfig = {
@@ -240,6 +241,9 @@ const createMultipartDraftMessage = (input: CreateDraftReplyInput) => {
   return encodeBase64UrlBytes(new TextEncoder().encode(message));
 };
 
+const createDraftUrl = (accountEmail: string) =>
+  `https://mail.google.com/mail/u/0/?authuser=${encodeURIComponent(accountEmail)}#drafts`;
+
 const isPdfPart = (part: GmailPart) =>
   part.mimeType === 'application/pdf' ||
   part.filename?.toLowerCase().endsWith('.pdf');
@@ -390,7 +394,29 @@ export const createGmailClient = (config: GmailClientConfig): EmailClient => ({
     });
     return {
       id: draft.id,
-      url: `https://mail.google.com/mail/u/0/?authuser=${encodeURIComponent(input.accountEmail)}#drafts`,
+      url: createDraftUrl(input.accountEmail),
+    };
+  },
+  async updateDraftReply(input: UpdateDraftReplyInput) {
+    const accessToken = await getAccessToken(config);
+    const draft = await gmailRequest<{ id: string }>(
+      `/drafts/${encodeURIComponent(input.draftId)}`,
+      accessToken,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: input.draftId,
+          message: {
+            threadId: input.threadId ?? undefined,
+            raw: createMultipartDraftMessage(input),
+          },
+        }),
+      },
+    );
+    return {
+      id: draft.id,
+      url: createDraftUrl(input.accountEmail),
     };
   },
 });

@@ -120,6 +120,27 @@ export const updateRfqStatus = async (
   return updated ? getRfq(updated.id, organizationId, vatRate) : null;
 };
 
+export const updateRfqGeneratedReply = async (
+  id: string,
+  organizationId: string,
+  generatedReply: string,
+  generatedReplyDraftId: string,
+  vatRate: number,
+) => {
+  const db = getDb();
+  const [updated] = await db
+    .update(rfqs)
+    .set({
+      generatedReply,
+      generatedReplyDraftId,
+      status: 'review',
+      updatedAt: new Date().toISOString(),
+    })
+    .where(and(eq(rfqs.id, id), eq(rfqs.organizationId, organizationId)))
+    .returning({ id: rfqs.id });
+  return updated ? getRfq(updated.id, organizationId, vatRate) : null;
+};
+
 export const deleteRfq = async (id: string, organizationId: string) => {
   const db = getDb();
   const [rfq] = await db

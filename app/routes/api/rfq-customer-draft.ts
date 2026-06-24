@@ -3,7 +3,7 @@ import { cloudflareContext } from '~/contexts.server/cloudflareContext.server';
 import { getEmailSourceForRfq } from '~/db/emailIngestion';
 import { getOrganizationForUser } from '~/db/organizations';
 import { getRfqPdfTemplate } from '~/db/rfqPdfTemplates';
-import { getRfq } from '~/db/rfqs';
+import { getRfq, updateRfqGeneratedReply } from '~/db/rfqs';
 import { createEmailClient } from '~/services/email/index.server';
 import { generateRfqReplyDraft } from '~/services/rfq-reply-draft.server';
 import { organizationAiModels } from '~/types/organization';
@@ -21,6 +21,26 @@ const requireSetting = (name: string, value: string | undefined) => {
 
 const safeFilename = (value: string) =>
   value.replace(/[^a-z0-9.-]+/gi, '-').replace(/^-|-$/g, '') || 'rfq';
+
+type DraftIntent = 'regenerate' | 'updatePdf';
+
+const parseDraftIntent = async (request: Request): Promise<DraftIntent> => {
+  if (!request.body) {
+    return 'regenerate';
+  }
+  const contentType = request.headers.get('Content-Type') ?? '';
+  if (contentType.includes('application/json')) {
+    const body = (await request.json()) as unknown;
+    return typeof body === 'object' &&
+      body !== null &&
+      'intent' in body &&
+      body.intent === 'updatePdf'
+      ? 'updatePdf'
+      : 'regenerate';
+  }
+  const formData = await request.formData();
+  return formData.get('intent') === 'updatePdf' ? 'updatePdf' : 'regenerate';
+};
 
 export const action = async ({
   request,
@@ -103,42 +123,56 @@ export const action = async ({
         { status: 400 },
       );
     }
+    const getOriginalMessage = emailClient.getMessage;
 
-    const model = organizationAiModels.find(
-      (candidate) => candidate.value === organization.preferredModel,
-    );
-    if (!model) {
+    const intent = await parseDraftIntent(request);
+    if (intent === 'updatePdf' && !rfq.generatedReply) {
       return data(
-        { error: 'Organization AI model is not supported.' },
+        { error: 'Generate an email draft before updating only the PDF.' },
         { status: 400 },
       );
     }
-    const originalMessage = await emailClient.getMessage(source.externalId);
-    const bodyText = await generateRfqReplyDraft({
-      config: {
-        provider: model.provider,
-        apiKey: requireSetting(
-          model.provider === 'gemini' ? 'GEMINI_API_KEY' : 'GROQ_API_KEY',
-          model.provider === 'gemini' ? env.GEMINI_API_KEY : env.GROQ_API_KEY,
-        ),
-        model: model.value,
-      },
-      rfq,
-      organizationName: organization.name,
-      customerName: rfq.customerName,
-      originalEmail: {
-        subject: originalMessage.subject,
-        fromName: originalMessage.from.name,
-        fromAddress: originalMessage.from.address,
-        text: originalMessage.text,
-      },
-    });
+    const bodyText =
+      intent === 'updatePdf' && rfq.generatedReply
+        ? rfq.generatedReply
+        : await (async () => {
+            const model = organizationAiModels.find(
+              (candidate) => candidate.value === organization.preferredModel,
+            );
+            if (!model) {
+              throw new Error('Organization AI model is not supported.');
+            }
+            const originalMessage = await getOriginalMessage(source.externalId);
+            return await generateRfqReplyDraft({
+              config: {
+                provider: model.provider,
+                apiKey: requireSetting(
+                  model.provider === 'gemini'
+                    ? 'GEMINI_API_KEY'
+                    : 'GROQ_API_KEY',
+                  model.provider === 'gemini'
+                    ? env.GEMINI_API_KEY
+                    : env.GROQ_API_KEY,
+                ),
+                model: model.value,
+              },
+              rfq,
+              organizationName: organization.name,
+              customerName: rfq.customerName,
+              originalEmail: {
+                subject: originalMessage.subject,
+                fromName: originalMessage.from.name,
+                fromAddress: originalMessage.from.address,
+                text: originalMessage.text,
+              },
+            });
+          })();
 
     const template = rfq.templateId
       ? await getRfqPdfTemplate(rfq.templateId, organization.id)
       : null;
     const pdf = await generateRfqPdf(rfq, template, organization);
-    const draft = await emailClient.createDraftReply({
+    const draftInput = {
       originalMessageId: source.externalId,
       threadId: source.threadId,
       accountEmail: source.accountEmail,
@@ -150,9 +184,36 @@ export const action = async ({
         contentType: 'application/pdf',
         bytes: pdf,
       },
-    });
+    };
+    let draft;
+    if (rfq.generatedReplyDraftId && emailClient.updateDraftReply) {
+      try {
+        draft = await emailClient.updateDraftReply({
+          ...draftInput,
+          draftId: rfq.generatedReplyDraftId,
+        });
+      } catch (error) {
+        console.warn('Unable to update Gmail draft, creating a new one', error);
+        draft = await emailClient.createDraftReply(draftInput);
+      }
+    } else {
+      draft = await emailClient.createDraftReply(draftInput);
+    }
+    const updatedRfq = await updateRfqGeneratedReply(
+      rfq.id,
+      organization.id,
+      bodyText,
+      draft.id,
+      organization.vat,
+    );
+    if (!updatedRfq) {
+      return data(
+        { error: 'Draft created, but RFQ could not be updated.' },
+        { status: 500 },
+      );
+    }
 
-    return data({ success: true, draft });
+    return data({ success: true, draft, generatedReply: bodyText, intent });
   } catch (error) {
     console.error('Unable to create RFQ customer draft', error);
     return data(

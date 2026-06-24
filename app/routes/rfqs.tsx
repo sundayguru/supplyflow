@@ -44,7 +44,7 @@ type ApiResponse =
   | { success: true; rfq?: RfqRecord; id?: string }
   | { error: string };
 
-const pendingStatuses: RfqStatus[] = ['new', 'pricing', 'quoted'];
+const pendingStatuses: RfqStatus[] = ['new', 'pricing', 'review', 'quoted'];
 
 const requireSetting = (name: string, value: string | undefined) => {
   if (!value) {

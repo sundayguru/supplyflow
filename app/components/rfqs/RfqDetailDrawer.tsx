@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router';
 import {
   CalendarDays,
+  Check,
+  ChevronDown,
   CircleDollarSign,
+  Clipboard,
   ExternalLink,
   FileText,
   LoaderCircle,
@@ -32,7 +35,12 @@ type ItemMutationResponse =
   | { error: string };
 
 type CustomerDraftResponse =
-  | { success: true; draft: { id: string; url: string } }
+  | {
+      success: true;
+      draft: { id: string; url: string };
+      generatedReply: string;
+      intent: 'regenerate' | 'updatePdf';
+    }
   | { error: string };
 
 const formatDate = (value: string) => new Date(value).toLocaleDateString();
@@ -47,6 +55,8 @@ export const RfqDetailDrawer = ({
   const customerDraft = useFetcher<CustomerDraftResponse>();
   const [editItem, setEditItem] = useState<RfqItemRecord | null>(null);
   const [deleteItem, setDeleteItem] = useState<RfqItemRecord | null>(null);
+  const [copiedDraft, setCopiedDraft] = useState<string | null>(null);
+  const [isDraftMenuOpen, setIsDraftMenuOpen] = useState(false);
   const sourcePdfUrl = rfq.sourcePdfKey
     ? `/api/rfqs/${encodeURIComponent(rfq.id)}/source-pdf`
     : null;
@@ -56,6 +66,17 @@ export const RfqDetailDrawer = ({
     customerDraft.data && 'success' in customerDraft.data
       ? customerDraft.data.draft.url
       : null;
+  const draftAction =
+    customerDraft.data && 'success' in customerDraft.data
+      ? customerDraft.data.intent === 'updatePdf'
+        ? 'updated'
+        : 'generated'
+      : null;
+  const generatedReply =
+    customerDraft.data && 'success' in customerDraft.data
+      ? customerDraft.data.generatedReply
+      : rfq.generatedReply;
+  const hasCopiedDraft = !!generatedReply && copiedDraft === generatedReply;
 
   const submitItem = (value: RfqItemInput) => {
     if (!editItem) {
@@ -87,14 +108,57 @@ export const RfqDetailDrawer = ({
     setDeleteItem(null);
   };
 
-  const createCustomerDraft = () => {
+  const createCustomerDraft = (intent: 'regenerate' | 'updatePdf') => {
     if (!canDraftReply) {
       return;
     }
-    customerDraft.submit(null, {
-      method: 'post',
-      action: `/api/rfqs/${encodeURIComponent(rfq.id)}/customer-draft`,
-    });
+    setIsDraftMenuOpen(false);
+    customerDraft.submit(
+      { intent },
+      {
+        method: 'post',
+        action: `/api/rfqs/${encodeURIComponent(rfq.id)}/customer-draft`,
+        encType: 'application/json',
+      },
+    );
+  };
+
+  const handleDraftAction = () => {
+    if (generatedReply) {
+      setIsDraftMenuOpen((isOpen) => !isOpen);
+      return;
+    }
+    createCustomerDraft('regenerate');
+  };
+
+  useEffect(() => {
+    if (!isDraftMenuOpen) {
+      return;
+    }
+    const closeDraftMenuOnOutsideClick = (event: MouseEvent) => {
+      if (!(event.target instanceof Element)) {
+        return;
+      }
+      if (!event.target.closest('[data-rfq-draft-menu]')) {
+        setIsDraftMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', closeDraftMenuOnOutsideClick);
+    return () => {
+      document.removeEventListener('mousedown', closeDraftMenuOnOutsideClick);
+    };
+  }, [isDraftMenuOpen]);
+
+  const submitDraftUpdate = (intent: 'regenerate' | 'updatePdf') => {
+    createCustomerDraft(intent);
+  };
+
+  const copyGeneratedReply = async () => {
+    if (!generatedReply) {
+      return;
+    }
+    await navigator.clipboard.writeText(generatedReply);
+    setCopiedDraft(generatedReply);
   };
 
   useEffect(() => {
@@ -165,7 +229,7 @@ export const RfqDetailDrawer = ({
           )}
           {draftUrl && (
             <p className='mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800'>
-              Draft reply created with the RFQ PDF attached.
+              Draft reply {draftAction} with the RFQ PDF attached.
               <a
                 href={draftUrl}
                 target='_blank'
@@ -175,6 +239,32 @@ export const RfqDetailDrawer = ({
                 <ExternalLink size={14} /> Open draft
               </a>
             </p>
+          )}
+          {generatedReply && (
+            <section className='mb-5 rounded-xl border border-slate-200 bg-white p-4'>
+              <div className='flex flex-wrap items-center justify-between gap-3'>
+                <div>
+                  <p className='text-xs font-bold tracking-[0.14em] text-emerald-700 uppercase'>
+                    Email draft
+                  </p>
+                  <p className='mt-1 text-sm text-slate-500'>
+                    Generated reply saved for this RFQ.
+                  </p>
+                </div>
+                <button
+                  type='button'
+                  onClick={copyGeneratedReply}
+                  className='inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
+                >
+                  {hasCopiedDraft ? (
+                    <Check size={16} className='text-emerald-600' />
+                  ) : (
+                    <Clipboard size={16} />
+                  )}
+                  {hasCopiedDraft ? 'Copied' : 'Copy draft'}
+                </button>
+              </div>
+            </section>
           )}
           <section
             className='grid gap-3 sm:grid-cols-2'
@@ -384,24 +474,45 @@ export const RfqDetailDrawer = ({
 
         <footer className='border-t border-slate-200 bg-white px-5 py-4 sm:px-7'>
           <div className='grid gap-3 sm:grid-cols-2'>
-            <button
-              type='button'
-              onClick={createCustomerDraft}
-              disabled={!canDraftReply || isDraftingReply}
-              title={
-                canDraftReply
-                  ? undefined
-                  : 'Only RFQs created from connected email can draft a reply'
-              }
-              className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400'
-            >
-              {isDraftingReply ? (
-                <LoaderCircle size={17} className='animate-spin' />
-              ) : (
-                <Send size={17} />
+            <div className='relative' data-rfq-draft-menu>
+              <button
+                type='button'
+                onClick={handleDraftAction}
+                disabled={!canDraftReply || isDraftingReply}
+                title={
+                  canDraftReply
+                    ? undefined
+                    : 'Only RFQs created from connected email can draft a reply'
+                }
+                className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400'
+              >
+                {isDraftingReply ? (
+                  <LoaderCircle size={17} className='animate-spin' />
+                ) : (
+                  <Send size={17} />
+                )}
+                {generatedReply ? 'Update reply' : 'Draft reply'}
+                {generatedReply && <ChevronDown size={15} />}
+              </button>
+              {isDraftMenuOpen && generatedReply && (
+                <div className='absolute bottom-full left-0 z-[130] mb-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl'>
+                  <button
+                    type='button'
+                    onClick={() => submitDraftUpdate('regenerate')}
+                    className='flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
+                  >
+                    <Send size={15} /> Regenerate
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => submitDraftUpdate('updatePdf')}
+                    className='flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
+                  >
+                    <FileText size={15} /> Update PDF
+                  </button>
+                </div>
               )}
-              Draft reply
-            </button>
+            </div>
             <button
               type='button'
               onClick={onEdit}
