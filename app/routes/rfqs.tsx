@@ -27,6 +27,7 @@ import {
 import { rfqStatusLabels } from '~/components/rfqs/RfqStatusBadge';
 import { RfqStatusMenu } from '~/components/rfqs/RfqStatusMenu';
 import { createRfq, getRfqs } from '~/db/rfqs';
+import { listEmailSourcesForRfqs } from '~/db/emailIngestion';
 import { getUserFromRequest } from '~/utils/session.server';
 import type { RfqRecord, RfqStatus } from '~/types/rfq';
 import { formatRfqMoney } from '~/utils/rfq';
@@ -75,8 +76,16 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
   try {
     const templates = await listRfqPdfTemplates(organization.id);
+    const rfqs = await getRfqs(organization.id, organization.vat);
+    const emailSources = await listEmailSourcesForRfqs(
+      organization.id,
+      rfqs.map((rfq) => rfq.id),
+    );
     return data({
-      rfqs: await getRfqs(organization.id, organization.vat),
+      rfqs: rfqs.map((rfq) => ({
+        ...rfq,
+        sourceEmail: emailSources.get(rfq.id) ?? null,
+      })),
       defaultPriceMarkup: organization.priceMarkup,
       vatRate: organization.vat,
       templates: templates.map(({ id, name }) => ({ id, name })),

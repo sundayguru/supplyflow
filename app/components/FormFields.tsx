@@ -34,7 +34,7 @@ export const Select = ({
       {label && (
         <label
           htmlFor={id}
-          className='mb-2 block text-xs font-bold tracking-widest text-black/50 uppercase'
+          className='mb-2 block text-xs font-bold uppercase tracking-widest text-black/50'
         >
           {label}
         </label>
@@ -44,7 +44,7 @@ export const Select = ({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         disabled={disabled}
-        className='w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm font-medium text-[#1a1a1a] transition outline-none focus:border-[#5A5A40] disabled:opacity-50'
+        className='w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm font-medium text-[#1a1a1a] outline-none transition focus:border-[#5A5A40] disabled:opacity-50'
       >
         {placeholder && (
           <option value='' disabled>
@@ -84,14 +84,14 @@ export const TextArea = ({
       {label && (
         <label
           htmlFor={id}
-          className='mb-2 block text-xs font-bold tracking-widest text-black/50 uppercase'
+          className='mb-2 block text-xs font-bold uppercase tracking-widest text-black/50'
         >
           {label}
         </label>
       )}
       <textarea
         id={id}
-        className='h-full min-h-[24rem] w-full rounded-2xl border border-black/5 bg-white p-6 font-mono text-sm leading-6 text-[#1a1a1a] transition outline-none focus:border-[#5A5A40]'
+        className='h-full min-h-[24rem] w-full rounded-2xl border border-black/5 bg-white p-6 font-mono text-sm leading-6 text-[#1a1a1a] outline-none transition focus:border-[#5A5A40]'
         {...props}
       />
       {error && <p className='mt-2 text-sm text-red-600'>{error}</p>}
@@ -117,14 +117,14 @@ export const Input = ({
       {label && (
         <label
           htmlFor={id}
-          className='mb-2 block text-xs font-bold tracking-widest text-black/50 uppercase'
+          className='mb-2 block text-xs font-bold uppercase tracking-widest text-black/50'
         >
           {label}
         </label>
       )}
       <input
         id={id}
-        className='w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm font-medium text-[#1a1a1a] transition outline-none focus:border-[#5A5A40]'
+        className='w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm font-medium text-[#1a1a1a] outline-none transition focus:border-[#5A5A40]'
         {...props}
       />
       {error && <p className='mt-2 text-sm text-red-600'>{error}</p>}

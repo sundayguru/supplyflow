@@ -26,7 +26,29 @@ export type ListMessagesOptions = {
   limit: number;
 };
 
+export type CreateDraftReplyInput = {
+  originalMessageId: string;
+  threadId: string | null;
+  accountEmail: string;
+  to: string;
+  subject: string;
+  bodyText: string;
+  attachment: {
+    filename: string;
+    contentType: string;
+    bytes: Uint8Array;
+  };
+};
+
+export type DraftReplyResult = {
+  id: string;
+  url: string;
+};
+
 export type EmailClient = {
   readonly provider: string;
   listMessages: (options: ListMessagesOptions) => Promise<EmailMessage[]>;
+  createDraftReply?: (
+    input: CreateDraftReplyInput,
+  ) => Promise<DraftReplyResult>;
 };

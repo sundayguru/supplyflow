@@ -33,6 +33,14 @@ export type RfqItemRecord = RfqItemInput & {
   updatedAt: string;
 };
 
+export type RfqEmailSource = {
+  ingestionId: string;
+  accountEmail: string;
+  fromAddress: string | null;
+  subject: string | null;
+  provider: string;
+};
+
 export type RfqRecord = Omit<RfqInput, 'items'> & {
   id: string;
   userId: string;
@@ -45,4 +53,5 @@ export type RfqRecord = Omit<RfqInput, 'items'> & {
   markupValue: number;
   vatValue: number;
   totalValue: number;
+  sourceEmail?: RfqEmailSource | null;
 };

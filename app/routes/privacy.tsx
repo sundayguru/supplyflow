@@ -50,7 +50,7 @@ export default function PrivacyPage() {
               <ShieldCheck size={24} />
             </div>
             <div>
-              <p className='text-[11px] font-bold tracking-[0.25em] text-[#5A5A40] uppercase'>
+              <p className='text-[11px] font-bold uppercase tracking-[0.25em] text-[#5A5A40]'>
                 Privacy Policy
               </p>
               <h1 className='font-serif text-4xl text-[#1a1a1a] md:text-5xl'>
@@ -58,7 +58,7 @@ export default function PrivacyPage() {
               </h1>
             </div>
           </div>
-          <p className='max-w-3xl font-serif text-lg leading-relaxed text-black/60 italic'>
+          <p className='max-w-3xl font-serif text-lg italic leading-relaxed text-black/60'>
             This privacy policy explains how CourseXQuiz collects, uses, and
             protects information in this free learning app.
           </p>

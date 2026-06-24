@@ -3,6 +3,7 @@ import type {
   EmailAttachment,
   EmailClient,
   EmailMessage,
+  CreateDraftReplyInput,
   ListMessagesOptions,
 } from './types';
 
@@ -59,7 +60,8 @@ export const createGmailAuthorizationUrl = (input: {
     client_id: input.clientId,
     redirect_uri: input.redirectUri,
     response_type: 'code',
-    scope: 'https://www.googleapis.com/auth/gmail.readonly',
+    scope:
+      'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose',
     access_type: 'offline',
     include_granted_scopes: 'true',
     prompt: 'consent',
@@ -117,6 +119,25 @@ const decodeBase64UrlBytes = (value: string) => {
   return Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
 };
 
+const encodeBase64UrlBytes = (bytes: Uint8Array) => {
+  let binary = '';
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+};
+
+const encodeBase64Bytes = (bytes: Uint8Array) => {
+  let binary = '';
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary);
+};
+
 const decodeBase64Url = (value: string) => {
   const bytes = decodeBase64UrlBytes(value);
   return new TextDecoder().decode(bytes);
@@ -172,6 +193,53 @@ const parseAddresses = (value: string) =>
     .map((address) => parseAddress(address))
     .filter((address) => address.address);
 
+const sanitizeHeader = (value: string) => value.replace(/[\r\n]/g, ' ').trim();
+
+const encodeMimeHeader = (value: string) => {
+  const safeValue = sanitizeHeader(value);
+  if (/^[\x20-\x7E]*$/.test(safeValue)) {
+    return safeValue;
+  }
+  return `=?UTF-8?B?${encodeBase64Bytes(new TextEncoder().encode(safeValue))}?=`;
+};
+
+const encodeAttachment = (bytes: Uint8Array) =>
+  encodeBase64Bytes(bytes)
+    .match(/.{1,76}/g)
+    ?.join('\r\n') ?? '';
+
+const sanitizeMimeFilename = (value: string) => value.replace(/["\r\n]/g, '-');
+
+const createMultipartDraftMessage = (input: CreateDraftReplyInput) => {
+  const boundary = `supplyflow-${crypto.randomUUID()}`;
+  const filename = sanitizeMimeFilename(input.attachment.filename);
+  const subject = /^re:/i.test(input.subject)
+    ? input.subject
+    : `Re: ${input.subject}`;
+  const message = [
+    `To: ${sanitizeHeader(input.to)}`,
+    `Subject: ${encodeMimeHeader(subject)}`,
+    'MIME-Version: 1.0',
+    `Content-Type: multipart/mixed; boundary="${boundary}"`,
+    '',
+    `--${boundary}`,
+    'Content-Type: text/plain; charset="UTF-8"',
+    'Content-Transfer-Encoding: 7bit',
+    '',
+    input.bodyText,
+    '',
+    `--${boundary}`,
+    `Content-Type: ${input.attachment.contentType}; name="${filename}"`,
+    'Content-Transfer-Encoding: base64',
+    `Content-Disposition: attachment; filename="${filename}"`,
+    '',
+    encodeAttachment(input.attachment.bytes),
+    `--${boundary}--`,
+    '',
+  ].join('\r\n');
+  return encodeBase64UrlBytes(new TextEncoder().encode(message));
+};
+
 const isPdfPart = (part: GmailPart) =>
   part.mimeType === 'application/pdf' ||
   part.filename?.toLowerCase().endsWith('.pdf');
@@ -187,9 +255,14 @@ const collectPdfParts = (part: GmailPart | undefined): GmailPart[] => {
 const gmailRequest = async <ResponseBody>(
   path: string,
   accessToken: string,
+  init?: RequestInit,
 ): Promise<ResponseBody> => {
   const response = await fetch(`${GMAIL_API_URL}${path}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+    ...init,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      ...init?.headers,
+    },
   });
   if (!response.ok) {
     throw new Error(`Gmail API request failed with status ${response.status}`);
@@ -299,5 +372,22 @@ export const createGmailClient = (config: GmailClientConfig): EmailClient => ({
     return messages.sort(
       (left, right) => left.receivedAt.getTime() - right.receivedAt.getTime(),
     );
+  },
+  async createDraftReply(input) {
+    const accessToken = await getAccessToken(config);
+    const draft = await gmailRequest<{ id: string }>('/drafts', accessToken, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: {
+          threadId: input.threadId ?? undefined,
+          raw: createMultipartDraftMessage(input),
+        },
+      }),
+    });
+    return {
+      id: draft.id,
+      url: `https://mail.google.com/mail/u/${encodeURIComponent(input.accountEmail)}/#drafts/${encodeURIComponent(draft.id)}`,
+    };
   },
 });

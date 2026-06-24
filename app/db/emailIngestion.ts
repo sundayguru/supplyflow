@@ -1,4 +1,15 @@
-import { and, count, desc, eq, like, lt, or, sql, type SQL } from 'drizzle-orm';
+import {
+  and,
+  count,
+  desc,
+  eq,
+  inArray,
+  like,
+  lt,
+  or,
+  sql,
+  type SQL,
+} from 'drizzle-orm';
 import type { EmailMessage } from '~/services/email/types';
 import { getDb } from './connection';
 import {
@@ -116,6 +127,84 @@ export const getEmailIngestionCounts = async (organizationId: string) => {
     counts[row.status] = row.total;
   });
   return counts;
+};
+
+export const listEmailSourcesForRfqs = async (
+  organizationId: string,
+  rfqIds: string[],
+) => {
+  if (!rfqIds.length) {
+    return new Map();
+  }
+  const db = getDb();
+  const rows = await db
+    .select({
+      rfqId: emailIngestions.rfqId,
+      ingestionId: emailIngestions.id,
+      provider: emailIngestions.provider,
+      subject: emailIngestions.subject,
+      fromAddress: emailIngestions.fromAddress,
+      accountEmail: connectedEmailAccounts.email,
+    })
+    .from(emailIngestions)
+    .innerJoin(
+      connectedEmailAccounts,
+      eq(emailIngestions.accountId, connectedEmailAccounts.id),
+    )
+    .where(
+      and(
+        eq(connectedEmailAccounts.organizationId, organizationId),
+        inArray(emailIngestions.rfqId, rfqIds),
+      ),
+    );
+
+  return new Map(
+    rows
+      .filter((row) => row.rfqId)
+      .map((row) => [
+        row.rfqId,
+        {
+          ingestionId: row.ingestionId,
+          provider: row.provider,
+          subject: row.subject,
+          fromAddress: row.fromAddress,
+          accountEmail: row.accountEmail,
+        },
+      ]),
+  );
+};
+
+export const getEmailSourceForRfq = async (
+  rfqId: string,
+  organizationId: string,
+) => {
+  const db = getDb();
+  const [source] = await db
+    .select({
+      ingestionId: emailIngestions.id,
+      provider: emailIngestions.provider,
+      externalId: emailIngestions.externalId,
+      threadId: emailIngestions.threadId,
+      subject: emailIngestions.subject,
+      fromAddress: emailIngestions.fromAddress,
+      accountEmail: connectedEmailAccounts.email,
+      accountProvider: connectedEmailAccounts.provider,
+      encryptedRefreshToken: connectedEmailAccounts.encryptedRefreshToken,
+    })
+    .from(emailIngestions)
+    .innerJoin(
+      connectedEmailAccounts,
+      eq(emailIngestions.accountId, connectedEmailAccounts.id),
+    )
+    .where(
+      and(
+        eq(emailIngestions.rfqId, rfqId),
+        eq(connectedEmailAccounts.organizationId, organizationId),
+        eq(connectedEmailAccounts.isActive, true),
+      ),
+    )
+    .limit(1);
+  return source ?? null;
 };
 
 export const getEmailSyncTime = async (accountId: string) => {

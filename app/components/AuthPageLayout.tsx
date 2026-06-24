@@ -35,10 +35,10 @@ export const AuthPageLayout = ({
         >
           <div className='mx-auto w-full max-w-md'>
             <Logo className='mb-10'>SupplyFlow</Logo>
-            <p className='text-xs font-bold tracking-[0.2em] text-emerald-700 uppercase'>
+            <p className='text-xs font-bold uppercase tracking-[0.2em] text-emerald-700'>
               {eyebrow}
             </p>
-            <h1 className='mt-4 font-serif text-4xl leading-[1.05] font-semibold tracking-tight sm:text-5xl'>
+            <h1 className='mt-4 font-serif text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl'>
               {title}
             </h1>
             <p className='mt-4 text-sm leading-6 text-slate-600 sm:text-base'>
@@ -54,7 +54,7 @@ export const AuthPageLayout = ({
           transition={{ duration: 0.65, delay: 0.08, ease: 'easeOut' }}
           className='relative hidden overflow-hidden bg-slate-950 p-12 text-white lg:flex lg:flex-col lg:justify-between'
         >
-          <div className='absolute -top-24 -right-20 h-72 w-72 rounded-full border-[48px] border-white/[0.03]' />
+          <div className='absolute -right-20 -top-24 h-72 w-72 rounded-full border-[48px] border-white/[0.03]' />
           <div className='absolute -bottom-28 -left-24 h-80 w-80 rounded-full bg-emerald-500/15 blur-3xl' />
 
           <div className='relative'>
@@ -62,7 +62,7 @@ export const AuthPageLayout = ({
               <span className='h-2 w-2 rounded-full bg-emerald-400' />
               RFQ operations, finally in flow
             </span>
-            <h2 className='mt-8 max-w-lg font-serif text-5xl leading-[1.02] font-semibold tracking-tight'>
+            <h2 className='mt-8 max-w-lg font-serif text-5xl font-semibold leading-[1.02] tracking-tight'>
               Quote faster. Work smarter. Win more.
             </h2>
             <p className='mt-5 max-w-md leading-7 text-slate-300'>

@@ -7,6 +7,7 @@ import {
   rgb,
 } from 'pdf-lib';
 import type { SelectOrganization, SelectRfqPdfTemplate } from '~/db/schemas';
+import type { RfqItemInput, RfqRecord } from '~/types/rfq';
 import { richTextToPlainText } from './richText';
 import { createMockRfqForTemplate } from './rfqPdfMock';
 
@@ -64,6 +65,31 @@ export type RfqPdfBannerAsset = {
   contentType: 'image/png' | 'image/jpeg';
 };
 
+type RfqPdfTemplateContent = Pick<
+  SelectRfqPdfTemplate,
+  'termsHtml' | 'headerBannerKey' | 'footerBannerKey'
+>;
+
+type RfqPdfData = Omit<
+  Pick<
+    RfqRecord,
+    | 'reference'
+    | 'dueDate'
+    | 'customerName'
+    | 'customerEmail'
+    | 'items'
+    | 'currency'
+    | 'subtotal'
+    | 'markupValue'
+    | 'vatValue'
+    | 'totalValue'
+    | 'applyVat'
+  >,
+  'items'
+> & {
+  items: RfqItemInput[];
+};
+
 const loadBanner = async (
   document: PDFDocument,
   asset: RfqPdfBannerAsset | null,
@@ -94,8 +120,9 @@ const drawFullWidthBanner = (
   });
 };
 
-export const generateRfqTemplateSamplePdf = async (
-  template: SelectRfqPdfTemplate,
+export const generateRfqPdf = async (
+  rfq: RfqPdfData,
+  template: RfqPdfTemplateContent | null,
   organization: SelectOrganization,
   banners: {
     header: RfqPdfBannerAsset | null;
@@ -109,7 +136,6 @@ export const generateRfqTemplateSamplePdf = async (
     loadBanner(document, banners.header),
     loadBanner(document, banners.footer),
   ]);
-  const rfq = createMockRfqForTemplate(organization);
 
   const addPage = () => {
     const page = document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
@@ -159,7 +185,7 @@ export const generateRfqTemplateSamplePdf = async (
     font: bold,
     size: 10,
   });
-  page.drawText(`Due: ${rfq.dueDate}`, {
+  page.drawText(`Due: ${rfq.dueDate ?? 'Not specified'}`, {
     x: 410,
     y,
     font: regular,
@@ -173,7 +199,7 @@ export const generateRfqTemplateSamplePdf = async (
     size: 10,
   });
   y -= 16;
-  page.drawText(`Email: ${rfq.customerEmail}`, {
+  page.drawText(`Email: ${rfq.customerEmail ?? 'Not provided'}`, {
     x: SIDE_MARGIN,
     y,
     font: regular,
@@ -240,7 +266,14 @@ export const generateRfqTemplateSamplePdf = async (
   const summary = [
     ['Items subtotal', formatMoney(rfq.subtotal, rfq.currency)],
     ['Markup', formatMoney(rfq.markupValue, rfq.currency)],
-    [`VAT (${organization.vat}%)`, formatMoney(rfq.vatValue, rfq.currency)],
+    ...(rfq.applyVat
+      ? [
+          [
+            `VAT (${organization.vat}%)`,
+            formatMoney(rfq.vatValue, rfq.currency),
+          ],
+        ]
+      : []),
     ['Total', formatMoney(rfq.totalValue, rfq.currency)],
   ];
   summary.forEach(([label, value], index) => {
@@ -270,7 +303,7 @@ export const generateRfqTemplateSamplePdf = async (
   });
   y -= 28;
   const terms =
-    richTextToPlainText(template.termsHtml) ||
+    richTextToPlainText(template?.termsHtml ?? '') ||
     'No terms and conditions have been added to this template.';
   for (const line of wrapText(
     terms,
@@ -298,3 +331,18 @@ export const generateRfqTemplateSamplePdf = async (
 
   return document.save();
 };
+
+export const generateRfqTemplateSamplePdf = (
+  template: SelectRfqPdfTemplate,
+  organization: SelectOrganization,
+  banners: {
+    header: RfqPdfBannerAsset | null;
+    footer: RfqPdfBannerAsset | null;
+  } = { header: null, footer: null },
+) =>
+  generateRfqPdf(
+    createMockRfqForTemplate(organization),
+    template,
+    organization,
+    banners,
+  );

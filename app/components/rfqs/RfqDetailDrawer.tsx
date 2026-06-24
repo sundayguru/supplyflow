@@ -5,9 +5,11 @@ import {
   CircleDollarSign,
   ExternalLink,
   FileText,
+  LoaderCircle,
   Mail,
   Package,
   Pencil,
+  Send,
   Trash2,
   UserRound,
   X,
@@ -29,6 +31,10 @@ type ItemMutationResponse =
   | { success: true; rfq: RfqRecord }
   | { error: string };
 
+type CustomerDraftResponse =
+  | { success: true; draft: { id: string; url: string } }
+  | { error: string };
+
 const formatDate = (value: string) => new Date(value).toLocaleDateString();
 
 export const RfqDetailDrawer = ({
@@ -38,11 +44,18 @@ export const RfqDetailDrawer = ({
   onEdit,
 }: RfqDetailDrawerProps) => {
   const itemMutation = useFetcher<ItemMutationResponse>();
+  const customerDraft = useFetcher<CustomerDraftResponse>();
   const [editItem, setEditItem] = useState<RfqItemRecord | null>(null);
   const [deleteItem, setDeleteItem] = useState<RfqItemRecord | null>(null);
   const sourcePdfUrl = rfq.sourcePdfKey
     ? `/api/rfqs/${encodeURIComponent(rfq.id)}/source-pdf`
     : null;
+  const canDraftReply = !!rfq.sourceEmail;
+  const isDraftingReply = customerDraft.state !== 'idle';
+  const draftUrl =
+    customerDraft.data && 'success' in customerDraft.data
+      ? customerDraft.data.draft.url
+      : null;
 
   const submitItem = (value: RfqItemInput) => {
     if (!editItem) {
@@ -72,6 +85,16 @@ export const RfqDetailDrawer = ({
       },
     );
     setDeleteItem(null);
+  };
+
+  const createCustomerDraft = () => {
+    if (!canDraftReply) {
+      return;
+    }
+    customerDraft.submit(null, {
+      method: 'post',
+      action: `/api/rfqs/${encodeURIComponent(rfq.id)}/customer-draft`,
+    });
   };
 
   useEffect(() => {
@@ -133,6 +156,24 @@ export const RfqDetailDrawer = ({
           {itemMutation.data && 'error' in itemMutation.data && (
             <p className='mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'>
               {itemMutation.data.error}
+            </p>
+          )}
+          {customerDraft.data && 'error' in customerDraft.data && (
+            <p className='mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'>
+              {customerDraft.data.error}
+            </p>
+          )}
+          {draftUrl && (
+            <p className='mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800'>
+              Draft reply created with the RFQ PDF attached.
+              <a
+                href={draftUrl}
+                target='_blank'
+                rel='noreferrer'
+                className='inline-flex items-center gap-1.5 font-semibold text-emerald-700 hover:text-emerald-900'
+              >
+                <ExternalLink size={14} /> Open draft
+              </a>
             </p>
           )}
           <section
@@ -342,13 +383,33 @@ export const RfqDetailDrawer = ({
         </div>
 
         <footer className='border-t border-slate-200 bg-white px-5 py-4 sm:px-7'>
-          <button
-            type='button'
-            onClick={onEdit}
-            className='inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-500'
-          >
-            <Pencil size={17} /> Edit RFQ
-          </button>
+          <div className='grid gap-3 sm:grid-cols-2'>
+            <button
+              type='button'
+              onClick={createCustomerDraft}
+              disabled={!canDraftReply || isDraftingReply}
+              title={
+                canDraftReply
+                  ? undefined
+                  : 'Only RFQs created from connected email can draft a reply'
+              }
+              className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400'
+            >
+              {isDraftingReply ? (
+                <LoaderCircle size={17} className='animate-spin' />
+              ) : (
+                <Send size={17} />
+              )}
+              Draft reply
+            </button>
+            <button
+              type='button'
+              onClick={onEdit}
+              className='inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-500'
+            >
+              <Pencil size={17} /> Edit RFQ
+            </button>
+          </div>
         </footer>
       </aside>
 
