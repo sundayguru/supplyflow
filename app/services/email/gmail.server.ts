@@ -390,7 +390,7 @@ export const createGmailClient = (config: GmailClientConfig): EmailClient => ({
     });
     return {
       id: draft.id,
-      url: `https://mail.google.com/mail/u/${encodeURIComponent(input.accountEmail)}/#drafts/${encodeURIComponent(draft.id)}`,
+      url: `https://mail.google.com/mail/u/0/?authuser=${encodeURIComponent(input.accountEmail)}#drafts`,
     };
   },
 });
