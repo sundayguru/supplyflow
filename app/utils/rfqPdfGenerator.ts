@@ -207,7 +207,7 @@ export const generateRfqPdf = async (
   });
   y -= 34;
 
-  const columns = [SIDE_MARGIN, 65, 300, 350, 430, 510];
+  const columns = [SIDE_MARGIN, 65, 150, 340, 385, 475];
   const drawTableHeader = () => {
     page.drawRectangle({
       x: SIDE_MARGIN,
@@ -216,7 +216,7 @@ export const generateRfqPdf = async (
       height: 24,
       color: rgb(0.91, 0.96, 0.94),
     });
-    ['#', 'Description', 'Qty', 'Unit price', 'Markup', 'Line total'].forEach(
+    ['#', 'Part no.', 'Description', 'Qty', 'Unit price', 'Line total'].forEach(
       (label, index) =>
         page.drawText(label, {
           x: columns[index],
@@ -237,12 +237,14 @@ export const generateRfqPdf = async (
     }
     const lineBase = Math.round(item.price * item.quantity);
     const lineMarkup = Math.round((lineBase * item.priceMarkup) / 100);
+    const unitMarkup = Math.round((item.price * item.priceMarkup) / 100);
+    const unitPriceWithMarkup = item.price + unitMarkup;
     const values = [
       String(index + 1),
-      safePdfText(item.description).slice(0, 43),
+      safePdfText(item.manufacturerPartNumber ?? '-').slice(0, 18),
+      safePdfText(item.description).slice(0, 32),
       String(item.quantity),
-      formatMoney(item.price, rfq.currency),
-      `${item.priceMarkup}%`,
+      formatMoney(unitPriceWithMarkup, rfq.currency),
       formatMoney(lineBase + lineMarkup, rfq.currency),
     ];
     values.forEach((value, columnIndex) =>
@@ -250,7 +252,7 @@ export const generateRfqPdf = async (
         x: columns[columnIndex],
         y,
         font: regular,
-        size: columnIndex === 1 ? 7.5 : 8,
+        size: columnIndex === 2 ? 7.5 : 8,
       }),
     );
     page.drawLine({
@@ -264,8 +266,10 @@ export const generateRfqPdf = async (
 
   y -= 15;
   const summary = [
-    ['Items subtotal', formatMoney(rfq.subtotal, rfq.currency)],
-    ['Markup', formatMoney(rfq.markupValue, rfq.currency)],
+    [
+      'Items subtotal',
+      formatMoney(rfq.subtotal + rfq.markupValue, rfq.currency),
+    ],
     ...(rfq.applyVat
       ? [
           [
