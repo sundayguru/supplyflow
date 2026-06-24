@@ -344,6 +344,9 @@ const getMessage = async (
 
 export const createGmailClient = (config: GmailClientConfig): EmailClient => ({
   provider: 'gmail',
+  async getMessage(id) {
+    return await getMessage(id, await getAccessToken(config));
+  },
   async listMessages({ receivedAfter, limit }: ListMessagesOptions) {
     const accessToken = await getAccessToken(config);
     const messageIds: string[] = [];

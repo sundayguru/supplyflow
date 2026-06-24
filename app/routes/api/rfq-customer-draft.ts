@@ -5,6 +5,8 @@ import { getOrganizationForUser } from '~/db/organizations';
 import { getRfqPdfTemplate } from '~/db/rfqPdfTemplates';
 import { getRfq } from '~/db/rfqs';
 import { createEmailClient } from '~/services/email/index.server';
+import { generateRfqReplyDraft } from '~/services/rfq-reply-draft.server';
+import { organizationAiModels } from '~/types/organization';
 import { generateRfqPdf } from '~/utils/rfqPdf.server';
 import { getUserFromRequest } from '~/utils/session.server';
 import { decryptToken } from '~/utils/tokenEncryption.server';
@@ -67,10 +69,12 @@ export const action = async ({
     if (
       !('GOOGLE_CLIENT_ID' in env) ||
       !('GOOGLE_CLIENT_SECRET' in env) ||
-      !('TOKEN_ENCRYPTION_KEY' in env)
+      !('TOKEN_ENCRYPTION_KEY' in env) ||
+      !('GEMINI_API_KEY' in env) ||
+      !('GROQ_API_KEY' in env)
     ) {
       return data(
-        { error: 'Connected email settings are not configured.' },
+        { error: 'Connected email or AI settings are not configured.' },
         { status: 500 },
       );
     }
@@ -93,6 +97,42 @@ export const action = async ({
         { status: 400 },
       );
     }
+    if (!emailClient.getMessage) {
+      return data(
+        { error: 'This email provider cannot load the original message.' },
+        { status: 400 },
+      );
+    }
+
+    const model = organizationAiModels.find(
+      (candidate) => candidate.value === organization.preferredModel,
+    );
+    if (!model) {
+      return data(
+        { error: 'Organization AI model is not supported.' },
+        { status: 400 },
+      );
+    }
+    const originalMessage = await emailClient.getMessage(source.externalId);
+    const bodyText = await generateRfqReplyDraft({
+      config: {
+        provider: model.provider,
+        apiKey: requireSetting(
+          model.provider === 'gemini' ? 'GEMINI_API_KEY' : 'GROQ_API_KEY',
+          model.provider === 'gemini' ? env.GEMINI_API_KEY : env.GROQ_API_KEY,
+        ),
+        model: model.value,
+      },
+      rfq,
+      organizationName: organization.name,
+      customerName: rfq.customerName,
+      originalEmail: {
+        subject: originalMessage.subject,
+        fromName: originalMessage.from.name,
+        fromAddress: originalMessage.from.address,
+        text: originalMessage.text,
+      },
+    });
 
     const template = rfq.templateId
       ? await getRfqPdfTemplate(rfq.templateId, organization.id)
@@ -104,7 +144,7 @@ export const action = async ({
       accountEmail: source.accountEmail,
       to: recipient,
       subject: source.subject ?? rfq.reference,
-      bodyText: `Hello,\n\nPlease find the quotation for ${rfq.reference} attached.\n\nBest regards,\n${organization.name}`,
+      bodyText,
       attachment: {
         filename: `${safeFilename(rfq.reference)}.pdf`,
         contentType: 'application/pdf',

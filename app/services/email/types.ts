@@ -48,6 +48,7 @@ export type DraftReplyResult = {
 export type EmailClient = {
   readonly provider: string;
   listMessages: (options: ListMessagesOptions) => Promise<EmailMessage[]>;
+  getMessage?: (id: string) => Promise<EmailMessage>;
   createDraftReply?: (
     input: CreateDraftReplyInput,
   ) => Promise<DraftReplyResult>;
