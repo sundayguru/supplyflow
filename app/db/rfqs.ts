@@ -189,7 +189,25 @@ export const updateRfqItem = async (
         ),
       ),
   ]);
-  return getRfq(existing.rfqId, organizationId, vatRate);
+  const updatedRfq = await getRfq(existing.rfqId, organizationId, vatRate);
+  if (
+    updatedRfq &&
+    !['quoted', 'won', 'lost'].includes(updatedRfq.status) &&
+    updatedRfq.items.every((item) => item.price > 0)
+  ) {
+    const [updated] = await db
+      .update(rfqs)
+      .set({ status: 'quoted', updatedAt: new Date().toISOString() })
+      .where(
+        and(
+          eq(rfqs.id, existing.rfqId),
+          eq(rfqs.organizationId, organizationId),
+        ),
+      )
+      .returning({ id: rfqs.id });
+    return updated ? getRfq(updated.id, organizationId, vatRate) : updatedRfq;
+  }
+  return updatedRfq;
 };
 
 export type DeleteRfqItemResult =
