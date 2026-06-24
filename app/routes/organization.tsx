@@ -183,7 +183,7 @@ export default function OrganizationPage({ loaderData }: Route.ComponentProps) {
           </p>
           <dl className='mt-7 grid gap-5 border-t border-slate-100 pt-6 sm:grid-cols-2'>
             <div>
-              <dt className='flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400'>
+              <dt className='flex items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase'>
                 <ExternalLink size={14} /> Website
               </dt>
               <dd className='mt-2 text-sm text-slate-700'>
@@ -202,7 +202,7 @@ export default function OrganizationPage({ loaderData }: Route.ComponentProps) {
               </dd>
             </div>
             <div>
-              <dt className='flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400'>
+              <dt className='flex items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase'>
                 <Phone size={14} /> Phone
               </dt>
               <dd className='mt-2 text-sm text-slate-700'>
@@ -210,7 +210,7 @@ export default function OrganizationPage({ loaderData }: Route.ComponentProps) {
               </dd>
             </div>
             <div className='sm:col-span-2'>
-              <dt className='flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400'>
+              <dt className='flex items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase'>
                 <MapPin size={14} /> Address
               </dt>
               <dd className='mt-2 text-sm text-slate-700'>
@@ -218,7 +218,7 @@ export default function OrganizationPage({ loaderData }: Route.ComponentProps) {
               </dd>
             </div>
             <div>
-              <dt className='flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400'>
+              <dt className='flex items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase'>
                 <Bot size={14} /> Preferred AI model
               </dt>
               <dd className='mt-2 text-sm text-slate-700'>
@@ -226,7 +226,7 @@ export default function OrganizationPage({ loaderData }: Route.ComponentProps) {
               </dd>
             </div>
             <div>
-              <dt className='flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400'>
+              <dt className='flex items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase'>
                 <Percent size={14} /> Pricing defaults
               </dt>
               <dd className='mt-2 text-sm text-slate-700'>

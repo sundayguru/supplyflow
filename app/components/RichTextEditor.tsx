@@ -25,7 +25,7 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
 
   return (
     <div>
-      <p className='mb-2 text-xs font-bold uppercase tracking-widest text-black/50'>
+      <p className='mb-2 text-xs font-bold tracking-widest text-black/50 uppercase'>
         Terms and conditions
       </p>
       <div className='overflow-hidden rounded-2xl border border-slate-200 bg-white'>

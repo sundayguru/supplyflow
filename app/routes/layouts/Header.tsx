@@ -96,12 +96,12 @@ export const Header = () => {
       )}
 
       <aside
-        className={`fixed bottom-0 left-0 top-16 z-40 flex w-72 flex-col border-r border-slate-200 bg-white px-4 py-5 shadow-xl shadow-slate-950/5 transition-transform duration-300 lg:translate-x-0 lg:shadow-none ${
+        className={`fixed top-16 bottom-0 left-0 z-40 flex w-72 flex-col border-r border-slate-200 bg-white px-4 py-5 shadow-xl shadow-slate-950/5 transition-transform duration-300 lg:translate-x-0 lg:shadow-none ${
           showSidebar ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className='px-3 pb-4'>
-          <p className='text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400'>
+          <p className='text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase'>
             Workspace
           </p>
           <p className='mt-1 text-sm font-semibold text-slate-900'>

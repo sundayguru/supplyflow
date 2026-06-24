@@ -119,7 +119,7 @@ const EmailIngestionsPage = ({ loaderData }: Route.ComponentProps) => {
   return (
     <div className='mx-auto max-w-7xl font-sans text-slate-950'>
       <div>
-        <p className='text-xs font-bold uppercase tracking-[0.18em] text-emerald-700'>
+        <p className='text-xs font-bold tracking-[0.18em] text-emerald-700 uppercase'>
           Inbox automation
         </p>
         <h1 className='mt-2 font-serif text-4xl font-semibold tracking-tight sm:text-5xl'>
@@ -154,7 +154,7 @@ const EmailIngestionsPage = ({ loaderData }: Route.ComponentProps) => {
         <label className='relative'>
           <span className='sr-only'>Search emails</span>
           <Search
-            className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400'
+            className='pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-slate-400'
             size={17}
           />
           <input
@@ -162,7 +162,7 @@ const EmailIngestionsPage = ({ loaderData }: Route.ComponentProps) => {
             name='query'
             defaultValue={loaderData.filters.query}
             placeholder='Search subject, sender, or email ID'
-            className='h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100'
+            className='h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pr-3 pl-10 text-sm transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100'
           />
         </label>
         <label>
@@ -225,7 +225,7 @@ const EmailIngestionsPage = ({ loaderData }: Route.ComponentProps) => {
         ) : (
           <div className='overflow-x-auto'>
             <table className='w-full min-w-[900px] text-left'>
-              <thead className='border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500'>
+              <thead className='border-b border-slate-200 bg-slate-50 text-xs font-bold tracking-wide text-slate-500 uppercase'>
                 <tr>
                   <th className='px-5 py-4'>Received</th>
                   <th className='px-5 py-4'>Message</th>
@@ -240,7 +240,7 @@ const EmailIngestionsPage = ({ loaderData }: Route.ComponentProps) => {
                     key={ingestion.id}
                     className='align-top hover:bg-slate-50/70'
                   >
-                    <td className='whitespace-nowrap px-5 py-4 text-sm text-slate-500'>
+                    <td className='px-5 py-4 text-sm whitespace-nowrap text-slate-500'>
                       {new Date(
                         ingestion.receivedAt ?? ingestion.createdAt,
                       ).toLocaleString()}
