@@ -109,6 +109,7 @@ const ProductPricesPage = ({ loaderData }: Route.ComponentProps) => {
   const productPrices = loaderData.productPrices;
   const deleteFetcher = useFetcher<ActionResponse>();
   const [search, setSearch] = useState('');
+  const [manufacturerFilter, setManufacturerFilter] = useState('all');
   const [editingProduct, setEditingProduct] =
     useState<ProductPriceRecord | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -118,19 +119,21 @@ const ProductPricesPage = ({ loaderData }: Route.ComponentProps) => {
 
   const filteredProductPrices = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) {
-      return productPrices;
-    }
-    return productPrices.filter((productPrice) =>
-      [
-        productPrice.name,
-        productPrice.manufacturer,
-        productPrice.partNumber,
-        productPrice.description,
-        productPrice.specifications,
-      ].some((value) => value?.toLowerCase().includes(query)),
+    return productPrices.filter(
+      (productPrice) =>
+        (manufacturerFilter === 'all' ||
+          productPrice.manufacturerId === manufacturerFilter ||
+          productPrice.manufacturer === manufacturerFilter) &&
+        (!query ||
+          [
+            productPrice.name,
+            productPrice.manufacturer,
+            productPrice.partNumber,
+            productPrice.description,
+            productPrice.specifications,
+          ].some((value) => value?.toLowerCase().includes(query))),
     );
-  }, [productPrices, search]);
+  }, [manufacturerFilter, productPrices, search]);
 
   const confirmDelete = () => {
     if (!deleteTarget) {
@@ -173,19 +176,34 @@ const ProductPricesPage = ({ loaderData }: Route.ComponentProps) => {
       )}
 
       <section className='mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm'>
-        <div className='flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5'>
-          <label className='relative block w-full sm:max-w-md'>
-            <Search
-              className='absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400'
-              size={17}
-            />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              className='w-full rounded-xl border border-slate-200 py-2.5 pr-3 pl-10 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10'
-              placeholder='Search products, manufacturers, or part numbers'
-            />
-          </label>
+        <div className='flex flex-col gap-3 border-b border-slate-100 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between'>
+          <div className='flex w-full flex-col gap-3 sm:flex-row sm:items-center'>
+            <label className='relative block w-full sm:max-w-md'>
+              <Search
+                className='absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400'
+                size={17}
+              />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className='w-full rounded-xl border border-slate-200 py-2.5 pr-3 pl-10 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10'
+                placeholder='Search products, manufacturers, or part numbers'
+              />
+            </label>
+            <select
+              value={manufacturerFilter}
+              onChange={(event) => setManufacturerFilter(event.target.value)}
+              className='w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-600 transition outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 sm:max-w-xs'
+              aria-label='Filter by manufacturer'
+            >
+              <option value='all'>All manufacturers</option>
+              {loaderData.manufacturers.map((manufacturer) => (
+                <option key={manufacturer.id} value={manufacturer.id}>
+                  {manufacturer.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <p className='text-sm font-medium text-slate-500'>
             {filteredProductPrices.length} product
             {filteredProductPrices.length === 1 ? '' : 's'}
