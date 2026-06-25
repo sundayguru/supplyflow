@@ -190,14 +190,16 @@ export const updateRfqItem = async (
       ),
   ]);
   const updatedRfq = await getRfq(existing.rfqId, organizationId, vatRate);
-  if (
-    updatedRfq &&
-    !['quoted', 'won', 'lost'].includes(updatedRfq.status) &&
-    updatedRfq.items.every((item) => item.price > 0)
-  ) {
+  if (updatedRfq && !['won', 'lost'].includes(updatedRfq.status)) {
+    const nextStatus = updatedRfq.items.every((item) => item.price > 0)
+      ? 'quoted'
+      : 'pricing';
+    if (updatedRfq.status === nextStatus) {
+      return updatedRfq;
+    }
     const [updated] = await db
       .update(rfqs)
-      .set({ status: 'quoted', updatedAt: new Date().toISOString() })
+      .set({ status: nextStatus, updatedAt: new Date().toISOString() })
       .where(
         and(
           eq(rfqs.id, existing.rfqId),
