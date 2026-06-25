@@ -27,6 +27,7 @@ import {
 import { rfqStatusLabels } from '~/components/rfqs/RfqStatusBadge';
 import { RfqStatusMenu } from '~/components/rfqs/RfqStatusMenu';
 import { createRfq, getRfqs } from '~/db/rfqs';
+import { listProductPrices } from '~/db/productPrices';
 import { listEmailSourcesForRfqs } from '~/db/emailIngestion';
 import { getUserFromRequest } from '~/utils/session.server';
 import type { RfqRecord, RfqStatus } from '~/types/rfq';
@@ -39,6 +40,7 @@ import { createRfqExtractor } from '~/services/rfq-extraction/index.server';
 import { extractRfqPdfText } from '~/utils/rfqPdfExtraction.server';
 import { uploadRfqSourcePdf } from '~/utils/rfqSourcePdf.server';
 import type { EmailMessage } from '~/services/email/types';
+import { syncRfqItemsWithProductPrices } from '~/utils/rfqProductPrices.server';
 
 type ApiResponse =
   | { success: true; rfq?: RfqRecord; id?: string }
@@ -76,6 +78,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
   try {
     const templates = await listRfqPdfTemplates(organization.id);
+    const productPrices = await listProductPrices(organization.id);
     const rfqs = await getRfqs(organization.id, organization.vat);
     const emailSources = await listEmailSourcesForRfqs(
       organization.id,
@@ -89,6 +92,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       defaultPriceMarkup: organization.priceMarkup,
       vatRate: organization.vat,
       templates: templates.map(({ id, name }) => ({ id, name })),
+      productPrices,
       loadError: null,
     });
   } catch (error) {
@@ -98,6 +102,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       defaultPriceMarkup: organization.priceMarkup,
       vatRate: organization.vat,
       templates: [],
+      productPrices: [],
       loadError: 'Unable to load RFQs',
     });
   }
@@ -180,6 +185,12 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       user.id,
       {
         ...extracted.rfq,
+        items: await syncRfqItemsWithProductPrices(
+          organization.id,
+          user.id,
+          extracted.rfq.currency,
+          extracted.rfq.items,
+        ),
         sourcePdfKey: await uploadRfqSourcePdf(
           organization.id,
           bytes,
@@ -520,6 +531,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
         <RfqDetailDrawer
           rfq={selectedRfq}
           vatRate={loaderData.vatRate}
+          productPrices={loaderData.productPrices}
           onClose={closeDetails}
           onEdit={editFromDetails}
         />
@@ -531,6 +543,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
           initialValue={formRfq === 'new' ? undefined : formRfq}
           defaultPriceMarkup={loaderData.defaultPriceMarkup}
           templates={loaderData.templates}
+          productPrices={loaderData.productPrices}
           onClose={() => setFormRfq(null)}
           onSubmit={submitRfq}
         />

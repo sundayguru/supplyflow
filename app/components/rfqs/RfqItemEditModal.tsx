@@ -1,22 +1,27 @@
 import { useState, type FormEvent } from 'react';
 import { X } from 'lucide-react';
-import type { RfqItemInput, RfqItemRecord } from '~/types/rfq';
-import { RfqItemFields } from './RfqItemFields';
+import type { ProductPriceRecord } from '~/types/productPrice';
+import type { RfqItemRecord } from '~/types/rfq';
+import { RfqItemFields, type RfqItemFormValue } from './RfqItemFields';
 
 type RfqItemEditModalProps = {
   item: RfqItemRecord;
+  currency: string;
+  productPrices: ProductPriceRecord[];
   isSaving: boolean;
   onClose: () => void;
-  onSubmit: (value: RfqItemInput) => void;
+  onSubmit: (value: RfqItemFormValue) => void;
 };
 
 export const RfqItemEditModal = ({
   item,
+  currency,
+  productPrices,
   isSaving,
   onClose,
   onSubmit,
 }: RfqItemEditModalProps) => {
-  const [value, setValue] = useState<RfqItemInput>(item);
+  const [value, setValue] = useState<RfqItemFormValue>(item);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -64,6 +69,8 @@ export const RfqItemEditModal = ({
             index={item.position}
             value={value}
             canRemove={false}
+            productPrices={productPrices}
+            currency={currency}
             onChange={setValue}
             onRemove={() => undefined}
           />

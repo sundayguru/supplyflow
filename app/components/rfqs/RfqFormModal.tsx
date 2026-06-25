@@ -1,15 +1,14 @@
 import { useState, type FormEvent } from 'react';
 import { Plus, X } from 'lucide-react';
-import {
-  rfqStatuses,
-  type RfqInput,
-  type RfqItemInput,
-  type RfqStatus,
-} from '~/types/rfq';
-import { RfqItemFields } from './RfqItemFields';
+import { rfqStatuses, type RfqInput, type RfqStatus } from '~/types/rfq';
+import type { ProductPriceRecord } from '~/types/productPrice';
+import { RfqItemFields, type RfqItemFormValue } from './RfqItemFields';
 import type { RfqPdfTemplateOption } from '~/types';
 
-export type RfqFormValue = RfqInput & { id?: string };
+export type RfqFormValue = Omit<RfqInput, 'items'> & {
+  id?: string;
+  items: RfqItemFormValue[];
+};
 
 type RfqFormModalProps = {
   initialValue?: RfqFormValue;
@@ -17,6 +16,7 @@ type RfqFormModalProps = {
   onSubmit: (value: RfqFormValue) => void;
   defaultPriceMarkup: number;
   templates: RfqPdfTemplateOption[];
+  productPrices: ProductPriceRecord[];
 };
 
 const statusLabels: Record<RfqStatus, string> = {
@@ -28,7 +28,7 @@ const statusLabels: Record<RfqStatus, string> = {
   lost: 'Lost',
 };
 
-const emptyItem = (priceMarkup: number): RfqItemInput => ({
+const emptyItem = (priceMarkup: number): RfqItemFormValue => ({
   quantity: 1,
   price: 0,
   priceMarkup,
@@ -45,6 +45,7 @@ export const RfqFormModal = ({
   onSubmit,
   defaultPriceMarkup,
   templates,
+  productPrices,
 }: RfqFormModalProps) => {
   const [customerName, setCustomerName] = useState(
     initialValue?.customerName ?? '',
@@ -59,7 +60,7 @@ export const RfqFormModal = ({
   const [applyVat, setApplyVat] = useState(initialValue?.applyVat ?? false);
   const [templateId, setTemplateId] = useState(initialValue?.templateId ?? '');
   const [currency, setCurrency] = useState(initialValue?.currency ?? 'EUR');
-  const [items, setItems] = useState<RfqItemInput[]>(
+  const [items, setItems] = useState<RfqItemFormValue[]>(
     initialValue?.items ?? [emptyItem(defaultPriceMarkup)],
   );
 
@@ -178,6 +179,8 @@ export const RfqFormModal = ({
                   index={index}
                   value={item}
                   canRemove={items.length > 1}
+                  productPrices={productPrices}
+                  currency={currency}
                   onChange={(nextItem) =>
                     setItems((current) =>
                       current.map((currentItem, currentIndex) =>

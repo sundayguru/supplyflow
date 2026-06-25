@@ -17,15 +17,18 @@ import {
   UserRound,
   X,
 } from 'lucide-react';
-import type { RfqItemInput, RfqItemRecord, RfqRecord } from '~/types/rfq';
+import type { ProductPriceRecord } from '~/types/productPrice';
+import type { RfqItemRecord, RfqRecord } from '~/types/rfq';
 import { formatRfqMoney } from '~/utils/rfq';
 import { ConfirmModal } from '../ConfirmModal';
 import { RfqItemEditModal } from './RfqItemEditModal';
+import type { RfqItemFormValue } from './RfqItemFields';
 import { RfqStatusBadge } from './RfqStatusBadge';
 
 type RfqDetailDrawerProps = {
   rfq: RfqRecord;
   vatRate: number;
+  productPrices: ProductPriceRecord[];
   onClose: () => void;
   onEdit: () => void;
 };
@@ -48,6 +51,7 @@ const formatDate = (value: string) => new Date(value).toLocaleDateString();
 export const RfqDetailDrawer = ({
   rfq,
   vatRate,
+  productPrices,
   onClose,
   onEdit,
 }: RfqDetailDrawerProps) => {
@@ -78,7 +82,7 @@ export const RfqDetailDrawer = ({
       : rfq.generatedReply;
   const hasCopiedDraft = !!generatedReply && copiedDraft === generatedReply;
 
-  const submitItem = (value: RfqItemInput) => {
+  const submitItem = (value: RfqItemFormValue) => {
     if (!editItem) {
       return;
     }
@@ -528,6 +532,8 @@ export const RfqDetailDrawer = ({
         <RfqItemEditModal
           key={editItem.id}
           item={editItem}
+          currency={rfq.currency}
+          productPrices={productPrices}
           isSaving={itemMutation.state !== 'idle'}
           onClose={() => setEditItem(null)}
           onSubmit={submitItem}

@@ -96,14 +96,6 @@ export const ProductPriceFormModal = ({
             defaultValue={productPrice?.currency ?? 'EUR'}
             required
           />
-          <Input
-            label='Price last updated'
-            id='price-last-updated'
-            name='priceLastUpdated'
-            type='date'
-            defaultValue={productPrice?.priceLastUpdated ?? ''}
-            className='sm:col-span-2'
-          />
         </div>
 
         <TextArea

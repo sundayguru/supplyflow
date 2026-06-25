@@ -12,17 +12,20 @@ export const listProductPrices = (organizationId: string) => {
     .orderBy(desc(productPrices.updatedAt));
 };
 
-export const createProductPrice = (
+export const createProductPrice = async (
   organizationId: string,
   createdBy: string,
   input: ProductPriceInput,
 ) => {
   const db = getDb();
   const id = crypto.randomUUID();
-  return db
+  const priceLastUpdated =
+    input.priceLastUpdated ?? new Date().toISOString().slice(0, 10);
+  const [productPrice] = await db
     .insert(productPrices)
-    .values({ id, organizationId, createdBy, ...input })
+    .values({ id, organizationId, createdBy, ...input, priceLastUpdated })
     .returning();
+  return productPrice;
 };
 
 export const updateProductPrice = async (
@@ -31,9 +34,26 @@ export const updateProductPrice = async (
   input: ProductPriceInput,
 ) => {
   const db = getDb();
+  const [existing] = await db
+    .select()
+    .from(productPrices)
+    .where(
+      and(
+        eq(productPrices.id, id),
+        eq(productPrices.organizationId, organizationId),
+      ),
+    )
+    .limit(1);
+  if (!existing) {
+    return null;
+  }
+  const priceLastUpdated =
+    existing.price !== input.price
+      ? new Date().toISOString().slice(0, 10)
+      : existing.priceLastUpdated;
   const [productPrice] = await db
     .update(productPrices)
-    .set({ ...input, updatedAt: new Date().toISOString() })
+    .set({ ...input, priceLastUpdated, updatedAt: new Date().toISOString() })
     .where(
       and(
         eq(productPrices.id, id),

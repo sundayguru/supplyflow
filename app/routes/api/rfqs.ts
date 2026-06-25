@@ -13,6 +13,10 @@ import { parseRfqInput } from '~/utils/rfq.server';
 import { getOrganizationForUser } from '~/db/organizations';
 import { rfqStatuses, type RfqStatus } from '~/types/rfq';
 import { getRfqPdfTemplate } from '~/db/rfqPdfTemplates';
+import {
+  applyProductPriceUpdateFlags,
+  syncRfqItemsWithProductPrices,
+} from '~/utils/rfqProductPrices.server';
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
@@ -48,10 +52,8 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
   try {
     if (request.method === 'POST') {
-      const parsed = parseRfqInput(
-        await request.json(),
-        organization.priceMarkup,
-      );
+      const body: unknown = await request.json();
+      const parsed = parseRfqInput(body, organization.priceMarkup);
       if (!parsed.success) {
         return data({ error: parsed.error }, { status: 400 });
       }
@@ -67,7 +69,16 @@ export const action = async ({ request }: Route.ActionArgs) => {
           rfq: await createRfq(
             organization.id,
             user.id,
-            { ...parsed.value, sourcePdfKey: null },
+            {
+              ...parsed.value,
+              sourcePdfKey: null,
+              items: await syncRfqItemsWithProductPrices(
+                organization.id,
+                user.id,
+                parsed.value.currency,
+                applyProductPriceUpdateFlags(body, parsed.value.items),
+              ),
+            },
             organization.vat,
           ),
         },
@@ -120,7 +131,16 @@ export const action = async ({ request }: Route.ActionArgs) => {
       const rfq = await updateRfq(
         body.id,
         organization.id,
-        { ...parsed.value, sourcePdfKey: existing.sourcePdfKey },
+        {
+          ...parsed.value,
+          sourcePdfKey: existing.sourcePdfKey,
+          items: await syncRfqItemsWithProductPrices(
+            organization.id,
+            user.id,
+            parsed.value.currency,
+            applyProductPriceUpdateFlags(body, parsed.value.items),
+          ),
+        },
         organization.vat,
       );
       if (!rfq) {

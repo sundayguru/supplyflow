@@ -1,9 +1,17 @@
 import { data } from 'react-router';
 import type { Route } from './+types/rfq-items';
-import { deleteRfqItem, updateRfqItem } from '~/db/rfqs';
+import {
+  deleteRfqItem,
+  getOrganizationRfqItem,
+  updateRfqItem,
+} from '~/db/rfqs';
 import { parseRfqItemInput } from '~/utils/rfq.server';
 import { getUserFromRequest } from '~/utils/session.server';
 import { getOrganizationForUser } from '~/db/organizations';
+import {
+  applyProductPriceUpdateFlag,
+  syncRfqItemsWithProductPrices,
+} from '~/utils/rfqProductPrices.server';
 
 const getItemId = (value: unknown) => {
   if (
@@ -39,10 +47,20 @@ export const action = async ({ request }: Route.ActionArgs) => {
       if (!parsed.success) {
         return data({ error: parsed.error }, { status: 400 });
       }
+      const itemContext = await getOrganizationRfqItem(id, organization.id);
+      if (!itemContext) {
+        return data({ error: 'RFQ item not found' }, { status: 404 });
+      }
+      const [syncedItem] = await syncRfqItemsWithProductPrices(
+        organization.id,
+        user.id,
+        itemContext.currency,
+        [applyProductPriceUpdateFlag(body, parsed.value)],
+      );
       const rfq = await updateRfqItem(
         id,
         organization.id,
-        parsed.value,
+        syncedItem,
         organization.vat,
       );
       return rfq

@@ -150,10 +150,13 @@ export const deleteRfq = async (id: string, organizationId: string) => {
   return rfq ?? null;
 };
 
-const getOrganizationRfqItem = async (id: string, organizationId: string) => {
+export const getOrganizationRfqItem = async (
+  id: string,
+  organizationId: string,
+) => {
   const db = getDb();
   const [item] = await db
-    .select({ id: rfqItems.id, rfqId: rfqItems.rfqId })
+    .select({ id: rfqItems.id, rfqId: rfqItems.rfqId, currency: rfqs.currency })
     .from(rfqItems)
     .innerJoin(rfqs, eq(rfqItems.rfqId, rfqs.id))
     .where(and(eq(rfqItems.id, id), eq(rfqs.organizationId, organizationId)))

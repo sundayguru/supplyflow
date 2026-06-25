@@ -1,11 +1,21 @@
+import { useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
+import type { ProductPriceRecord } from '~/types/productPrice';
 import type { RfqItemInput } from '~/types/rfq';
+import { findProductPriceForRfqItem } from '~/utils/productPrices';
+import { formatRfqMoney } from '~/utils/rfq';
+
+export type RfqItemFormValue = RfqItemInput & {
+  updateProductPrice?: boolean;
+};
 
 type RfqItemFieldsProps = {
   index: number;
-  value: RfqItemInput;
+  value: RfqItemFormValue;
   canRemove: boolean;
-  onChange: (value: RfqItemInput) => void;
+  productPrices: ProductPriceRecord[];
+  currency: string;
+  onChange: (value: RfqItemFormValue) => void;
   onRemove: () => void;
 };
 
@@ -13,15 +23,35 @@ export const RfqItemFields = ({
   index,
   value,
   canRemove,
+  productPrices,
+  currency,
   onChange,
   onRemove,
 }: RfqItemFieldsProps) => {
   const inputClass =
     'mt-2 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10';
-  const update = <Key extends keyof RfqItemInput>(
+  const update = <Key extends keyof RfqItemFormValue>(
     key: Key,
-    nextValue: RfqItemInput[Key],
+    nextValue: RfqItemFormValue[Key],
   ) => onChange({ ...value, [key]: nextValue });
+  const matchedProductPrice = findProductPriceForRfqItem(productPrices, value);
+  const hasProductPriceMismatch =
+    !!matchedProductPrice && value.price !== matchedProductPrice.price;
+
+  useEffect(() => {
+    if (
+      !matchedProductPrice ||
+      value.price > 0 ||
+      value.price === matchedProductPrice.price
+    ) {
+      return;
+    }
+    onChange({
+      ...value,
+      price: matchedProductPrice.price,
+      updateProductPrice: false,
+    });
+  }, [matchedProductPrice, onChange, value]);
 
   return (
     <fieldset className='rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5'>
@@ -101,6 +131,29 @@ export const RfqItemFields = ({
           />
         </label>
       </div>
+
+      {hasProductPriceMismatch && (
+        <label className='mt-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900'>
+          <input
+            type='checkbox'
+            checked={value.updateProductPrice === true}
+            onChange={(event) =>
+              update('updateProductPrice', event.target.checked)
+            }
+            className='mt-0.5 h-4 w-4 rounded border-amber-300 text-emerald-600'
+          />
+          <span>
+            <span className='block font-semibold'>
+              Update product price to this RFQ price
+            </span>
+            <span className='mt-1 block text-xs leading-5 text-amber-800'>
+              Catalog price is{' '}
+              {formatRfqMoney(matchedProductPrice.price, currency)}. Leave this
+              unchecked to use the catalog price on save.
+            </span>
+          </span>
+        </label>
+      )}
 
       <label className='mt-4 block text-sm font-semibold text-slate-700'>
         Item description
