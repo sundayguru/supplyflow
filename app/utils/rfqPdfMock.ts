@@ -18,6 +18,7 @@ const mockItems = (priceMarkup: number): RfqItemInput[] =>
     price: Number(price),
     priceMarkup,
     manufacturer: null,
+    manufacturerId: null,
     manufacturerPartNumber: null,
     specifications: null,
   }));

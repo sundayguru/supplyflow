@@ -50,6 +50,7 @@ export const parseProductPriceFormData = (
     value: {
       name,
       manufacturer: optionalString(formData.get('manufacturer')),
+      manufacturerId: optionalString(formData.get('manufacturerId')),
       partNumber: optionalString(formData.get('partNumber')),
       price,
       currency,

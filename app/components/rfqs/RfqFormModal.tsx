@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Plus, X } from 'lucide-react';
 import { rfqStatuses, type RfqInput, type RfqStatus } from '~/types/rfq';
+import type { ManufacturerRecord } from '~/types/manufacturer';
 import type { ProductPriceRecord } from '~/types/productPrice';
 import { RfqItemFields, type RfqItemFormValue } from './RfqItemFields';
 import type { RfqPdfTemplateOption } from '~/types';
@@ -17,6 +18,7 @@ type RfqFormModalProps = {
   defaultPriceMarkup: number;
   templates: RfqPdfTemplateOption[];
   productPrices: ProductPriceRecord[];
+  manufacturers: ManufacturerRecord[];
 };
 
 const statusLabels: Record<RfqStatus, string> = {
@@ -35,6 +37,7 @@ const emptyItem = (priceMarkup: number): RfqItemFormValue => ({
   unit: 'unit',
   description: '',
   manufacturer: null,
+  manufacturerId: null,
   manufacturerPartNumber: null,
   specifications: null,
 });
@@ -46,6 +49,7 @@ export const RfqFormModal = ({
   defaultPriceMarkup,
   templates,
   productPrices,
+  manufacturers,
 }: RfqFormModalProps) => {
   const [customerName, setCustomerName] = useState(
     initialValue?.customerName ?? '',
@@ -180,6 +184,7 @@ export const RfqFormModal = ({
                   value={item}
                   canRemove={items.length > 1}
                   productPrices={productPrices}
+                  manufacturers={manufacturers}
                   currency={currency}
                   onChange={(nextItem) =>
                     setItems((current) =>

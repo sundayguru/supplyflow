@@ -3,6 +3,7 @@ import {
   listProductPrices,
   updateProductPrice,
 } from '~/db/productPrices';
+import { getOrCreateManufacturer } from '~/db/manufacturers';
 import type { ProductPriceRecord } from '~/types/productPrice';
 import type { RfqItemInput } from '~/types/rfq';
 import { findProductPriceForRfqItem } from './productPrices';
@@ -23,6 +24,7 @@ const toProductPriceInput = (
 ) => ({
   name: item.description,
   manufacturer: item.manufacturer,
+  manufacturerId: item.manufacturerId,
   partNumber: item.manufacturerPartNumber,
   price: item.price,
   currency,
@@ -38,6 +40,7 @@ const toRfqItemInput = (item: RfqItemProductPriceInput): RfqItemInput => ({
   unit: item.unit,
   description: item.description,
   manufacturer: item.manufacturer,
+  manufacturerId: item.manufacturerId,
   manufacturerPartNumber: item.manufacturerPartNumber,
   specifications: item.specifications,
 });
@@ -47,7 +50,8 @@ const mergeProductMetadata = (
   item: RfqItemInput,
 ) => ({
   name: productPrice.name,
-  manufacturer: productPrice.manufacturer,
+  manufacturer: item.manufacturer ?? productPrice.manufacturer,
+  manufacturerId: item.manufacturerId ?? productPrice.manufacturerId,
   partNumber: productPrice.partNumber,
   price: item.price,
   currency: productPrice.currency,
@@ -66,33 +70,58 @@ export const syncRfqItemsWithProductPrices = async (
   const syncedItems: RfqItemInput[] = [];
 
   for (const item of items) {
-    const productPrice = findProductPriceForRfqItem(productPrices, item);
+    const manufacturer = await getOrCreateManufacturer(
+      organizationId,
+      userId,
+      item.manufacturer,
+    );
+    const itemWithManufacturer = {
+      ...item,
+      manufacturer: manufacturer?.name ?? item.manufacturer,
+      manufacturerId: manufacturer?.id ?? item.manufacturerId,
+    };
+    const productPrice = findProductPriceForRfqItem(
+      productPrices,
+      itemWithManufacturer,
+    );
     if (productPrice) {
-      if (item.updateProductPrice && item.price !== productPrice.price) {
+      if (
+        itemWithManufacturer.updateProductPrice &&
+        itemWithManufacturer.price !== productPrice.price
+      ) {
         const updatedProductPrice = await updateProductPrice(
           productPrice.id,
           organizationId,
-          mergeProductMetadata(productPrice, item),
+          mergeProductMetadata(productPrice, itemWithManufacturer),
         );
         if (updatedProductPrice) {
           productPrices.splice(productPrices.indexOf(productPrice), 1);
           productPrices.push(updatedProductPrice);
         }
-        syncedItems.push(toRfqItemInput(item));
+        syncedItems.push(toRfqItemInput(itemWithManufacturer));
         continue;
       }
 
-      syncedItems.push(toRfqItemInput({ ...item, price: productPrice.price }));
+      syncedItems.push(
+        toRfqItemInput({
+          ...itemWithManufacturer,
+          price: productPrice.price,
+          manufacturer:
+            productPrice.manufacturer ?? itemWithManufacturer.manufacturer,
+          manufacturerId:
+            productPrice.manufacturerId ?? itemWithManufacturer.manufacturerId,
+        }),
+      );
       continue;
     }
 
     const newProductPrice = await createProductPrice(
       organizationId,
       userId,
-      toProductPriceInput(item, currency, today()),
+      toProductPriceInput(itemWithManufacturer, currency, today()),
     );
     productPrices.push(newProductPrice);
-    syncedItems.push(toRfqItemInput(item));
+    syncedItems.push(toRfqItemInput(itemWithManufacturer));
   }
 
   return syncedItems;

@@ -17,6 +17,7 @@ import {
   UserRound,
   X,
 } from 'lucide-react';
+import type { ManufacturerRecord } from '~/types/manufacturer';
 import type { ProductPriceRecord } from '~/types/productPrice';
 import type { RfqItemRecord, RfqRecord } from '~/types/rfq';
 import { formatRfqMoney } from '~/utils/rfq';
@@ -29,6 +30,7 @@ type RfqDetailDrawerProps = {
   rfq: RfqRecord;
   vatRate: number;
   productPrices: ProductPriceRecord[];
+  manufacturers: ManufacturerRecord[];
   onClose: () => void;
   onEdit: () => void;
 };
@@ -52,6 +54,7 @@ export const RfqDetailDrawer = ({
   rfq,
   vatRate,
   productPrices,
+  manufacturers,
   onClose,
   onEdit,
 }: RfqDetailDrawerProps) => {
@@ -534,6 +537,7 @@ export const RfqDetailDrawer = ({
           item={editItem}
           currency={rfq.currency}
           productPrices={productPrices}
+          manufacturers={manufacturers}
           isSaving={itemMutation.state !== 'idle'}
           onClose={() => setEditItem(null)}
           onSubmit={submitItem}

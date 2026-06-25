@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { organizations } from './organizations';
 import { users } from './users';
+import { manufacturers } from './manufacturers';
 
 export const productPrices = sqliteTable(
   'product_prices',
@@ -15,6 +16,9 @@ export const productPrices = sqliteTable(
       .references(() => users.id, { onDelete: 'restrict' }),
     name: text('name', { length: 255 }).notNull(),
     manufacturer: text('manufacturer', { length: 255 }),
+    manufacturerId: text('manufacturer_id').references(() => manufacturers.id, {
+      onDelete: 'set null',
+    }),
     partNumber: text('part_number', { length: 255 }),
     price: integer('price').notNull().default(0),
     currency: text('currency', { length: 3 }).notNull().default('EUR'),
@@ -32,6 +36,7 @@ export const productPrices = sqliteTable(
     index('product_prices_organization_idx').on(table.organizationId),
     index('product_prices_manufacturer_part_idx').on(
       table.organizationId,
+      table.manufacturerId,
       table.manufacturer,
       table.partNumber,
     ),

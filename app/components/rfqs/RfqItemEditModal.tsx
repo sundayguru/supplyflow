@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { X } from 'lucide-react';
+import type { ManufacturerRecord } from '~/types/manufacturer';
 import type { ProductPriceRecord } from '~/types/productPrice';
 import type { RfqItemRecord } from '~/types/rfq';
 import { RfqItemFields, type RfqItemFormValue } from './RfqItemFields';
@@ -8,6 +9,7 @@ type RfqItemEditModalProps = {
   item: RfqItemRecord;
   currency: string;
   productPrices: ProductPriceRecord[];
+  manufacturers: ManufacturerRecord[];
   isSaving: boolean;
   onClose: () => void;
   onSubmit: (value: RfqItemFormValue) => void;
@@ -17,6 +19,7 @@ export const RfqItemEditModal = ({
   item,
   currency,
   productPrices,
+  manufacturers,
   isSaving,
   onClose,
   onSubmit,
@@ -70,6 +73,7 @@ export const RfqItemEditModal = ({
             value={value}
             canRemove={false}
             productPrices={productPrices}
+            manufacturers={manufacturers}
             currency={currency}
             onChange={setValue}
             onRemove={() => undefined}

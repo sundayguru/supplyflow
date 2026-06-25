@@ -1,6 +1,7 @@
 export type ProductPriceInput = {
   name: string;
   manufacturer: string | null;
+  manufacturerId: string | null;
   partNumber: string | null;
   price: number;
   currency: string;

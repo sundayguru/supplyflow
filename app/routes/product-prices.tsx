@@ -17,6 +17,7 @@ import {
   listProductPrices,
   updateProductPrice,
 } from '~/db/productPrices';
+import { getOrCreateManufacturer, listManufacturers } from '~/db/manufacturers';
 import { getOrganizationForUser } from '~/db/organizations';
 import type { ProductPriceRecord } from '~/types/productPrice';
 import { formatRfqMoney } from '~/utils/rfq';
@@ -43,6 +44,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   }
   return data({
     productPrices: await listProductPrices(organization.id),
+    manufacturers: await listManufacturers(organization.id),
   });
 };
 
@@ -72,14 +74,28 @@ export const action = async ({ request }: Route.ActionArgs) => {
   if (!parsed.success) {
     return data({ error: parsed.error }, { status: 400 });
   }
+  const manufacturer = await getOrCreateManufacturer(
+    organization.id,
+    user.id,
+    parsed.value.manufacturer,
+  );
+  const productPriceInput = {
+    ...parsed.value,
+    manufacturer: manufacturer?.name ?? parsed.value.manufacturer,
+    manufacturerId: manufacturer?.id ?? null,
+  };
 
   if (intent === 'create') {
-    await createProductPrice(organization.id, user.id, parsed.value);
+    await createProductPrice(organization.id, user.id, productPriceInput);
     return data({ success: true as const }, { status: 201 });
   }
 
   if (intent === 'update') {
-    const updated = await updateProductPrice(id, organization.id, parsed.value);
+    const updated = await updateProductPrice(
+      id,
+      organization.id,
+      productPriceInput,
+    );
     if (!updated) {
       return data({ error: 'Product price not found' }, { status: 404 });
     }
@@ -270,6 +286,7 @@ const ProductPricesPage = ({ loaderData }: Route.ComponentProps) => {
       {isCreating && (
         <ProductPriceFormModal
           productPrice={null}
+          manufacturers={loaderData.manufacturers}
           onClose={() => setIsCreating(false)}
         />
       )}
@@ -277,6 +294,7 @@ const ProductPricesPage = ({ loaderData }: Route.ComponentProps) => {
         <ProductPriceFormModal
           key={editingProduct.id}
           productPrice={editingProduct}
+          manufacturers={loaderData.manufacturers}
           onClose={() => setEditingProduct(null)}
         />
       )}

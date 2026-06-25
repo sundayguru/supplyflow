@@ -9,6 +9,7 @@ import {
 import { users } from './users';
 import { organizations } from './organizations';
 import { rfqPdfTemplates } from './rfqPdfTemplates';
+import { manufacturers } from './manufacturers';
 import { rfqStatuses } from '../../types/rfq';
 
 export const rfqs = sqliteTable(
@@ -69,6 +70,9 @@ export const rfqItems = sqliteTable(
     unit: text('unit', { length: 32 }).notNull(),
     description: text('description').notNull(),
     manufacturer: text('manufacturer', { length: 255 }),
+    manufacturerId: text('manufacturer_id').references(() => manufacturers.id, {
+      onDelete: 'set null',
+    }),
     manufacturerPartNumber: text('manufacturer_part_number', { length: 255 }),
     specifications: text('specifications'),
     createdAt: text('created_at')
@@ -80,6 +84,7 @@ export const rfqItems = sqliteTable(
   },
   (table) => [
     index('rfq_items_rfq_id_idx').on(table.rfqId),
+    index('rfq_items_manufacturer_id_idx').on(table.manufacturerId),
     index('rfq_items_manufacturer_part_idx').on(table.manufacturerPartNumber),
   ],
 );

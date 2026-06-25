@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
+import type { ManufacturerRecord } from '~/types/manufacturer';
 import type { ProductPriceRecord } from '~/types/productPrice';
 import type { RfqItemInput } from '~/types/rfq';
 import { findProductPriceForRfqItem } from '~/utils/productPrices';
@@ -14,6 +15,7 @@ type RfqItemFieldsProps = {
   value: RfqItemFormValue;
   canRemove: boolean;
   productPrices: ProductPriceRecord[];
+  manufacturers: ManufacturerRecord[];
   currency: string;
   onChange: (value: RfqItemFormValue) => void;
   onRemove: () => void;
@@ -24,6 +26,7 @@ export const RfqItemFields = ({
   value,
   canRemove,
   productPrices,
+  manufacturers,
   currency,
   onChange,
   onRemove,
@@ -37,6 +40,18 @@ export const RfqItemFields = ({
   const matchedProductPrice = findProductPriceForRfqItem(productPrices, value);
   const hasProductPriceMismatch =
     !!matchedProductPrice && value.price !== matchedProductPrice.price;
+  const updateManufacturer = (manufacturerName: string) => {
+    const normalizedName = manufacturerName.trim();
+    const manufacturer = manufacturers.find(
+      (candidate) =>
+        candidate.name.toLowerCase() === normalizedName.toLowerCase(),
+    );
+    onChange({
+      ...value,
+      manufacturer: normalizedName || null,
+      manufacturerId: manufacturer?.id ?? null,
+    });
+  };
 
   useEffect(() => {
     if (
@@ -171,13 +186,17 @@ export const RfqItemFields = ({
         <label className='text-sm font-semibold text-slate-700'>
           Manufacturer
           <input
+            list={`manufacturers-${index}`}
             value={value.manufacturer ?? ''}
-            onChange={(event) =>
-              update('manufacturer', event.target.value || null)
-            }
+            onChange={(event) => updateManufacturer(event.target.value)}
             className={inputClass}
             placeholder='CIRCLE SEAL'
           />
+          <datalist id={`manufacturers-${index}`}>
+            {manufacturers.map((manufacturer) => (
+              <option key={manufacturer.id} value={manufacturer.name} />
+            ))}
+          </datalist>
         </label>
         <label className='text-sm font-semibold text-slate-700'>
           Manufacturer part number

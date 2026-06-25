@@ -16,6 +16,7 @@ export type RfqItemInput = {
   unit: string;
   description: string;
   manufacturer: string | null;
+  manufacturerId: string | null;
   manufacturerPartNumber: string | null;
   specifications: string | null;
 };

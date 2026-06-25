@@ -28,6 +28,7 @@ import { rfqStatusLabels } from '~/components/rfqs/RfqStatusBadge';
 import { RfqStatusMenu } from '~/components/rfqs/RfqStatusMenu';
 import { createRfq, getRfqs } from '~/db/rfqs';
 import { listProductPrices } from '~/db/productPrices';
+import { listManufacturers } from '~/db/manufacturers';
 import { listEmailSourcesForRfqs } from '~/db/emailIngestion';
 import { getUserFromRequest } from '~/utils/session.server';
 import type { RfqRecord, RfqStatus } from '~/types/rfq';
@@ -79,6 +80,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   try {
     const templates = await listRfqPdfTemplates(organization.id);
     const productPrices = await listProductPrices(organization.id);
+    const manufacturers = await listManufacturers(organization.id);
     const rfqs = await getRfqs(organization.id, organization.vat);
     const emailSources = await listEmailSourcesForRfqs(
       organization.id,
@@ -93,6 +95,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       vatRate: organization.vat,
       templates: templates.map(({ id, name }) => ({ id, name })),
       productPrices,
+      manufacturers,
       loadError: null,
     });
   } catch (error) {
@@ -103,6 +106,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       vatRate: organization.vat,
       templates: [],
       productPrices: [],
+      manufacturers: [],
       loadError: 'Unable to load RFQs',
     });
   }
@@ -532,6 +536,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
           rfq={selectedRfq}
           vatRate={loaderData.vatRate}
           productPrices={loaderData.productPrices}
+          manufacturers={loaderData.manufacturers}
           onClose={closeDetails}
           onEdit={editFromDetails}
         />
@@ -544,6 +549,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
           defaultPriceMarkup={loaderData.defaultPriceMarkup}
           templates={loaderData.templates}
           productPrices={loaderData.productPrices}
+          manufacturers={loaderData.manufacturers}
           onClose={() => setFormRfq(null)}
           onSubmit={submitRfq}
         />

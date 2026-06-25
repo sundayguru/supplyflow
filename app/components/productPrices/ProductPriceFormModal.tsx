@@ -4,12 +4,14 @@ import { useFetcher } from 'react-router';
 import { Button } from '~/components/Button';
 import { Input, TextArea } from '~/components/FormFields';
 import { Modal } from '~/components/Modal';
+import type { ManufacturerRecord } from '~/types/manufacturer';
 import type { ProductPriceRecord } from '~/types/productPrice';
 
 type ProductPriceActionResponse = { success: true } | { error: string };
 
 type ProductPriceFormModalProps = {
   productPrice: ProductPriceRecord | null;
+  manufacturers: ManufacturerRecord[];
   onClose: () => void;
 };
 
@@ -18,6 +20,7 @@ const priceValue = (price?: number) =>
 
 export const ProductPriceFormModal = ({
   productPrice,
+  manufacturers,
   onClose,
 }: ProductPriceFormModalProps) => {
   const fetcher = useFetcher<ProductPriceActionResponse>();
@@ -70,8 +73,14 @@ export const ProductPriceFormModal = ({
             label='Manufacturer'
             id='manufacturer'
             name='manufacturer'
+            list='product-price-manufacturers'
             defaultValue={productPrice?.manufacturer ?? ''}
           />
+          <datalist id='product-price-manufacturers'>
+            {manufacturers.map((manufacturer) => (
+              <option key={manufacturer.id} value={manufacturer.name} />
+            ))}
+          </datalist>
           <Input
             label='Part number'
             id='part-number'

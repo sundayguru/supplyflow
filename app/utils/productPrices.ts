@@ -3,7 +3,7 @@ import type { RfqItemInput } from '~/types/rfq';
 
 type ProductPriceMatch = Pick<
   ProductPriceRecord,
-  'name' | 'manufacturer' | 'partNumber'
+  'name' | 'manufacturer' | 'manufacturerId' | 'partNumber'
 >;
 
 const normalizeProductText = (value: string | null | undefined) =>
@@ -13,6 +13,10 @@ const manufacturerMatches = (
   product: ProductPriceMatch,
   item: RfqItemInput,
 ) => {
+  if (product.manufacturerId && item.manufacturerId) {
+    return product.manufacturerId === item.manufacturerId;
+  }
+
   const productManufacturer = normalizeProductText(product.manufacturer);
   const itemManufacturer = normalizeProductText(item.manufacturer);
   return (
