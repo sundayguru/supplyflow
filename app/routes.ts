@@ -23,6 +23,7 @@ export default [
   layout('./routes/layouts/ProtectedLayout.tsx', [
     route('dashboard', 'routes/dashboard.tsx'),
     route('rfqs', 'routes/rfqs.tsx'),
+    route('product-prices', 'routes/product-prices.tsx'),
     route('rfq-pdf-templates', 'routes/rfq-pdf-templates.tsx'),
     route('connected-accounts', 'routes/connected-accounts.tsx'),
     route('email-ingestions', 'routes/email-ingestions.tsx'),

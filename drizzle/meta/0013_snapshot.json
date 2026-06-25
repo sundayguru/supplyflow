@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "f4464c37-79a3-471e-8eec-9bc4336462d2",
-  "prevId": "b786d05e-410c-4d16-829a-84f07f7f3cbd",
+  "id": "1076c04a-8b3b-4df5-8fec-7719909a461c",
+  "prevId": "f4464c37-79a3-471e-8eec-9bc4336462d2",
   "tables": {
     "users": {
       "name": "users",
@@ -1614,6 +1614,146 @@
         "rfq_pdf_templates_created_by_users_id_fk": {
           "name": "rfq_pdf_templates_created_by_users_id_fk",
           "tableFrom": "rfq_pdf_templates",
+          "tableTo": "users",
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "product_prices": {
+      "name": "product_prices",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text(36)",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "manufacturer": {
+          "name": "manufacturer",
+          "type": "text(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "part_number": {
+          "name": "part_number",
+          "type": "text(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "price": {
+          "name": "price",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'EUR'"
+        },
+        "price_last_updated": {
+          "name": "price_last_updated",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "specifications": {
+          "name": "specifications",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CURRENT_TIMESTAMP)"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CURRENT_TIMESTAMP)"
+        }
+      },
+      "indexes": {
+        "product_prices_organization_idx": {
+          "name": "product_prices_organization_idx",
+          "columns": ["organization_id"],
+          "isUnique": false
+        },
+        "product_prices_manufacturer_part_idx": {
+          "name": "product_prices_manufacturer_part_idx",
+          "columns": ["organization_id", "manufacturer", "part_number"],
+          "isUnique": false
+        },
+        "product_prices_updated_at_idx": {
+          "name": "product_prices_updated_at_idx",
+          "columns": ["updated_at"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "product_prices_organization_id_organizations_id_fk": {
+          "name": "product_prices_organization_id_organizations_id_fk",
+          "tableFrom": "product_prices",
+          "tableTo": "organizations",
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "product_prices_created_by_users_id_fk": {
+          "name": "product_prices_created_by_users_id_fk",
+          "tableFrom": "product_prices",
           "tableTo": "users",
           "columnsFrom": ["created_by"],
           "columnsTo": ["id"],

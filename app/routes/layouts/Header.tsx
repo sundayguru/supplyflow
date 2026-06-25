@@ -8,6 +8,7 @@ import {
   MailSearch,
   LayoutDashboard,
   Menu,
+  Package,
   Settings,
   ShieldCheck,
   X,
@@ -40,6 +41,7 @@ export const Header = () => {
   const navItems: NavItem[] = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/rfqs', label: 'RFQ management', icon: ClipboardList },
+    { to: '/product-prices', label: 'Product prices', icon: Package },
     { to: '/rfq-pdf-templates', label: 'PDF templates', icon: FileText },
     { to: '/connected-accounts', label: 'Connected accounts', icon: MailCheck },
     {
