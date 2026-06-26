@@ -49,6 +49,12 @@ export type DraftReplyResult = {
   url: string;
 };
 
+export type DraftSentStatusInput = {
+  draftId: string;
+  threadId: string | null;
+  sentAfter: Date;
+};
+
 export type EmailClient = {
   readonly provider: string;
   listMessages: (options: ListMessagesOptions) => Promise<EmailMessage[]>;
@@ -59,4 +65,5 @@ export type EmailClient = {
   updateDraftReply?: (
     input: UpdateDraftReplyInput,
   ) => Promise<DraftReplyResult>;
+  isDraftSent?: (input: DraftSentStatusInput) => Promise<boolean>;
 };

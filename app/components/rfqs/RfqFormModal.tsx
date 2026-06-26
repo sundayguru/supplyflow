@@ -26,6 +26,7 @@ const statusLabels: Record<RfqStatus, string> = {
   pricing: 'Pricing',
   quoted: 'Quoted',
   review: 'Review',
+  sent: 'Sent',
   won: 'Won',
   lost: 'Lost',
 };

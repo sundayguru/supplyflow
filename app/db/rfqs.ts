@@ -128,13 +128,15 @@ export const updateRfqGeneratedReply = async (
   vatRate: number,
 ) => {
   const db = getDb();
+  const updatedAt = new Date().toISOString();
   const [updated] = await db
     .update(rfqs)
     .set({
       generatedReply,
       generatedReplyDraftId,
+      generatedReplyDraftUpdatedAt: updatedAt,
       status: 'review',
-      updatedAt: new Date().toISOString(),
+      updatedAt,
     })
     .where(and(eq(rfqs.id, id), eq(rfqs.organizationId, organizationId)))
     .returning({ id: rfqs.id });
@@ -193,7 +195,7 @@ export const updateRfqItem = async (
       ),
   ]);
   const updatedRfq = await getRfq(existing.rfqId, organizationId, vatRate);
-  if (updatedRfq && !['won', 'lost'].includes(updatedRfq.status)) {
+  if (updatedRfq && !['sent', 'won', 'lost'].includes(updatedRfq.status)) {
     const nextStatus = updatedRfq.items.every((item) => item.price > 0)
       ? 'quoted'
       : 'pricing';

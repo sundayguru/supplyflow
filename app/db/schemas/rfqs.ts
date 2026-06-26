@@ -28,6 +28,7 @@ export const rfqs = sqliteTable(
     sourcePdfKey: text('source_pdf_key', { length: 511 }),
     generatedReply: text('generated_reply'),
     generatedReplyDraftId: text('generated_reply_draft_id', { length: 255 }),
+    generatedReplyDraftUpdatedAt: text('generated_reply_draft_updated_at'),
     reference: text('reference', { length: 32 }).notNull().unique(),
     customerName: text('customer_name', { length: 255 }).notNull(),
     customerEmail: text('customer_email', { length: 255 }),

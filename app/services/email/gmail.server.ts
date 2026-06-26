@@ -6,6 +6,7 @@ import type {
   CreateDraftReplyInput,
   ListMessagesOptions,
   UpdateDraftReplyInput,
+  DraftSentStatusInput,
 } from './types';
 
 export type GmailClientConfig = {
@@ -34,7 +35,13 @@ type GmailMessageResponse = {
   id: string;
   threadId?: string;
   internalDate?: string;
+  labelIds?: string[];
   payload?: GmailPart;
+};
+
+type GmailThreadResponse = {
+  id: string;
+  messages?: GmailMessageResponse[];
 };
 
 type GoogleTokenResponse = {
@@ -47,6 +54,15 @@ type GmailAttachmentResponse = {
   data?: string;
   size?: number;
 };
+
+class GmailApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
+}
 
 const GMAIL_API_URL = 'https://gmail.googleapis.com/gmail/v1/users/me';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -269,7 +285,10 @@ const gmailRequest = async <ResponseBody>(
     },
   });
   if (!response.ok) {
-    throw new Error(`Gmail API request failed with status ${response.status}`);
+    throw new GmailApiError(
+      `Gmail API request failed with status ${response.status}`,
+      response.status,
+    );
   }
   return (await response.json()) as ResponseBody;
 };
@@ -346,6 +365,24 @@ const getMessage = async (
   };
 };
 
+const isDraftSent = async (
+  input: DraftSentStatusInput,
+  accessToken: string,
+) => {
+  try {
+    const res = await gmailRequest<{
+      id: string;
+      message: GmailMessageResponse;
+    }>(`/drafts/${encodeURIComponent(input.draftId)}`, accessToken);
+    const sentAfterMs = input.sentAfter.getTime();
+    const message = res.message;
+    const internalDate = Number(message.internalDate ?? 0);
+    return message.labelIds?.includes('SENT') && internalDate >= sentAfterMs;
+  } catch (error) {
+    return false;
+  }
+};
+
 export const createGmailClient = (config: GmailClientConfig): EmailClient => ({
   provider: 'gmail',
   async getMessage(id) {
@@ -418,5 +455,8 @@ export const createGmailClient = (config: GmailClientConfig): EmailClient => ({
       id: draft.id,
       url: createDraftUrl(input.accountEmail),
     };
+  },
+  async isDraftSent(input) {
+    return await isDraftSent(input, await getAccessToken(config));
   },
 });

@@ -3,6 +3,7 @@ export const rfqStatuses = [
   'pricing',
   'review',
   'quoted',
+  'sent',
   'won',
   'lost',
 ] as const;
@@ -59,6 +60,7 @@ export type RfqRecord = Omit<RfqInput, 'items'> & {
   items: RfqItemRecord[];
   generatedReply: string | null;
   generatedReplyDraftId: string | null;
+  generatedReplyDraftUpdatedAt: string | null;
   subtotal: number;
   markupValue: number;
   vatValue: number;
