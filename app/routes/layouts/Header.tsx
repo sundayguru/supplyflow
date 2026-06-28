@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Menu,
   Package,
+  ShoppingCart,
   Settings,
   ShieldCheck,
   X,
@@ -41,6 +42,7 @@ export const Header = () => {
   const navItems: NavItem[] = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/rfqs', label: 'RFQ management', icon: ClipboardList },
+    { to: '/purchase-orders', label: 'PO management', icon: ShoppingCart },
     { to: '/product-prices', label: 'Product prices', icon: Package },
     { to: '/rfq-pdf-templates', label: 'PDF templates', icon: FileText },
     { to: '/connected-accounts', label: 'Connected accounts', icon: MailCheck },

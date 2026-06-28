@@ -23,6 +23,7 @@ export default [
   layout('./routes/layouts/ProtectedLayout.tsx', [
     route('dashboard', 'routes/dashboard.tsx'),
     route('rfqs', 'routes/rfqs.tsx'),
+    route('purchase-orders', 'routes/purchase-orders.tsx'),
     route('product-prices', 'routes/product-prices.tsx'),
     route('rfq-pdf-templates', 'routes/rfq-pdf-templates.tsx'),
     route('connected-accounts', 'routes/connected-accounts.tsx'),
@@ -39,6 +40,8 @@ export default [
     route('api/user', 'routes/api/user.ts'),
     route('api/user/avatar', 'routes/api/user.avatar.tsx'),
     route('api/rfqs', 'routes/api/rfqs.ts'),
+    route('api/purchase-orders', 'routes/api/purchase-orders.ts'),
+    route('api/purchase-order-items', 'routes/api/purchase-order-items.ts'),
     route('api/rfqs/:rfqId/customer-draft', 'routes/api/rfq-customer-draft.ts'),
     route('api/rfqs/:rfqId/source-pdf', 'routes/api/rfq-source-pdf.ts'),
     route('api/rfq-items', 'routes/api/rfq-items.ts'),

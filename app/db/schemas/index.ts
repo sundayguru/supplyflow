@@ -6,6 +6,7 @@ export * from './verificationTokens';
 export * from './passwordResetTokens';
 export * from './notifications';
 export * from './rfqs';
+export * from './purchaseOrders';
 export * from './emailIngestion';
 export * from './connectedEmailAccounts';
 export * from './organizations';
