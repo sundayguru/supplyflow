@@ -17,6 +17,8 @@ const mockItems = (priceMarkup: number): RfqItemInput[] =>
     unit: String(unit),
     price: Number(price),
     priceMarkup,
+    discountType: 'percentage',
+    discountValue: 0,
     manufacturer: null,
     manufacturerId: null,
     manufacturerPartNumber: null,

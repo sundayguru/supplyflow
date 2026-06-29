@@ -86,7 +86,7 @@ export default function ResetPasswordPage({
           <input
             type='password'
             name='password'
-            className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm transition outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
+            className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
             placeholder='••••••••'
             required
           />
@@ -98,7 +98,7 @@ export default function ResetPasswordPage({
           <input
             type='password'
             name='confirmPassword'
-            className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm transition outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
+            className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
             placeholder='••••••••'
             required
           />

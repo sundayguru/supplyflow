@@ -111,11 +111,11 @@ export const PurchaseOrderDetailDrawer = ({
         role='dialog'
         aria-modal='true'
         aria-labelledby='po-detail-title'
-        className='absolute top-0 right-0 flex h-full w-full max-w-2xl flex-col bg-[#f8faf7] shadow-2xl'
+        className='absolute right-0 top-0 flex h-full w-full max-w-2xl flex-col bg-[#f8faf7] shadow-2xl'
       >
         <header className='flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-5 py-5 sm:px-7'>
           <div>
-            <p className='text-xs font-bold tracking-[0.16em] text-emerald-700 uppercase'>
+            <p className='text-xs font-bold uppercase tracking-[0.16em] text-emerald-700'>
               Purchase order
             </p>
             <div className='mt-2 flex flex-wrap items-center gap-3'>
@@ -149,7 +149,7 @@ export const PurchaseOrderDetailDrawer = ({
             aria-label='PO summary'
           >
             <div className='rounded-2xl border border-slate-200 bg-white p-4'>
-              <p className='flex items-center gap-2 text-xs font-bold tracking-wide text-slate-400 uppercase'>
+              <p className='flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-400'>
                 <UserRound size={14} /> Supplier
               </p>
               <p className='mt-3 font-semibold text-slate-900'>
@@ -161,7 +161,7 @@ export const PurchaseOrderDetailDrawer = ({
               </p>
             </div>
             <div className='rounded-2xl border border-slate-200 bg-white p-4'>
-              <p className='flex items-center gap-2 text-xs font-bold tracking-wide text-slate-400 uppercase'>
+              <p className='flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-400'>
                 <CircleDollarSign size={14} /> Total value
               </p>
               <p className='mt-3 text-2xl font-semibold text-slate-900'>
@@ -172,7 +172,7 @@ export const PurchaseOrderDetailDrawer = ({
               </p>
             </div>
             <div className='rounded-2xl border border-slate-200 bg-white p-4'>
-              <p className='flex items-center gap-2 text-xs font-bold tracking-wide text-slate-400 uppercase'>
+              <p className='flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-400'>
                 <CalendarDays size={14} /> Dates
               </p>
               <p className='mt-3 font-semibold text-slate-900'>
@@ -193,7 +193,7 @@ export const PurchaseOrderDetailDrawer = ({
               </p>
             </div>
             <div className='rounded-2xl border border-slate-200 bg-white p-4'>
-              <p className='text-xs font-bold tracking-wide text-slate-400 uppercase'>
+              <p className='text-xs font-bold uppercase tracking-wide text-slate-400'>
                 Created
               </p>
               <p className='mt-3 font-semibold text-slate-900'>
@@ -209,7 +209,7 @@ export const PurchaseOrderDetailDrawer = ({
             <section className='mt-7 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'>
               {purchaseOrder.linkedRfq && (
                 <div>
-                  <p className='flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-emerald-700 uppercase'>
+                  <p className='flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-emerald-700'>
                     <ClipboardList size={14} /> Linked RFQ
                   </p>
                   <Link
@@ -222,7 +222,7 @@ export const PurchaseOrderDetailDrawer = ({
                 </div>
               )}
               {purchaseOrder.notes && (
-                <p className='mt-4 border-t border-slate-100 pt-4 text-sm leading-6 whitespace-pre-wrap text-slate-600'>
+                <p className='mt-4 whitespace-pre-wrap border-t border-slate-100 pt-4 text-sm leading-6 text-slate-600'>
                   {purchaseOrder.notes}
                 </p>
               )}
@@ -232,7 +232,7 @@ export const PurchaseOrderDetailDrawer = ({
           <section className='mt-7'>
             <div className='flex items-center justify-between gap-3'>
               <div>
-                <p className='text-xs font-bold tracking-[0.14em] text-emerald-700 uppercase'>
+                <p className='text-xs font-bold uppercase tracking-[0.14em] text-emerald-700'>
                   Ordered items
                 </p>
                 <h3 className='mt-1 text-lg font-bold text-slate-900'>
@@ -300,7 +300,7 @@ export const PurchaseOrderDetailDrawer = ({
                           {item.manufacturerPartNumber}
                         </span>
                       )}
-                      <p className='mt-3 text-sm leading-6 whitespace-pre-wrap text-slate-700'>
+                      <p className='mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700'>
                         {item.description}
                       </p>
                       {(item.manufacturer || item.specifications) && (
@@ -314,7 +314,7 @@ export const PurchaseOrderDetailDrawer = ({
                             </p>
                           )}
                           {item.specifications && (
-                            <p className='mt-2 leading-6 whitespace-pre-wrap text-slate-500'>
+                            <p className='mt-2 whitespace-pre-wrap leading-6 text-slate-500'>
                               {item.specifications}
                             </p>
                           )}

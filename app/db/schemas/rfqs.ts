@@ -68,6 +68,12 @@ export const rfqItems = sqliteTable(
     quantity: real('quantity').notNull(),
     price: integer('price').notNull().default(0),
     priceMarkup: real('price_markup').notNull().default(0),
+    discountType: text('discount_type', {
+      enum: ['percentage', 'fixed'],
+    })
+      .notNull()
+      .default('percentage'),
+    discountValue: integer('discount_value').notNull().default(0),
     unit: text('unit', { length: 32 }).notNull(),
     description: text('description').notNull(),
     manufacturer: text('manufacturer', { length: 255 }),

@@ -30,6 +30,9 @@ Return exactly one JSON object with this shape:
     "items": [{
       "quantity": positive number,
       "price": non-negative integer in the smallest currency unit, default 0,
+      "priceMarkup": non-negative number, default 0,
+      "discountType": "percentage" or "fixed", default "percentage",
+      "discountValue": non-negative number, default 0,
       "unit": string such as "unit" or "piece",
       "description": string,
       "manufacturer": string or null,
@@ -95,6 +98,23 @@ export const parseRfqExtractionResponse = (
                 ? message.from.address
                 : null,
           status: 'new',
+          items:
+            'items' in envelope.rfq && Array.isArray(envelope.rfq.items)
+              ? envelope.rfq.items.map((item) =>
+                  typeof item === 'object' && item !== null
+                    ? {
+                        ...item,
+                        discountType:
+                          'discountType' in item &&
+                          item.discountType === 'fixed'
+                            ? 'fixed'
+                            : 'percentage',
+                        discountValue:
+                          'discountValue' in item ? item.discountValue : 0,
+                      }
+                    : item,
+                )
+              : [],
         }
       : null;
   const parsed = parseRfqInput(candidate, defaultPriceMarkup);

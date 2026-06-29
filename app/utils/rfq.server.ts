@@ -30,6 +30,9 @@ export const parseRfqItemInput = (
     value.priceMarkup === undefined
       ? defaultPriceMarkup
       : Number(value.priceMarkup);
+  const discountType = value.discountType === 'fixed' ? 'fixed' : 'percentage';
+  const discountValue =
+    value.discountValue === undefined ? 0 : Number(value.discountValue);
   const unit = typeof value.unit === 'string' ? value.unit.trim() : '';
   const description =
     typeof value.description === 'string' ? value.description.trim() : '';
@@ -48,6 +51,20 @@ export const parseRfqItemInput = (
       error: 'Item price markup must be between 0 and 1000',
     };
   }
+  if (
+    !Number.isFinite(discountValue) ||
+    discountValue < 0 ||
+    (discountType === 'percentage' && discountValue > 100) ||
+    (discountType === 'fixed' && !Number.isInteger(discountValue))
+  ) {
+    return {
+      success: false,
+      error:
+        discountType === 'percentage'
+          ? 'Item discount percentage must be between 0 and 100'
+          : 'Item discount amount must be zero or more',
+    };
+  }
 
   return {
     success: true,
@@ -55,6 +72,8 @@ export const parseRfqItemInput = (
       quantity,
       price,
       priceMarkup,
+      discountType,
+      discountValue,
       unit,
       description,
       manufacturer:

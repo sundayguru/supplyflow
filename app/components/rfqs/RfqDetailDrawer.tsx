@@ -20,7 +20,7 @@ import {
 import type { ManufacturerRecord } from '~/types/manufacturer';
 import type { ProductPriceRecord } from '~/types/productPrice';
 import type { RfqItemRecord, RfqRecord } from '~/types/rfq';
-import { formatRfqMoney } from '~/utils/rfq';
+import { calculateRfqItemAmounts, formatRfqMoney } from '~/utils/rfq';
 import { ConfirmModal } from '../ConfirmModal';
 import { RfqItemEditModal } from './RfqItemEditModal';
 import type { RfqItemFormValue } from './RfqItemFields';
@@ -196,11 +196,11 @@ export const RfqDetailDrawer = ({
         role='dialog'
         aria-modal='true'
         aria-labelledby='rfq-detail-title'
-        className='absolute top-0 right-0 flex h-full w-full max-w-2xl flex-col bg-[#f8faf7] shadow-2xl'
+        className='absolute right-0 top-0 flex h-full w-full max-w-2xl flex-col bg-[#f8faf7] shadow-2xl'
       >
         <header className='flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-5 py-5 sm:px-7'>
           <div>
-            <p className='text-xs font-bold tracking-[0.16em] text-emerald-700 uppercase'>
+            <p className='text-xs font-bold uppercase tracking-[0.16em] text-emerald-700'>
               Request for quotation
             </p>
             <div className='mt-2 flex flex-wrap items-center gap-3'>
@@ -251,7 +251,7 @@ export const RfqDetailDrawer = ({
             <section className='mb-5 rounded-xl border border-slate-200 bg-white p-4'>
               <div className='flex flex-wrap items-center justify-between gap-3'>
                 <div>
-                  <p className='text-xs font-bold tracking-[0.14em] text-emerald-700 uppercase'>
+                  <p className='text-xs font-bold uppercase tracking-[0.14em] text-emerald-700'>
                     Email draft
                   </p>
                   <p className='mt-1 text-sm text-slate-500'>
@@ -278,7 +278,7 @@ export const RfqDetailDrawer = ({
             aria-label='RFQ summary'
           >
             <div className='rounded-2xl border border-slate-200 bg-white p-4'>
-              <p className='flex items-center gap-2 text-xs font-bold tracking-wide text-slate-400 uppercase'>
+              <p className='flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-400'>
                 <UserRound size={14} /> Customer
               </p>
               <p className='mt-3 font-semibold text-slate-900'>
@@ -289,7 +289,7 @@ export const RfqDetailDrawer = ({
               </p>
             </div>
             <div className='rounded-2xl border border-slate-200 bg-white p-4'>
-              <p className='flex items-center gap-2 text-xs font-bold tracking-wide text-slate-400 uppercase'>
+              <p className='flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-400'>
                 <CircleDollarSign size={14} /> Total value
               </p>
               <p className='mt-3 text-2xl font-semibold text-slate-900'>
@@ -297,7 +297,7 @@ export const RfqDetailDrawer = ({
               </p>
             </div>
             <div className='rounded-2xl border border-slate-200 bg-white p-4'>
-              <p className='flex items-center gap-2 text-xs font-bold tracking-wide text-slate-400 uppercase'>
+              <p className='flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-400'>
                 <CalendarDays size={14} /> Due date
               </p>
               <p className='mt-3 font-semibold text-slate-900'>
@@ -307,7 +307,7 @@ export const RfqDetailDrawer = ({
               </p>
             </div>
             <div className='rounded-2xl border border-slate-200 bg-white p-4'>
-              <p className='text-xs font-bold tracking-wide text-slate-400 uppercase'>
+              <p className='text-xs font-bold uppercase tracking-wide text-slate-400'>
                 Created
               </p>
               <p className='mt-3 font-semibold text-slate-900'>
@@ -323,7 +323,7 @@ export const RfqDetailDrawer = ({
             <section className='mt-7 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm'>
               <div className='flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4'>
                 <div>
-                  <p className='flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-emerald-700 uppercase'>
+                  <p className='flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-emerald-700'>
                     <FileText size={14} /> Source PDF
                   </p>
                   <h3 className='mt-1 text-lg font-bold text-slate-900'>
@@ -365,7 +365,7 @@ export const RfqDetailDrawer = ({
           <section className='mt-7'>
             <div className='flex items-center justify-between gap-3'>
               <div>
-                <p className='text-xs font-bold tracking-[0.14em] text-emerald-700 uppercase'>
+                <p className='text-xs font-bold uppercase tracking-[0.14em] text-emerald-700'>
                   Requested items
                 </p>
                 <h3 className='mt-1 text-lg font-bold text-slate-900'>
@@ -380,76 +380,15 @@ export const RfqDetailDrawer = ({
 
             <div className='mt-4 space-y-4'>
               {rfq.items.map((item, index) => (
-                <article
+                <RfqDetailItem
                   key={item.id}
-                  className='rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'
-                >
-                  <div className='flex items-start gap-4'>
-                    <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-500'>
-                      {index + 1}
-                    </span>
-                    <div className='min-w-0 flex-1'>
-                      <div className='flex flex-wrap items-start justify-between gap-2'>
-                        <p className='font-semibold text-slate-900'>
-                          {item.quantity} {item.unit}
-                        </p>
-                        <p className='text-sm font-semibold text-emerald-700'>
-                          {formatRfqMoney(item.price, rfq.currency)} ·{' '}
-                          {item.priceMarkup}% markup
-                        </p>
-                        <div className='flex items-center gap-1'>
-                          {item.manufacturerPartNumber && (
-                            <span className='mr-1 rounded-lg bg-slate-100 px-2.5 py-1 font-mono text-xs text-slate-600'>
-                              {item.manufacturerPartNumber}
-                            </span>
-                          )}
-                          <button
-                            type='button'
-                            onClick={() => setEditItem(item)}
-                            className='rounded-lg p-2 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-700'
-                            aria-label={`Edit item ${index + 1}`}
-                          >
-                            <Pencil size={15} />
-                          </button>
-                          <button
-                            type='button'
-                            onClick={() => setDeleteItem(item)}
-                            disabled={rfq.items.length <= 1}
-                            title={
-                              rfq.items.length <= 1
-                                ? 'An RFQ must contain at least one item'
-                                : undefined
-                            }
-                            className='rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-30'
-                            aria-label={`Delete item ${index + 1}`}
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
-                      </div>
-                      <p className='mt-3 text-sm leading-6 whitespace-pre-wrap text-slate-700'>
-                        {item.description}
-                      </p>
-                      {(item.manufacturer || item.specifications) && (
-                        <div className='mt-4 border-t border-slate-100 pt-4 text-sm'>
-                          {item.manufacturer && (
-                            <p className='text-slate-600'>
-                              <span className='font-semibold text-slate-800'>
-                                Manufacturer:
-                              </span>{' '}
-                              {item.manufacturer}
-                            </p>
-                          )}
-                          {item.specifications && (
-                            <p className='mt-2 leading-6 whitespace-pre-wrap text-slate-500'>
-                              {item.specifications}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </article>
+                  item={item}
+                  index={index}
+                  currency={rfq.currency}
+                  canDelete={rfq.items.length > 1}
+                  onEdit={() => setEditItem(item)}
+                  onDelete={() => setDeleteItem(item)}
+                />
               ))}
             </div>
           </section>
@@ -465,6 +404,12 @@ export const RfqDetailDrawer = ({
                 <dt>Markup</dt>
                 <dd>{formatRfqMoney(rfq.markupValue, rfq.currency)}</dd>
               </div>
+              {rfq.discountValue > 0 && (
+                <div className='flex items-center justify-between text-slate-600'>
+                  <dt>Discount</dt>
+                  <dd>-{formatRfqMoney(rfq.discountValue, rfq.currency)}</dd>
+                </div>
+              )}
               {rfq.applyVat && (
                 <div className='flex items-center justify-between text-slate-600'>
                   <dt>VAT ({vatRate}%)</dt>
@@ -553,5 +498,104 @@ export const RfqDetailDrawer = ({
         confirmVariant='danger'
       />
     </div>
+  );
+};
+
+type RfqDetailItemProps = {
+  item: RfqItemRecord;
+  index: number;
+  currency: string;
+  canDelete: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+};
+
+const RfqDetailItem = ({
+  item,
+  index,
+  currency,
+  canDelete,
+  onEdit,
+  onDelete,
+}: RfqDetailItemProps) => {
+  const amounts = calculateRfqItemAmounts(item);
+
+  return (
+    <article className='rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'>
+      <div className='flex items-start gap-4'>
+        <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-500'>
+          {index + 1}
+        </span>
+        <div className='min-w-0 flex-1'>
+          <div className='flex flex-wrap items-start justify-between gap-2'>
+            <p className='font-semibold text-slate-900'>
+              {item.quantity} {item.unit}
+            </p>
+            <p className='text-sm font-semibold text-emerald-700'>
+              {formatRfqMoney(item.price, currency)} · {item.priceMarkup}%
+              markup
+            </p>
+            <div className='flex items-center gap-1'>
+              {item.manufacturerPartNumber && (
+                <span className='mr-1 rounded-lg bg-slate-100 px-2.5 py-1 font-mono text-xs text-slate-600'>
+                  {item.manufacturerPartNumber}
+                </span>
+              )}
+              <button
+                type='button'
+                onClick={onEdit}
+                className='rounded-lg p-2 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-700'
+                aria-label={`Edit item ${index + 1}`}
+              >
+                <Pencil size={15} />
+              </button>
+              <button
+                type='button'
+                onClick={onDelete}
+                disabled={!canDelete}
+                title={
+                  !canDelete
+                    ? 'An RFQ must contain at least one item'
+                    : undefined
+                }
+                className='rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-30'
+                aria-label={`Delete item ${index + 1}`}
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+          </div>
+          {amounts.lineDiscount > 0 && (
+            <p className='mt-2 text-xs font-semibold text-emerald-700'>
+              Discount:{' '}
+              {item.discountType === 'percentage'
+                ? `${item.discountValue}%`
+                : formatRfqMoney(item.discountValue, currency)}{' '}
+              (-{formatRfqMoney(amounts.lineDiscount, currency)})
+            </p>
+          )}
+          <p className='mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700'>
+            {item.description}
+          </p>
+          {(item.manufacturer || item.specifications) && (
+            <div className='mt-4 border-t border-slate-100 pt-4 text-sm'>
+              {item.manufacturer && (
+                <p className='text-slate-600'>
+                  <span className='font-semibold text-slate-800'>
+                    Manufacturer:
+                  </span>{' '}
+                  {item.manufacturer}
+                </p>
+              )}
+              {item.specifications && (
+                <p className='mt-2 whitespace-pre-wrap leading-6 text-slate-500'>
+                  {item.specifications}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </article>
   );
 };

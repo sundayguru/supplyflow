@@ -180,7 +180,7 @@ export default function RfqPdfTemplatesPage({
     <div className='mx-auto max-w-6xl space-y-7'>
       <div className='flex flex-col justify-between gap-4 sm:flex-row sm:items-end'>
         <div>
-          <p className='text-xs font-bold tracking-[0.18em] text-emerald-700 uppercase'>
+          <p className='text-xs font-bold uppercase tracking-[0.18em] text-emerald-700'>
             Document design
           </p>
           <h1 className='mt-2 font-serif text-4xl font-semibold text-slate-950'>

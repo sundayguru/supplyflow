@@ -8,6 +8,7 @@ import {
 } from 'pdf-lib';
 import type { SelectOrganization, SelectRfqPdfTemplate } from '~/db/schemas';
 import type { RfqItemInput, RfqRecord } from '~/types/rfq';
+import { calculateRfqItemAmounts } from './rfq';
 import { richTextToPlainText } from './richText';
 import { createMockRfqForTemplate } from './rfqPdfMock';
 
@@ -81,6 +82,7 @@ type RfqPdfData = Omit<
     | 'currency'
     | 'subtotal'
     | 'markupValue'
+    | 'discountValue'
     | 'vatValue'
     | 'totalValue'
     | 'applyVat'
@@ -207,7 +209,7 @@ export const generateRfqPdf = async (
   });
   y -= 34;
 
-  const columns = [SIDE_MARGIN, 65, 150, 340, 385, 475];
+  const columns = [SIDE_MARGIN, 63, 138, 305, 348, 418, 482];
   const drawTableHeader = () => {
     page.drawRectangle({
       x: SIDE_MARGIN,
@@ -216,15 +218,22 @@ export const generateRfqPdf = async (
       height: 24,
       color: rgb(0.91, 0.96, 0.94),
     });
-    ['#', 'Part no.', 'Description', 'Qty', 'Unit price', 'Line total'].forEach(
-      (label, index) =>
-        page.drawText(label, {
-          x: columns[index],
-          y,
-          font: bold,
-          size: 8,
-          color: rgb(0.1, 0.28, 0.22),
-        }),
+    [
+      '#',
+      'Part no.',
+      'Description',
+      'Qty',
+      'Unit price',
+      'Discount',
+      'Line total',
+    ].forEach((label, index) =>
+      page.drawText(label, {
+        x: columns[index],
+        y,
+        font: bold,
+        size: 8,
+        color: rgb(0.1, 0.28, 0.22),
+      }),
     );
     y -= 30;
   };
@@ -235,17 +244,23 @@ export const generateRfqPdf = async (
       y = PAGE_HEIGHT - (headerBanner ? 112 : 80);
       drawTableHeader();
     }
-    const lineBase = Math.round(item.price * item.quantity);
-    const lineMarkup = Math.round((lineBase * item.priceMarkup) / 100);
+    const amounts = calculateRfqItemAmounts(item);
     const unitMarkup = Math.round((item.price * item.priceMarkup) / 100);
     const unitPriceWithMarkup = item.price + unitMarkup;
+    const discountLabel =
+      amounts.lineDiscount > 0
+        ? item.discountType === 'percentage'
+          ? `${item.discountValue}%`
+          : formatMoney(amounts.lineDiscount, rfq.currency)
+        : '-';
     const values = [
       String(index + 1),
       safePdfText(item.manufacturerPartNumber ?? '-').slice(0, 18),
-      safePdfText(item.description).slice(0, 32),
+      safePdfText(item.description).slice(0, 28),
       String(item.quantity),
       formatMoney(unitPriceWithMarkup, rfq.currency),
-      formatMoney(lineBase + lineMarkup, rfq.currency),
+      discountLabel,
+      formatMoney(amounts.lineTotal, rfq.currency),
     ];
     values.forEach((value, columnIndex) =>
       page.drawText(value, {
@@ -270,6 +285,9 @@ export const generateRfqPdf = async (
       'Items subtotal',
       formatMoney(rfq.subtotal + rfq.markupValue, rfq.currency),
     ],
+    ...(rfq.discountValue > 0
+      ? [['Discount', `-${formatMoney(rfq.discountValue, rfq.currency)}`]]
+      : []),
     ...(rfq.applyVat
       ? [
           [

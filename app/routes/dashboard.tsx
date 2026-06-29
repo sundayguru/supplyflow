@@ -132,7 +132,7 @@ const DashboardPage = () => {
     <div className='mx-auto max-w-[1440px] font-sans text-slate-950'>
       <div className='flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between'>
         <div>
-          <p className='text-xs font-bold tracking-[0.18em] text-emerald-700 uppercase'>
+          <p className='text-xs font-bold uppercase tracking-[0.18em] text-emerald-700'>
             Performance overview
           </p>
           <h1 className='mt-2 font-serif text-4xl font-semibold tracking-tight sm:text-5xl'>
@@ -275,7 +275,7 @@ const DashboardPage = () => {
         </div>
         <div className='overflow-x-auto'>
           <table className='w-full min-w-[680px] text-left text-sm'>
-            <thead className='bg-slate-50/70 text-[10px] font-bold tracking-wider text-slate-400 uppercase'>
+            <thead className='bg-slate-50/70 text-[10px] font-bold uppercase tracking-wider text-slate-400'>
               <tr>
                 <th className='px-6 py-3'>Reference</th>
                 <th className='px-6 py-3'>Customer</th>

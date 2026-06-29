@@ -9,6 +9,26 @@ type PricedRfqItem = {
   quantity: number;
   price: number;
   priceMarkup: number;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+};
+
+export const calculateRfqItemAmounts = (item: PricedRfqItem) => {
+  const lineBase = Math.round(item.price * item.quantity);
+  const lineMarkup = Math.round((lineBase * item.priceMarkup) / 100);
+  const lineBeforeDiscount = lineBase + lineMarkup;
+  const rawDiscount =
+    item.discountType === 'percentage'
+      ? Math.round((lineBeforeDiscount * item.discountValue) / 100)
+      : item.discountValue;
+  const lineDiscount = Math.min(lineBeforeDiscount, Math.max(0, rawDiscount));
+  return {
+    lineBase,
+    lineMarkup,
+    lineBeforeDiscount,
+    lineDiscount,
+    lineTotal: lineBeforeDiscount - lineDiscount,
+  };
 };
 
 export const calculateRfqTotals = (
@@ -16,20 +36,22 @@ export const calculateRfqTotals = (
   vatRate: number,
   applyVat: boolean,
 ) => {
-  const subtotal = items.reduce(
-    (total, item) => total + Math.round(item.price * item.quantity),
+  const amounts = items.map(calculateRfqItemAmounts);
+  const subtotal = amounts.reduce((total, item) => total + item.lineBase, 0);
+  const markupValue = amounts.reduce(
+    (total, item) => total + item.lineMarkup,
     0,
   );
-  const markupValue = items.reduce(
-    (total, item) =>
-      total + Math.round((item.price * item.quantity * item.priceMarkup) / 100),
+  const discountValue = amounts.reduce(
+    (total, item) => total + item.lineDiscount,
     0,
   );
-  const valueBeforeVat = subtotal + markupValue;
+  const valueBeforeVat = subtotal + markupValue - discountValue;
   const vatValue = applyVat ? Math.round((valueBeforeVat * vatRate) / 100) : 0;
   return {
     subtotal,
     markupValue,
+    discountValue,
     vatValue,
     totalValue: valueBeforeVat + vatValue,
   };

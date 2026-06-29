@@ -127,6 +127,13 @@
       "when": 1782678189348,
       "tag": "0017_pale_sinister_six",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1782765464129,
+      "tag": "0018_pretty_johnny_storm",
+      "breakpoints": true
     }
   ]
 }

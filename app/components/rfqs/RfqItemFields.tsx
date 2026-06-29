@@ -4,7 +4,7 @@ import type { ManufacturerRecord } from '~/types/manufacturer';
 import type { ProductPriceRecord } from '~/types/productPrice';
 import type { RfqItemInput } from '~/types/rfq';
 import { findProductPriceForRfqItem } from '~/utils/productPrices';
-import { formatRfqMoney } from '~/utils/rfq';
+import { calculateRfqItemAmounts, formatRfqMoney } from '~/utils/rfq';
 
 export type RfqItemFormValue = RfqItemInput & {
   updateProductPrice?: boolean;
@@ -40,6 +40,7 @@ export const RfqItemFields = ({
   const matchedProductPrice = findProductPriceForRfqItem(productPrices, value);
   const hasProductPriceMismatch =
     !!matchedProductPrice && value.price !== matchedProductPrice.price;
+  const amounts = calculateRfqItemAmounts(value);
   const updateManufacturer = (manufacturerName: string) => {
     const normalizedName = manufacturerName.trim();
     const manufacturer = manufacturers.find(
@@ -146,6 +147,59 @@ export const RfqItemFields = ({
           />
         </label>
       </div>
+
+      <div className='mt-4 grid gap-4 sm:grid-cols-[1fr_1.2fr]'>
+        <label className='text-sm font-semibold text-slate-700'>
+          Discount type
+          <select
+            value={value.discountType}
+            onChange={(event) =>
+              update(
+                'discountType',
+                event.target.value as RfqItemFormValue['discountType'],
+              )
+            }
+            className={inputClass}
+          >
+            <option value='percentage'>Percentage</option>
+            <option value='fixed'>Line amount</option>
+          </select>
+        </label>
+        <label className='text-sm font-semibold text-slate-700'>
+          Discount{' '}
+          {value.discountType === 'percentage' ? '(%)' : `(${currency})`}
+          <input
+            type='number'
+            min='0'
+            max={value.discountType === 'percentage' ? '100' : undefined}
+            step={value.discountType === 'percentage' ? '0.01' : '0.01'}
+            value={
+              value.discountType === 'fixed'
+                ? value.discountValue
+                  ? value.discountValue / 100
+                  : ''
+                : value.discountValue || ''
+            }
+            onChange={(event) =>
+              update(
+                'discountValue',
+                value.discountType === 'fixed'
+                  ? Math.round(Number(event.target.value || 0) * 100)
+                  : Number(event.target.value || 0),
+              )
+            }
+            className={inputClass}
+            placeholder={value.discountType === 'percentage' ? '0' : '0.00'}
+          />
+        </label>
+      </div>
+
+      {amounts.lineDiscount > 0 && (
+        <p className='mt-3 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-800'>
+          Discount lowers this line by{' '}
+          {formatRfqMoney(amounts.lineDiscount, currency)}.
+        </p>
+      )}
 
       {hasProductPriceMismatch && (
         <label className='mt-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900'>

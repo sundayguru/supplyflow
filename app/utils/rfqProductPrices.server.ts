@@ -37,6 +37,8 @@ const toRfqItemInput = (item: RfqItemProductPriceInput): RfqItemInput => ({
   quantity: item.quantity,
   price: item.price,
   priceMarkup: item.priceMarkup,
+  discountType: item.discountType,
+  discountValue: item.discountValue,
   unit: item.unit,
   description: item.description,
   manufacturer: item.manufacturer,

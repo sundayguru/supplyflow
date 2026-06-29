@@ -14,6 +14,8 @@ export type RfqItemInput = {
   quantity: number;
   price: number;
   priceMarkup: number;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
   unit: string;
   description: string;
   manufacturer: string | null;
@@ -63,6 +65,7 @@ export type RfqRecord = Omit<RfqInput, 'items'> & {
   generatedReplyDraftUpdatedAt: string | null;
   subtotal: number;
   markupValue: number;
+  discountValue: number;
   vatValue: number;
   totalValue: number;
   sourceEmail?: RfqEmailSource | null;
