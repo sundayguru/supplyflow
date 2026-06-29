@@ -1,0 +1,1 @@
+ALTER TABLE `email_ingestions` ADD `purchase_order_id` text REFERENCES purchase_orders(id);

@@ -16,6 +16,7 @@ import {
   connectedEmailAccounts,
   emailAccountSyncStates,
   emailIngestions,
+  purchaseOrders,
   rfqs,
   type EmailIngestionStatus,
 } from './schemas';
@@ -89,6 +90,8 @@ export const listEmailIngestions = async ({
       accountEmail: connectedEmailAccounts.email,
       rfqId: emailIngestions.rfqId,
       rfqReference: rfqs.reference,
+      purchaseOrderId: emailIngestions.purchaseOrderId,
+      purchaseOrderReference: purchaseOrders.reference,
     })
     .from(emailIngestions)
     .innerJoin(
@@ -96,6 +99,10 @@ export const listEmailIngestions = async ({
       eq(emailIngestions.accountId, connectedEmailAccounts.id),
     )
     .leftJoin(rfqs, eq(emailIngestions.rfqId, rfqs.id))
+    .leftJoin(
+      purchaseOrders,
+      eq(emailIngestions.purchaseOrderId, purchaseOrders.id),
+    )
     .where(where)
     .orderBy(desc(emailIngestions.receivedAt), desc(emailIngestions.createdAt))
     .limit(pageSize)
@@ -283,14 +290,24 @@ export const claimEmail = async (
 
 export const completeEmailIngestion = async (
   id: string,
-  outcome: { status: 'processed'; rfqId: string } | { status: 'ignored' },
+  outcome:
+    | { status: 'processed'; rfqId: string; purchaseOrderId?: null }
+    | { status: 'processed'; purchaseOrderId: string; rfqId?: null }
+    | { status: 'ignored' },
 ) => {
   const db = getDb();
   await db
     .update(emailIngestions)
     .set({
       status: outcome.status,
-      rfqId: outcome.status === 'processed' ? outcome.rfqId : null,
+      rfqId:
+        outcome.status === 'processed' && 'rfqId' in outcome
+          ? outcome.rfqId
+          : null,
+      purchaseOrderId:
+        outcome.status === 'processed' && 'purchaseOrderId' in outcome
+          ? outcome.purchaseOrderId
+          : null,
       error: null,
       updatedAt: now(),
     })

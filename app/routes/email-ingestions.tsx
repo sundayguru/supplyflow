@@ -111,7 +111,7 @@ const EmailIngestionsPage = ({ loaderData }: Route.ComponentProps) => {
   );
   const summary = [
     { label: 'All emails', value: totalIngestions },
-    { label: 'RFQs created', value: loaderData.counts.processed },
+    { label: 'Records created', value: loaderData.counts.processed },
     { label: 'Ignored', value: loaderData.counts.ignored },
     { label: 'Failed', value: loaderData.counts.failed },
   ];
@@ -271,6 +271,15 @@ const EmailIngestionsPage = ({ loaderData }: Route.ComponentProps) => {
                         >
                           {ingestion.rfqReference ?? 'View RFQ'}
                         </Link>
+                      ) : ingestion.purchaseOrderId ? (
+                        <Link
+                          to={`/purchase-orders?po=${encodeURIComponent(
+                            ingestion.purchaseOrderId,
+                          )}`}
+                          className='font-semibold text-emerald-700 hover:text-emerald-600'
+                        >
+                          {ingestion.purchaseOrderReference ?? 'View PO'}
+                        </Link>
                       ) : ingestion.error ? (
                         <span
                           className='line-clamp-2 text-rose-600'
@@ -280,7 +289,9 @@ const EmailIngestionsPage = ({ loaderData }: Route.ComponentProps) => {
                         </span>
                       ) : (
                         <span className='text-slate-400'>
-                          {ingestion.status === 'ignored' ? 'Not an RFQ' : '—'}
+                          {ingestion.status === 'ignored'
+                            ? 'Not an RFQ or PO'
+                            : '—'}
                         </span>
                       )}
                     </td>

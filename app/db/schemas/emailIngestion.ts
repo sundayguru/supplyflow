@@ -7,6 +7,7 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core';
 import { rfqs } from './rfqs';
+import { purchaseOrders } from './purchaseOrders';
 import { connectedEmailAccounts } from './connectedEmailAccounts';
 
 export const emailIngestionStatuses = [
@@ -33,6 +34,10 @@ export const emailIngestions = sqliteTable(
     fromAddress: text('from_address', { length: 255 }),
     receivedAt: text('received_at'),
     rfqId: text('rfq_id').references(() => rfqs.id, { onDelete: 'set null' }),
+    purchaseOrderId: text('purchase_order_id').references(
+      () => purchaseOrders.id,
+      { onDelete: 'set null' },
+    ),
     error: text('error'),
     attempts: integer('attempts').notNull().default(1),
     createdAt: text('created_at')

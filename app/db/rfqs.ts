@@ -49,6 +49,22 @@ export const getRfq = async (
   return rfq ? withTotals(rfq, vatRate) : null;
 };
 
+export const getRfqByReference = async (
+  reference: string,
+  organizationId: string,
+  vatRate: number,
+): Promise<RfqRecord | null> => {
+  const db = getDb();
+  const rfq = await db.query.rfqs.findFirst({
+    where: and(
+      eq(rfqs.reference, reference),
+      eq(rfqs.organizationId, organizationId),
+    ),
+    with: { items: { orderBy: [asc(rfqItems.position)] } },
+  });
+  return rfq ? withTotals(rfq, vatRate) : null;
+};
+
 export const createRfq = async (
   organizationId: string,
   userId: string,

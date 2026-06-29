@@ -6,8 +6,14 @@ import {
   getEmailSyncTime,
   saveEmailSyncTime,
 } from '~/db/emailIngestion';
-import { createRfq } from '~/db/rfqs';
+import { createPurchaseOrder } from '~/db/purchaseOrders';
+import { createRfq, getRfqs } from '~/db/rfqs';
 import { createEmailClient } from '~/services/email/index.server';
+import { createPurchaseOrderExtractor } from '~/services/purchase-order-extraction/index.server';
+import type {
+  PurchaseOrderExtractionResult,
+  PurchaseOrderExtractor,
+} from '~/services/purchase-order-extraction/types';
 import { createRfqExtractor } from '~/services/rfq-extraction/index.server';
 import type {
   RfqExtractionResult,
@@ -56,28 +62,78 @@ type ExtractedMessageRfq = {
   sourcePdf: EmailAttachment | null;
 };
 
+type ExtractedMessagePurchaseOrder = {
+  result: Extract<PurchaseOrderExtractionResult, { isPurchaseOrder: true }>;
+  searchText: string;
+};
+
+type LinkedRfqCandidate = {
+  id: string;
+  reference: string;
+};
+
+const isPdfAttachment = (attachment: EmailAttachment) =>
+  attachment.contentType === 'application/pdf' ||
+  attachment.filename.toLowerCase().endsWith('.pdf');
+
+const buildPdfContextMessage = (
+  message: EmailMessage,
+  attachment: EmailAttachment,
+  text: string,
+): EmailMessage => ({
+  ...message,
+  id: `${message.id}:${attachment.id}`,
+  subject: `PDF attachment: ${attachment.filename}`,
+  text: [
+    `Email subject: ${message.subject}`,
+    `Email body:`,
+    message.text,
+    '',
+    `PDF filename: ${attachment.filename}`,
+    `PDF text:`,
+    text,
+  ].join('\n'),
+  attachments: [],
+});
+
+const resolveLinkedRfqId = (
+  extractedReference: string | null,
+  searchText: string,
+  rfqs: LinkedRfqCandidate[],
+) => {
+  const normalizedExtractedReference = extractedReference?.trim().toLowerCase();
+  if (normalizedExtractedReference) {
+    const exactMatch = rfqs.find(
+      (rfq) => rfq.reference.toLowerCase() === normalizedExtractedReference,
+    );
+    if (exactMatch) {
+      return exactMatch.id;
+    }
+  }
+
+  const normalizedSearchText = searchText.toLowerCase();
+  return (
+    rfqs.find((rfq) =>
+      normalizedSearchText.includes(rfq.reference.toLowerCase()),
+    )?.id ?? null
+  );
+};
+
 const extractPdfAttachmentRfq = async (
   message: EmailMessage,
   extractor: RfqExtractor,
 ): Promise<ExtractedMessageRfq | null> => {
   for (const attachment of message.attachments) {
-    if (
-      attachment.contentType !== 'application/pdf' &&
-      !attachment.filename.toLowerCase().endsWith('.pdf')
-    ) {
+    if (!isPdfAttachment(attachment)) {
       continue;
     }
     const file = new File([attachment.bytes], attachment.filename, {
       type: 'application/pdf',
     });
     const text = await extractRfqPdfText(file, attachment.bytes);
-    const result = await extractor.extract({
-      ...message,
-      id: `${message.id}:${attachment.id}`,
-      subject: `PDF attachment: ${attachment.filename}`,
-      text,
-      attachments: [],
-    });
+    const result = await extractor.extract(
+      buildPdfContextMessage(message, attachment, text),
+    );
     if (result.isRfq) {
       return { result, sourcePdf: attachment };
     }
@@ -104,6 +160,52 @@ const extractMessageRfq = async (
   }
 };
 
+const extractPdfAttachmentPurchaseOrder = async (
+  message: EmailMessage,
+  extractor: PurchaseOrderExtractor,
+): Promise<ExtractedMessagePurchaseOrder | null> => {
+  for (const attachment of message.attachments) {
+    if (!isPdfAttachment(attachment)) {
+      continue;
+    }
+    const file = new File([attachment.bytes], attachment.filename, {
+      type: 'application/pdf',
+    });
+    const text = await extractRfqPdfText(file, attachment.bytes);
+    const pdfMessage = buildPdfContextMessage(message, attachment, text);
+    const result = await extractor.extract(pdfMessage);
+    if (result.isPurchaseOrder) {
+      return { result, searchText: pdfMessage.text };
+    }
+  }
+  return null;
+};
+
+const extractMessagePurchaseOrder = async (
+  message: EmailMessage,
+  extractor: PurchaseOrderExtractor,
+): Promise<ExtractedMessagePurchaseOrder | null> => {
+  try {
+    const result = await extractor.extract(message);
+    if (result.isPurchaseOrder) {
+      return {
+        result,
+        searchText: `${message.subject}\n${message.text}`,
+      };
+    }
+    return await extractPdfAttachmentPurchaseOrder(message, extractor);
+  } catch (error) {
+    const pdfResult = await extractPdfAttachmentPurchaseOrder(
+      message,
+      extractor,
+    );
+    if (pdfResult) {
+      return pdfResult;
+    }
+    throw error;
+  }
+};
+
 const processAccount = async (
   account: SelectConnectedEmailAccount,
   env: Env,
@@ -121,15 +223,23 @@ const processAccount = async (
   if (!model) {
     throw new Error('Organization AI model is not supported');
   }
-  const extractor: RfqExtractor = createRfqExtractor({
+  const extractorConfig = {
     provider: model.provider,
     apiKey: requireSetting(
       model.provider === 'gemini' ? 'GEMINI_API_KEY' : 'GROQ_API_KEY',
       model.provider === 'gemini' ? env.GEMINI_API_KEY : env.GROQ_API_KEY,
     ),
     model: model.value,
+  };
+  const extractor: RfqExtractor = createRfqExtractor({
+    ...extractorConfig,
     defaultPriceMarkup: organization.priceMarkup,
   });
+  const purchaseOrderExtractor: PurchaseOrderExtractor =
+    createPurchaseOrderExtractor(extractorConfig);
+  const rfqCandidates = (
+    await getRfqs(account.organizationId, organization.vat)
+  ).map(({ id, reference }) => ({ id, reference }));
   const startedAt = new Date();
   const refreshToken = await decryptToken(
     account.encryptedRefreshToken,
@@ -169,8 +279,37 @@ const processAccount = async (
     try {
       const extraction = await extractMessageRfq(message, extractor);
       if (!extraction) {
-        await completeEmailIngestion(ingestionId, { status: 'ignored' });
-        ignored += 1;
+        const purchaseOrderExtraction = await extractMessagePurchaseOrder(
+          message,
+          purchaseOrderExtractor,
+        );
+        if (!purchaseOrderExtraction) {
+          await completeEmailIngestion(ingestionId, { status: 'ignored' });
+          ignored += 1;
+          continue;
+        }
+        const rfqId = resolveLinkedRfqId(
+          purchaseOrderExtraction.result.rfqReference,
+          purchaseOrderExtraction.searchText,
+          rfqCandidates,
+        );
+        const purchaseOrder = await createPurchaseOrder(
+          account.organizationId,
+          account.userId,
+          {
+            ...purchaseOrderExtraction.result.purchaseOrder,
+            rfqId,
+          },
+          organization.vat,
+        );
+        if (!purchaseOrder) {
+          throw new Error('Purchase order could not be created');
+        }
+        await completeEmailIngestion(ingestionId, {
+          status: 'processed',
+          purchaseOrderId: purchaseOrder.id,
+        });
+        processed += 1;
         continue;
       }
       const sourcePdfKey = extraction.sourcePdf
