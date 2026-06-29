@@ -1,4 +1,7 @@
-import { listActiveConnectedEmailAccounts } from '~/db/connectedEmailAccounts';
+import {
+  listActiveConnectedEmailAccounts,
+  markConnectedEmailAccountNeedsReconnect,
+} from '~/db/connectedEmailAccounts';
 import {
   claimEmail,
   completeEmailIngestion,
@@ -9,6 +12,7 @@ import {
 import { createPurchaseOrder } from '~/db/purchaseOrders';
 import { createRfq, getRfqs } from '~/db/rfqs';
 import { createEmailClient } from '~/services/email/index.server';
+import { isGmailAuthenticationError } from '~/services/email/gmail.server';
 import { createPurchaseOrderExtractor } from '~/services/purchase-order-extraction/index.server';
 import type {
   PurchaseOrderExtractionResult,
@@ -360,6 +364,12 @@ export const runEmailIngestion = async (env: Env, organizationId?: string) => {
     try {
       results.push(await processAccount(account, env));
     } catch (error) {
+      if (isGmailAuthenticationError(error)) {
+        await markConnectedEmailAccountNeedsReconnect(
+          account.id,
+          'Gmail access expired. Reconnect this account to resume inbox checks.',
+        );
+      }
       results.push({
         accountId: account.id,
         email: account.email,

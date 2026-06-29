@@ -5,7 +5,7 @@ import {
   useFetcher,
   useSearchParams,
 } from 'react-router';
-import { Mail, Plus, Trash2 } from 'lucide-react';
+import { AlertTriangle, Mail, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import type { Route } from './+types/connected-accounts';
 import {
   deleteConnectedEmailAccount,
@@ -141,9 +141,24 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
                   Gmail · Connected{' '}
                   {new Date(account.createdAt).toLocaleDateString()}
                 </p>
+                {account.needsReconnect && (
+                  <p className='mt-2 flex items-start gap-1.5 text-xs font-medium text-amber-700'>
+                    <AlertTriangle size={14} className='mt-0.5 shrink-0' />
+                    {account.reconnectReason ??
+                      'Gmail access expired. Reconnect this account to resume inbox checks.'}
+                  </p>
+                )}
               </div>
               {loaderData.isOwner ? (
                 <>
+                  {account.needsReconnect && (
+                    <Link
+                      to='/api/email-accounts/google/start'
+                      className='inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-400'
+                    >
+                      <RefreshCw size={16} /> Reconnect
+                    </Link>
+                  )}
                   <fetcher.Form method='post'>
                     <input type='hidden' name='id' value={account.id} />
                     <input type='hidden' name='intent' value='toggle' />
@@ -156,7 +171,11 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
                       type='submit'
                       className={`rounded-full px-3 py-1.5 text-xs font-semibold ${account.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}
                     >
-                      {account.isActive ? 'Active' : 'Inactive'}
+                      {account.needsReconnect
+                        ? 'Needs reconnect'
+                        : account.isActive
+                          ? 'Active'
+                          : 'Inactive'}
                     </button>
                   </fetcher.Form>
                   <fetcher.Form method='post'>
@@ -173,9 +192,13 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
                 </>
               ) : (
                 <span
-                  className={`rounded-full px-3 py-1.5 text-xs font-semibold ${account.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold ${account.needsReconnect ? 'bg-amber-50 text-amber-700' : account.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}
                 >
-                  {account.isActive ? 'Active' : 'Inactive'}
+                  {account.needsReconnect
+                    ? 'Needs reconnect'
+                    : account.isActive
+                      ? 'Active'
+                      : 'Inactive'}
                 </span>
               )}
             </article>

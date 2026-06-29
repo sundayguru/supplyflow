@@ -16,6 +16,7 @@ export const listRfqsWithDraftedEmails = (limit = 50) => {
       draftUpdatedAt: rfqs.generatedReplyDraftUpdatedAt,
       rfqUpdatedAt: rfqs.updatedAt,
       threadId: emailIngestions.threadId,
+      accountId: connectedEmailAccounts.id,
       accountProvider: connectedEmailAccounts.provider,
       accountEmail: connectedEmailAccounts.email,
       encryptedRefreshToken: connectedEmailAccounts.encryptedRefreshToken,
@@ -31,6 +32,7 @@ export const listRfqsWithDraftedEmails = (limit = 50) => {
         isNotNull(rfqs.generatedReplyDraftId),
         notInArray(rfqs.status, terminalDraftStatuses),
         eq(connectedEmailAccounts.isActive, true),
+        eq(connectedEmailAccounts.needsReconnect, false),
       ),
     )
     .limit(limit);

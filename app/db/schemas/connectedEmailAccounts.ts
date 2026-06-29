@@ -25,6 +25,11 @@ export const connectedEmailAccounts = sqliteTable(
     displayName: text('display_name', { length: 255 }),
     encryptedRefreshToken: text('encrypted_refresh_token').notNull(),
     isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+    needsReconnect: integer('needs_reconnect', { mode: 'boolean' })
+      .notNull()
+      .default(false),
+    reconnectReason: text('reconnect_reason', { length: 511 }),
+    reconnectRequiredAt: text('reconnect_required_at'),
     createdAt: text('created_at')
       .notNull()
       .default(sql`(CURRENT_TIMESTAMP)`),
@@ -39,6 +44,7 @@ export const connectedEmailAccounts = sqliteTable(
       table.providerAccountId,
     ),
     index('connected_email_accounts_active_idx').on(table.isActive),
+    index('connected_email_accounts_reconnect_idx').on(table.needsReconnect),
     index('connected_email_accounts_user_idx').on(table.userId),
     index('connected_email_accounts_org_idx').on(table.organizationId),
   ],

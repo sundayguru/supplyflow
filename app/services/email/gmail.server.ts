@@ -39,11 +39,6 @@ type GmailMessageResponse = {
   payload?: GmailPart;
 };
 
-type GmailThreadResponse = {
-  id: string;
-  messages?: GmailMessageResponse[];
-};
-
 type GoogleTokenResponse = {
   access_token?: string;
   refresh_token?: string;
@@ -54,6 +49,20 @@ type GmailAttachmentResponse = {
   data?: string;
   size?: number;
 };
+
+export class GmailAuthenticationError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
+}
+
+export const isGmailAuthenticationError = (
+  error: unknown,
+): error is GmailAuthenticationError =>
+  error instanceof GmailAuthenticationError;
 
 class GmailApiError extends Error {
   constructor(
@@ -285,6 +294,12 @@ const gmailRequest = async <ResponseBody>(
     },
   });
   if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      throw new GmailAuthenticationError(
+        `Gmail API authentication failed with status ${response.status}`,
+        response.status,
+      );
+    }
     throw new GmailApiError(
       `Gmail API request failed with status ${response.status}`,
       response.status,
@@ -305,8 +320,10 @@ const getAccessToken = async (config: GmailClientConfig) => {
     }),
   });
   if (!response.ok) {
-    throw new Error(
-      `Google token refresh failed with status ${response.status}`,
+    const errorText = await response.text();
+    throw new GmailAuthenticationError(
+      `Google token refresh failed with status ${response.status}: ${errorText}`,
+      response.status,
     );
   }
   const payload = (await response.json()) as GoogleTokenResponse;
@@ -377,8 +394,11 @@ const isDraftSent = async (
     const sentAfterMs = input.sentAfter.getTime();
     const message = res.message;
     const internalDate = Number(message.internalDate ?? 0);
-    return message.labelIds?.includes('SENT') && internalDate >= sentAfterMs;
-  } catch (error) {
+    return (
+      (message.labelIds?.includes('SENT') ?? false) &&
+      internalDate >= sentAfterMs
+    );
+  } catch {
     return false;
   }
 };

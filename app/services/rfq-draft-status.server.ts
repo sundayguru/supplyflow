@@ -2,7 +2,9 @@ import {
   listRfqsWithDraftedEmails,
   markRfqDraftSent,
 } from '~/db/rfqDraftStatus';
+import { markConnectedEmailAccountNeedsReconnect } from '~/db/connectedEmailAccounts';
 import { createEmailClient } from '~/services/email/index.server';
+import { isGmailAuthenticationError } from '~/services/email/gmail.server';
 import { decryptToken } from '~/utils/tokenEncryption.server';
 
 type DraftStatusResult = {
@@ -73,6 +75,12 @@ export const runRfqDraftSentStatusSync = async (
         sent += 1;
       }
     } catch (error) {
+      if (isGmailAuthenticationError(error)) {
+        await markConnectedEmailAccountNeedsReconnect(
+          draftedRfq.accountId,
+          'Gmail access expired. Reconnect this account to resume inbox checks.',
+        );
+      }
       failed += 1;
       console.error(
         JSON.stringify({

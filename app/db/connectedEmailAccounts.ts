@@ -11,6 +11,9 @@ export const listConnectedEmailAccounts = (organizationId: string) => {
       email: connectedEmailAccounts.email,
       displayName: connectedEmailAccounts.displayName,
       isActive: connectedEmailAccounts.isActive,
+      needsReconnect: connectedEmailAccounts.needsReconnect,
+      reconnectReason: connectedEmailAccounts.reconnectReason,
+      reconnectRequiredAt: connectedEmailAccounts.reconnectRequiredAt,
       createdAt: connectedEmailAccounts.createdAt,
       updatedAt: connectedEmailAccounts.updatedAt,
     })
@@ -28,9 +31,13 @@ export const listActiveConnectedEmailAccounts = (organizationId?: string) => {
       organizationId
         ? and(
             eq(connectedEmailAccounts.isActive, true),
+            eq(connectedEmailAccounts.needsReconnect, false),
             eq(connectedEmailAccounts.organizationId, organizationId),
           )
-        : eq(connectedEmailAccounts.isActive, true),
+        : and(
+            eq(connectedEmailAccounts.isActive, true),
+            eq(connectedEmailAccounts.needsReconnect, false),
+          ),
     );
 };
 
@@ -59,11 +66,32 @@ export const upsertConnectedEmailAccount = async (input: {
         displayName: input.displayName,
         encryptedRefreshToken: input.encryptedRefreshToken,
         isActive: true,
+        needsReconnect: false,
+        reconnectReason: null,
+        reconnectRequiredAt: null,
         updatedAt: new Date().toISOString(),
       },
     })
     .returning({ id: connectedEmailAccounts.id });
   return account;
+};
+
+export const markConnectedEmailAccountNeedsReconnect = async (
+  id: string,
+  reason: string,
+) => {
+  const db = getDb();
+  const [account] = await db
+    .update(connectedEmailAccounts)
+    .set({
+      needsReconnect: true,
+      reconnectReason: reason.slice(0, 511),
+      reconnectRequiredAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })
+    .where(eq(connectedEmailAccounts.id, id))
+    .returning({ id: connectedEmailAccounts.id });
+  return account ?? null;
 };
 
 export const setConnectedEmailAccountActive = async (
