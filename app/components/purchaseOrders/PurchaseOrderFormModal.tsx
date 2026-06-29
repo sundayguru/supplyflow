@@ -7,6 +7,7 @@ import {
   type PurchaseOrderInput,
   type PurchaseOrderStatus,
 } from '~/types/purchaseOrder';
+import { currencyOptionLabel, supportedCurrencies } from '~/utils/currencies';
 import {
   PurchaseOrderItemFields,
   type PurchaseOrderItemFormValue,
@@ -216,15 +217,18 @@ export const PurchaseOrderFormModal = ({
             </label>
             <label className='text-sm font-semibold text-slate-700'>
               Currency
-              <input
+              <select
                 required
-                maxLength={3}
                 value={currency}
-                onChange={(event) =>
-                  setCurrency(event.target.value.toUpperCase())
-                }
+                onChange={(event) => setCurrency(event.target.value)}
                 className={inputClass}
-              />
+              >
+                {supportedCurrencies.map((option) => (
+                  <option key={option.code} value={option.code}>
+                    {currencyOptionLabel(option)}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
 

@@ -1,10 +1,9 @@
 import type { ProductPriceInput } from '~/types/productPrice';
+import { isSupportedCurrencyCode } from './currencies';
 
 type ParseProductPriceResult =
   | { success: true; value: ProductPriceInput }
   | { success: false; error: string };
-
-const currencyPattern = /^[A-Z]{3}$/;
 
 const optionalString = (value: FormDataEntryValue | null) => {
   const text = String(value ?? '').trim();
@@ -41,8 +40,8 @@ export const parseProductPriceFormData = (
   const currency = String(formData.get('currency') ?? 'EUR')
     .trim()
     .toUpperCase();
-  if (!currencyPattern.test(currency)) {
-    return { success: false, error: 'Currency must be a 3-letter code' };
+  if (!isSupportedCurrencyCode(currency)) {
+    return { success: false, error: 'Select a supported currency' };
   }
 
   return {

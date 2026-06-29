@@ -4,6 +4,7 @@ import {
   type RfqItemInput,
   type RfqStatus,
 } from '~/types/rfq';
+import { isSupportedCurrencyCode } from './currencies';
 
 type ParseResult =
   | { success: true; value: RfqInput }
@@ -136,8 +137,8 @@ export const parseRfqInput = (
   if (!rfqStatuses.includes(status as RfqStatus)) {
     return { success: false, error: 'Select a valid RFQ status' };
   }
-  if (!/^[A-Z]{3}$/.test(currency)) {
-    return { success: false, error: 'Currency must use a three-letter code' };
+  if (!isSupportedCurrencyCode(currency)) {
+    return { success: false, error: 'Select a supported currency' };
   }
   if (rawItems.length === 0) {
     return { success: false, error: 'Add at least one RFQ item' };

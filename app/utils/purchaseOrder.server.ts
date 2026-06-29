@@ -6,6 +6,7 @@ import {
   type PurchaseOrderItemStatus,
   type PurchaseOrderStatus,
 } from '~/types/purchaseOrder';
+import { isSupportedCurrencyCode } from './currencies';
 
 type ParseResult =
   | { success: true; value: PurchaseOrderInput }
@@ -122,8 +123,8 @@ export const parsePurchaseOrderInput = (value: unknown): ParseResult => {
   ) {
     return { success: false, error: 'Select a valid purchase order status' };
   }
-  if (!/^[A-Z]{3}$/.test(currency)) {
-    return { success: false, error: 'Currency must use a three-letter code' };
+  if (!isSupportedCurrencyCode(currency)) {
+    return { success: false, error: 'Select a supported currency' };
   }
   if (rawItems.length === 0) {
     return { success: false, error: 'Add at least one purchase order item' };

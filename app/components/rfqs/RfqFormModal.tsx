@@ -3,6 +3,7 @@ import { Plus, X } from 'lucide-react';
 import { rfqStatuses, type RfqInput, type RfqStatus } from '~/types/rfq';
 import type { ManufacturerRecord } from '~/types/manufacturer';
 import type { ProductPriceRecord } from '~/types/productPrice';
+import { currencyOptionLabel, supportedCurrencies } from '~/utils/currencies';
 import { RfqItemFields, type RfqItemFormValue } from './RfqItemFields';
 import type { RfqPdfTemplateOption } from '~/types';
 
@@ -237,15 +238,18 @@ export const RfqFormModal = ({
           <div className='grid gap-5 sm:grid-cols-2'>
             <label className='text-sm font-semibold text-slate-700'>
               Currency
-              <input
+              <select
                 required
-                maxLength={3}
                 value={currency}
-                onChange={(event) =>
-                  setCurrency(event.target.value.toUpperCase())
-                }
+                onChange={(event) => setCurrency(event.target.value)}
                 className={inputClass}
-              />
+              >
+                {supportedCurrencies.map((option) => (
+                  <option key={option.code} value={option.code}>
+                    {currencyOptionLabel(option)}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className='flex items-center gap-3 self-end rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-700'>
               <input

@@ -6,6 +6,7 @@ import { Input, TextArea } from '~/components/FormFields';
 import { Modal } from '~/components/Modal';
 import type { ManufacturerRecord } from '~/types/manufacturer';
 import type { ProductPriceRecord } from '~/types/productPrice';
+import { currencyOptionLabel, supportedCurrencies } from '~/utils/currencies';
 
 type ProductPriceActionResponse = { success: true } | { error: string };
 
@@ -97,14 +98,22 @@ export const ProductPriceFormModal = ({
             defaultValue={priceValue(productPrice?.price)}
             required
           />
-          <Input
-            label='Currency'
-            id='currency'
-            name='currency'
-            maxLength={3}
-            defaultValue={productPrice?.currency ?? 'EUR'}
-            required
-          />
+          <label className='text-sm font-semibold text-slate-700'>
+            Currency
+            <select
+              id='currency'
+              name='currency'
+              defaultValue={productPrice?.currency ?? 'EUR'}
+              required
+              className='mt-2 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10'
+            >
+              {supportedCurrencies.map((option) => (
+                <option key={option.code} value={option.code}>
+                  {currencyOptionLabel(option)}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         <TextArea
