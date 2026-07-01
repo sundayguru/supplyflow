@@ -32,7 +32,7 @@ export const InviteUserModal = ({ isOpen, onClose }: InviteUserModalProps) => {
           <p className='text-sm text-slate-600'>
             Invitation created. Share this secure link with the invited user.
           </p>
-          <div className='break-all rounded-2xl bg-slate-50 p-4 text-sm text-slate-700'>
+          <div className='rounded-2xl bg-slate-50 p-4 text-sm break-all text-slate-700'>
             {inviteUrl}
           </div>
           <div className='flex justify-end gap-3'>

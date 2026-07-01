@@ -34,6 +34,8 @@ export const parseRfqItemInput = (
   const discountType = value.discountType === 'fixed' ? 'fixed' : 'percentage';
   const discountValue =
     value.discountValue === undefined ? 0 : Number(value.discountValue);
+  const shippingCost =
+    value.shippingCost === undefined ? 0 : Number(value.shippingCost);
   const unit = typeof value.unit === 'string' ? value.unit.trim() : '';
   const description =
     typeof value.description === 'string' ? value.description.trim() : '';
@@ -45,6 +47,9 @@ export const parseRfqItemInput = (
   }
   if (!Number.isInteger(price) || price < 0) {
     return { success: false, error: 'Item price must be zero or more' };
+  }
+  if (!Number.isInteger(shippingCost) || shippingCost < 0) {
+    return { success: false, error: 'Item shipping cost must be zero or more' };
   }
   if (!Number.isFinite(priceMarkup) || priceMarkup < 0 || priceMarkup > 1000) {
     return {
@@ -75,6 +80,7 @@ export const parseRfqItemInput = (
       priceMarkup,
       discountType,
       discountValue,
+      shippingCost,
       unit,
       description,
       manufacturer:

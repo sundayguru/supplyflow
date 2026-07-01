@@ -48,7 +48,7 @@ export const RfqPdfTemplatePreview = ({
 
   return (
     <div className='space-y-4 rounded-2xl bg-slate-100 p-4'>
-      <p className='text-xs font-bold uppercase tracking-wider text-slate-500'>
+      <p className='text-xs font-bold tracking-wider text-slate-500 uppercase'>
         Live PDF preview
       </p>
       <div className='grid gap-4 xl:grid-cols-2'>
@@ -100,7 +100,7 @@ export const RfqPdfTemplatePreview = ({
                 })}
               </tbody>
             </table>
-            <dl className='ml-auto mt-4 w-36 space-y-1'>
+            <dl className='mt-4 ml-auto w-36 space-y-1'>
               <div className='flex justify-between'>
                 <dt>Subtotal</dt>
                 <dd>{formatRfqMoney(rfq.subtotal, 'EUR')}</dd>

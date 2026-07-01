@@ -43,7 +43,7 @@ export const PurchaseOrderItemEditModal = ({
       >
         <div className='flex items-start justify-between gap-4'>
           <div>
-            <p className='text-xs font-bold uppercase tracking-[0.16em] text-emerald-700'>
+            <p className='text-xs font-bold tracking-[0.16em] text-emerald-700 uppercase'>
               Purchase order item
             </p>
             <h2

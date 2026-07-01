@@ -1,0 +1,1 @@
+ALTER TABLE `rfq_items` ADD `shipping_cost` integer DEFAULT 0 NOT NULL;

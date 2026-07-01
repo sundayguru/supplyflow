@@ -117,7 +117,7 @@ export const RfqItemFields = ({
         </label>
       </div>
 
-      <div className='mt-4 grid gap-4 sm:grid-cols-2'>
+      <div className='mt-4 grid gap-4 sm:grid-cols-3'>
         <label className='text-sm font-semibold text-slate-700'>
           Unit price
           <input
@@ -144,6 +144,23 @@ export const RfqItemFields = ({
               update('priceMarkup', Number(event.target.value))
             }
             className={inputClass}
+          />
+        </label>
+        <label className='text-sm font-semibold text-slate-700'>
+          Shipping cost ({currency})
+          <input
+            type='number'
+            min='0'
+            step='0.01'
+            value={value.shippingCost ? value.shippingCost / 100 : ''}
+            onChange={(event) =>
+              update(
+                'shippingCost',
+                Math.round(Number(event.target.value || 0) * 100),
+              )
+            }
+            className={inputClass}
+            placeholder='0.00'
           />
         </label>
       </div>
@@ -198,6 +215,13 @@ export const RfqItemFields = ({
         <p className='mt-3 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-800'>
           Discount lowers this line by{' '}
           {formatRfqMoney(amounts.lineDiscount, currency)}.
+        </p>
+      )}
+
+      {amounts.lineShipping > 0 && (
+        <p className='mt-3 rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs font-semibold text-sky-800'>
+          Shipping adds {formatRfqMoney(amounts.lineShipping, currency)} to this
+          line.
         </p>
       )}
 

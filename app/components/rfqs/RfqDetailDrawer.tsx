@@ -196,11 +196,11 @@ export const RfqDetailDrawer = ({
         role='dialog'
         aria-modal='true'
         aria-labelledby='rfq-detail-title'
-        className='absolute right-0 top-0 flex h-full w-full max-w-2xl flex-col bg-[#f8faf7] shadow-2xl'
+        className='absolute top-0 right-0 flex h-full w-full max-w-2xl flex-col bg-[#f8faf7] shadow-2xl'
       >
         <header className='flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-5 py-5 sm:px-7'>
           <div>
-            <p className='text-xs font-bold uppercase tracking-[0.16em] text-emerald-700'>
+            <p className='text-xs font-bold tracking-[0.16em] text-emerald-700 uppercase'>
               Request for quotation
             </p>
             <div className='mt-2 flex flex-wrap items-center gap-3'>
@@ -251,7 +251,7 @@ export const RfqDetailDrawer = ({
             <section className='mb-5 rounded-xl border border-slate-200 bg-white p-4'>
               <div className='flex flex-wrap items-center justify-between gap-3'>
                 <div>
-                  <p className='text-xs font-bold uppercase tracking-[0.14em] text-emerald-700'>
+                  <p className='text-xs font-bold tracking-[0.14em] text-emerald-700 uppercase'>
                     Email draft
                   </p>
                   <p className='mt-1 text-sm text-slate-500'>
@@ -278,7 +278,7 @@ export const RfqDetailDrawer = ({
             aria-label='RFQ summary'
           >
             <div className='rounded-2xl border border-slate-200 bg-white p-4'>
-              <p className='flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-400'>
+              <p className='flex items-center gap-2 text-xs font-bold tracking-wide text-slate-400 uppercase'>
                 <UserRound size={14} /> Customer
               </p>
               <p className='mt-3 font-semibold text-slate-900'>
@@ -289,7 +289,7 @@ export const RfqDetailDrawer = ({
               </p>
             </div>
             <div className='rounded-2xl border border-slate-200 bg-white p-4'>
-              <p className='flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-400'>
+              <p className='flex items-center gap-2 text-xs font-bold tracking-wide text-slate-400 uppercase'>
                 <CircleDollarSign size={14} /> Total value
               </p>
               <p className='mt-3 text-2xl font-semibold text-slate-900'>
@@ -297,7 +297,7 @@ export const RfqDetailDrawer = ({
               </p>
             </div>
             <div className='rounded-2xl border border-slate-200 bg-white p-4'>
-              <p className='flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-400'>
+              <p className='flex items-center gap-2 text-xs font-bold tracking-wide text-slate-400 uppercase'>
                 <CalendarDays size={14} /> Due date
               </p>
               <p className='mt-3 font-semibold text-slate-900'>
@@ -307,7 +307,7 @@ export const RfqDetailDrawer = ({
               </p>
             </div>
             <div className='rounded-2xl border border-slate-200 bg-white p-4'>
-              <p className='text-xs font-bold uppercase tracking-wide text-slate-400'>
+              <p className='text-xs font-bold tracking-wide text-slate-400 uppercase'>
                 Created
               </p>
               <p className='mt-3 font-semibold text-slate-900'>
@@ -323,7 +323,7 @@ export const RfqDetailDrawer = ({
             <section className='mt-7 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm'>
               <div className='flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4'>
                 <div>
-                  <p className='flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-emerald-700'>
+                  <p className='flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-emerald-700 uppercase'>
                     <FileText size={14} /> Source PDF
                   </p>
                   <h3 className='mt-1 text-lg font-bold text-slate-900'>
@@ -365,7 +365,7 @@ export const RfqDetailDrawer = ({
           <section className='mt-7'>
             <div className='flex items-center justify-between gap-3'>
               <div>
-                <p className='text-xs font-bold uppercase tracking-[0.14em] text-emerald-700'>
+                <p className='text-xs font-bold tracking-[0.14em] text-emerald-700 uppercase'>
                   Requested items
                 </p>
                 <h3 className='mt-1 text-lg font-bold text-slate-900'>
@@ -408,6 +408,12 @@ export const RfqDetailDrawer = ({
                 <div className='flex items-center justify-between text-slate-600'>
                   <dt>Discount</dt>
                   <dd>-{formatRfqMoney(rfq.discountValue, rfq.currency)}</dd>
+                </div>
+              )}
+              {rfq.shippingValue > 0 && (
+                <div className='flex items-center justify-between text-slate-600'>
+                  <dt>Shipping</dt>
+                  <dd>{formatRfqMoney(rfq.shippingValue, rfq.currency)}</dd>
                 </div>
               )}
               {rfq.applyVat && (
@@ -574,7 +580,12 @@ const RfqDetailItem = ({
               (-{formatRfqMoney(amounts.lineDiscount, currency)})
             </p>
           )}
-          <p className='mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700'>
+          {amounts.lineShipping > 0 && (
+            <p className='mt-2 text-xs font-semibold text-sky-700'>
+              Shipping: {formatRfqMoney(amounts.lineShipping, currency)}
+            </p>
+          )}
+          <p className='mt-3 text-sm leading-6 whitespace-pre-wrap text-slate-700'>
             {item.description}
           </p>
           {(item.manufacturer || item.specifications) && (
@@ -588,7 +599,7 @@ const RfqDetailItem = ({
                 </p>
               )}
               {item.specifications && (
-                <p className='mt-2 whitespace-pre-wrap leading-6 text-slate-500'>
+                <p className='mt-2 leading-6 whitespace-pre-wrap text-slate-500'>
                   {item.specifications}
                 </p>
               )}

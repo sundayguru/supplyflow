@@ -74,6 +74,7 @@ export const rfqItems = sqliteTable(
       .notNull()
       .default('percentage'),
     discountValue: integer('discount_value').notNull().default(0),
+    shippingCost: integer('shipping_cost').notNull().default(0),
     unit: text('unit', { length: 32 }).notNull(),
     description: text('description').notNull(),
     manufacturer: text('manufacturer', { length: 255 }),

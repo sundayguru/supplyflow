@@ -123,7 +123,7 @@ export const OrganizationFormModal = ({
         <div>
           <label
             htmlFor='organization-preferred-model'
-            className='mb-2 block text-xs font-bold uppercase tracking-widest text-black/50'
+            className='mb-2 block text-xs font-bold tracking-widest text-black/50 uppercase'
           >
             Preferred AI model
           </label>

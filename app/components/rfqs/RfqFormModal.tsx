@@ -38,6 +38,7 @@ const emptyItem = (priceMarkup: number): RfqItemFormValue => ({
   priceMarkup,
   discountType: 'percentage',
   discountValue: 0,
+  shippingCost: 0,
   unit: 'unit',
   description: '',
   manufacturer: null,
@@ -102,7 +103,7 @@ export const RfqFormModal = ({
       <div className='relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8'>
         <div className='flex items-start justify-between gap-4'>
           <div>
-            <p className='text-xs font-bold uppercase tracking-[0.16em] text-emerald-700'>
+            <p className='text-xs font-bold tracking-[0.16em] text-emerald-700 uppercase'>
               {initialValue ? 'Update request' : 'New request'}
             </p>
             <h2 className='mt-2 font-serif text-3xl font-semibold text-slate-950'>

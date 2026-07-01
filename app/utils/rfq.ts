@@ -11,6 +11,7 @@ type PricedRfqItem = {
   priceMarkup: number;
   discountType: 'percentage' | 'fixed';
   discountValue: number;
+  shippingCost: number;
 };
 
 export const calculateRfqItemAmounts = (item: PricedRfqItem) => {
@@ -22,12 +23,14 @@ export const calculateRfqItemAmounts = (item: PricedRfqItem) => {
       ? Math.round((lineBeforeDiscount * item.discountValue) / 100)
       : item.discountValue;
   const lineDiscount = Math.min(lineBeforeDiscount, Math.max(0, rawDiscount));
+  const lineShipping = Math.max(0, item.shippingCost);
   return {
     lineBase,
     lineMarkup,
     lineBeforeDiscount,
     lineDiscount,
-    lineTotal: lineBeforeDiscount - lineDiscount,
+    lineShipping,
+    lineTotal: lineBeforeDiscount - lineDiscount + lineShipping,
   };
 };
 
@@ -46,12 +49,17 @@ export const calculateRfqTotals = (
     (total, item) => total + item.lineDiscount,
     0,
   );
-  const valueBeforeVat = subtotal + markupValue - discountValue;
+  const shippingValue = amounts.reduce(
+    (total, item) => total + item.lineShipping,
+    0,
+  );
+  const valueBeforeVat = subtotal + markupValue - discountValue + shippingValue;
   const vatValue = applyVat ? Math.round((valueBeforeVat * vatRate) / 100) : 0;
   return {
     subtotal,
     markupValue,
     discountValue,
+    shippingValue,
     vatValue,
     totalValue: valueBeforeVat + vatValue,
   };

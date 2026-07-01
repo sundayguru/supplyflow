@@ -33,6 +33,7 @@ Return exactly one JSON object with this shape:
       "priceMarkup": non-negative number, default 0,
       "discountType": "percentage" or "fixed", default "percentage",
       "discountValue": non-negative number, default 0,
+      "shippingCost": non-negative integer in the smallest currency unit, default 0,
       "unit": string such as "unit" or "piece",
       "description": string,
       "manufacturer": string or null,
@@ -111,6 +112,8 @@ export const parseRfqExtractionResponse = (
                             : 'percentage',
                         discountValue:
                           'discountValue' in item ? item.discountValue : 0,
+                        shippingCost:
+                          'shippingCost' in item ? item.shippingCost : 0,
                       }
                     : item,
                 )

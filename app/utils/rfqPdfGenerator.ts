@@ -83,6 +83,7 @@ type RfqPdfData = Omit<
     | 'subtotal'
     | 'markupValue'
     | 'discountValue'
+    | 'shippingValue'
     | 'vatValue'
     | 'totalValue'
     | 'applyVat'
@@ -209,7 +210,7 @@ export const generateRfqPdf = async (
   });
   y -= 34;
 
-  const columns = [SIDE_MARGIN, 63, 138, 305, 348, 418, 482];
+  const columns = [SIDE_MARGIN, 63, 128, 270, 312, 376, 432, 492];
   const drawTableHeader = () => {
     page.drawRectangle({
       x: SIDE_MARGIN,
@@ -225,6 +226,7 @@ export const generateRfqPdf = async (
       'Qty',
       'Unit price',
       'Discount',
+      'Shipping',
       'Line total',
     ].forEach((label, index) =>
       page.drawText(label, {
@@ -253,13 +255,18 @@ export const generateRfqPdf = async (
           ? `${item.discountValue}%`
           : formatMoney(amounts.lineDiscount, rfq.currency)
         : '-';
+    const shippingLabel =
+      amounts.lineShipping > 0
+        ? formatMoney(amounts.lineShipping, rfq.currency)
+        : '-';
     const values = [
       String(index + 1),
       safePdfText(item.manufacturerPartNumber ?? '-').slice(0, 18),
-      safePdfText(item.description).slice(0, 28),
+      safePdfText(item.description).slice(0, 22),
       String(item.quantity),
       formatMoney(unitPriceWithMarkup, rfq.currency),
       discountLabel,
+      shippingLabel,
       formatMoney(amounts.lineTotal, rfq.currency),
     ];
     values.forEach((value, columnIndex) =>
@@ -287,6 +294,9 @@ export const generateRfqPdf = async (
     ],
     ...(rfq.discountValue > 0
       ? [['Discount', `-${formatMoney(rfq.discountValue, rfq.currency)}`]]
+      : []),
+    ...(rfq.shippingValue > 0
+      ? [['Shipping', formatMoney(rfq.shippingValue, rfq.currency)]]
       : []),
     ...(rfq.applyVat
       ? [
