@@ -27,7 +27,12 @@ import { decryptToken } from '~/utils/tokenEncryption.server';
 import type { SelectConnectedEmailAccount } from '~/db/schemas';
 import { getOrganizationById } from '~/db/organizations';
 import { organizationAiModels } from '~/types/organization';
-import type { EmailAttachment, EmailMessage } from '~/services/email/types';
+import type {
+  EmailAttachment,
+  EmailClient,
+  EmailMessage,
+} from '~/services/email/types';
+import type { RfqRecord } from '~/types/rfq';
 import { extractRfqPdfText } from '~/utils/rfqPdfExtraction.server';
 import { uploadRfqSourcePdf } from '~/utils/rfqSourcePdf.server';
 
@@ -210,6 +215,44 @@ const extractMessagePurchaseOrder = async (
   }
 };
 
+const buildRfqAcknowledgementBody = (
+  rfq: RfqRecord,
+  organizationName: string,
+) =>
+  [
+    'Hello,',
+    '',
+    'Thank you for your request for quotation. We have received it and it will be processed as soon as possible.',
+    '',
+    `Reference: ${rfq.reference}`,
+    '',
+    'Best regards,',
+    organizationName,
+  ].join('\n');
+
+const sendRfqAcknowledgement = async ({
+  emailClient,
+  message,
+  organizationName,
+  rfq,
+}: {
+  emailClient: EmailClient;
+  message: EmailMessage;
+  organizationName: string;
+  rfq: RfqRecord;
+}) => {
+  if (!emailClient.sendReply || !message.from.address) {
+    return;
+  }
+  await emailClient.sendReply({
+    originalMessageId: message.id,
+    threadId: message.threadId,
+    to: message.from.address,
+    subject: message.subject || rfq.reference,
+    bodyText: buildRfqAcknowledgementBody(rfq, organizationName),
+  });
+};
+
 const processAccount = async (
   account: SelectConnectedEmailAccount,
   env: Env,
@@ -331,6 +374,33 @@ const processAccount = async (
       );
       if (!rfq) {
         throw new Error('RFQ could not be created');
+      }
+      try {
+        await sendRfqAcknowledgement({
+          emailClient,
+          message,
+          organizationName: organization.name,
+          rfq,
+        });
+      } catch (acknowledgementError) {
+        if (isGmailAuthenticationError(acknowledgementError)) {
+          await markConnectedEmailAccountNeedsReconnect(
+            account.id,
+            'Gmail access expired. Reconnect this account to resume inbox checks.',
+          );
+        }
+        console.warn(
+          JSON.stringify({
+            event: 'rfq_acknowledgement_failed',
+            accountId: account.id,
+            rfqId: rfq.id,
+            messageId: message.id,
+            error:
+              acknowledgementError instanceof Error
+                ? acknowledgementError.message
+                : 'Unknown acknowledgement error',
+          }),
+        );
       }
       await completeEmailIngestion(ingestionId, {
         status: 'processed',

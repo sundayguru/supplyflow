@@ -40,6 +40,14 @@ export type CreateDraftReplyInput = {
   };
 };
 
+export type SendReplyInput = {
+  originalMessageId: string;
+  threadId: string | null;
+  to: string;
+  subject: string;
+  bodyText: string;
+};
+
 export type UpdateDraftReplyInput = CreateDraftReplyInput & {
   draftId: string;
 };
@@ -65,5 +73,6 @@ export type EmailClient = {
   updateDraftReply?: (
     input: UpdateDraftReplyInput,
   ) => Promise<DraftReplyResult>;
+  sendReply?: (input: SendReplyInput) => Promise<void>;
   isDraftSent?: (input: DraftSentStatusInput) => Promise<boolean>;
 };

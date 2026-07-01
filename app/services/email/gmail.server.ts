@@ -6,6 +6,7 @@ import type {
   CreateDraftReplyInput,
   ListMessagesOptions,
   UpdateDraftReplyInput,
+  SendReplyInput,
   DraftSentStatusInput,
 } from './types';
 
@@ -266,6 +267,23 @@ const createMultipartDraftMessage = (input: CreateDraftReplyInput) => {
   return encodeBase64UrlBytes(new TextEncoder().encode(message));
 };
 
+const createPlainTextReplyMessage = (input: SendReplyInput) => {
+  const subject = /^re:/i.test(input.subject)
+    ? input.subject
+    : `Re: ${input.subject}`;
+  const message = [
+    `To: ${sanitizeHeader(input.to)}`,
+    `Subject: ${encodeMimeHeader(subject)}`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/plain; charset="UTF-8"',
+    'Content-Transfer-Encoding: 7bit',
+    '',
+    input.bodyText,
+    '',
+  ].join('\r\n');
+  return encodeBase64UrlBytes(new TextEncoder().encode(message));
+};
+
 const createDraftUrl = (accountEmail: string) =>
   `https://mail.google.com/mail/u/0/?authuser=${encodeURIComponent(accountEmail)}#drafts`;
 
@@ -475,6 +493,17 @@ export const createGmailClient = (config: GmailClientConfig): EmailClient => ({
       id: draft.id,
       url: createDraftUrl(input.accountEmail),
     };
+  },
+  async sendReply(input) {
+    const accessToken = await getAccessToken(config);
+    await gmailRequest('/messages/send', accessToken, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        threadId: input.threadId ?? undefined,
+        raw: createPlainTextReplyMessage(input),
+      }),
+    });
   },
   async isDraftSent(input) {
     return await isDraftSent(input, await getAccessToken(config));
