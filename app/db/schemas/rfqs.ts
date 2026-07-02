@@ -29,6 +29,8 @@ export const rfqs = sqliteTable(
     generatedReply: text('generated_reply'),
     generatedReplyDraftId: text('generated_reply_draft_id', { length: 255 }),
     generatedReplyDraftUpdatedAt: text('generated_reply_draft_updated_at'),
+    quotationSentAt: text('quotation_sent_at'),
+    quoteReminderSentAt: text('quote_reminder_sent_at'),
     reference: text('reference', { length: 32 }).notNull().unique(),
     customerName: text('customer_name', { length: 255 }).notNull(),
     customerEmail: text('customer_email', { length: 255 }),

@@ -103,11 +103,19 @@ export const updateRfq = async (
   const db = getDb();
   const { items, ...rfqInput } = input;
   const updatedAt = new Date().toISOString();
+  const quotationSentAt =
+    input.status === 'sent' && !existing.quotationSentAt
+      ? updatedAt
+      : existing.quotationSentAt;
+  const quoteReminderSentAt =
+    input.status === 'sent' && existing.status !== 'sent'
+      ? null
+      : existing.quoteReminderSentAt;
 
   await db.batch([
     db
       .update(rfqs)
-      .set({ ...rfqInput, updatedAt })
+      .set({ ...rfqInput, quotationSentAt, quoteReminderSentAt, updatedAt })
       .where(and(eq(rfqs.id, id), eq(rfqs.organizationId, organizationId))),
     db.delete(rfqItems).where(eq(rfqItems.rfqId, id)),
     db.insert(rfqItems).values(
@@ -128,9 +136,22 @@ export const updateRfqStatus = async (
   vatRate: number,
 ) => {
   const db = getDb();
+  const existing = await getRfq(id, organizationId, vatRate);
+  if (!existing) {
+    return null;
+  }
+  const updatedAt = new Date().toISOString();
+  const quotationSentAt =
+    status === 'sent' && !existing.quotationSentAt
+      ? updatedAt
+      : existing.quotationSentAt;
+  const quoteReminderSentAt =
+    status === 'sent' && existing.status !== 'sent'
+      ? null
+      : existing.quoteReminderSentAt;
   const [updated] = await db
     .update(rfqs)
-    .set({ status, updatedAt: new Date().toISOString() })
+    .set({ status, quotationSentAt, quoteReminderSentAt, updatedAt })
     .where(and(eq(rfqs.id, id), eq(rfqs.organizationId, organizationId)))
     .returning({ id: rfqs.id });
   return updated ? getRfq(updated.id, organizationId, vatRate) : null;

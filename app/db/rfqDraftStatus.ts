@@ -40,9 +40,15 @@ export const listRfqsWithDraftedEmails = (limit = 50) => {
 
 export const markRfqDraftSent = async (rfqId: string) => {
   const db = getDb();
+  const sentAt = new Date().toISOString();
   const [updated] = await db
     .update(rfqs)
-    .set({ status: 'sent', updatedAt: new Date().toISOString() })
+    .set({
+      status: 'sent',
+      quotationSentAt: sentAt,
+      quoteReminderSentAt: null,
+      updatedAt: sentAt,
+    })
     .where(eq(rfqs.id, rfqId))
     .returning({ id: rfqs.id });
   return updated ?? null;

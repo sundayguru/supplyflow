@@ -64,6 +64,8 @@ export type RfqRecord = Omit<RfqInput, 'items'> & {
   generatedReply: string | null;
   generatedReplyDraftId: string | null;
   generatedReplyDraftUpdatedAt: string | null;
+  quotationSentAt: string | null;
+  quoteReminderSentAt: string | null;
   subtotal: number;
   markupValue: number;
   discountValue: number;
