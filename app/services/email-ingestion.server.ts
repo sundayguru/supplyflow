@@ -6,6 +6,7 @@ import {
   claimEmail,
   completeEmailIngestion,
   failEmailIngestion,
+  getEmailIngestionAttempt,
   getEmailSyncTime,
   saveEmailSyncTime,
 } from '~/db/emailIngestion';
@@ -39,6 +40,7 @@ import { uploadRfqSourcePdf } from '~/utils/rfqSourcePdf.server';
 const FIRST_SYNC_LOOKBACK_MS = 24 * 60 * 60 * 1000;
 const OVERLAP_MS = 5 * 60 * 1000;
 const MAX_MESSAGES_PER_RUN = 25;
+const STALE_PROCESSING_MS = 10 * 60 * 1000;
 
 type AccountResult = {
   accountId: string;
@@ -81,9 +83,26 @@ type LinkedRfqCandidate = {
   reference: string;
 };
 
+type EmailIngestionAttempt = Awaited<
+  ReturnType<typeof getEmailIngestionAttempt>
+>;
+
 const isPdfAttachment = (attachment: EmailAttachment) =>
   attachment.contentType === 'application/pdf' ||
   attachment.filename.toLowerCase().endsWith('.pdf');
+
+const shouldSkipStoredEmail = (attempt: EmailIngestionAttempt) => {
+  if (!attempt) {
+    return false;
+  }
+  if (attempt.status === 'processed') {
+    return true;
+  }
+  return (
+    attempt.status === 'processing' &&
+    new Date(attempt.updatedAt).getTime() > Date.now() - STALE_PROCESSING_MS
+  );
+};
 
 const buildPdfContextMessage = (
   message: EmailMessage,
@@ -315,14 +334,11 @@ const processAccount = async (
   let failed = 0;
 
   for (const message of messages) {
-    const ingestionId = await claimEmail(
-      account.id,
-      emailClient.provider,
-      message,
-    );
-    if (!ingestionId) {
+    const attempt = await getEmailIngestionAttempt(account.id, message.id);
+    if (shouldSkipStoredEmail(attempt)) {
       continue;
     }
+    let ingestionId: string | null = null;
     try {
       const extraction = await extractMessageRfq(message, extractor);
       if (!extraction) {
@@ -331,8 +347,15 @@ const processAccount = async (
           purchaseOrderExtractor,
         );
         if (!purchaseOrderExtraction) {
-          await completeEmailIngestion(ingestionId, { status: 'ignored' });
           ignored += 1;
+          continue;
+        }
+        ingestionId = await claimEmail(
+          account.id,
+          emailClient.provider,
+          message,
+        );
+        if (!ingestionId) {
           continue;
         }
         const rfqId = resolveLinkedRfqId(
@@ -357,6 +380,10 @@ const processAccount = async (
           purchaseOrderId: purchaseOrder.id,
         });
         processed += 1;
+        continue;
+      }
+      ingestionId = await claimEmail(account.id, emailClient.provider, message);
+      if (!ingestionId) {
         continue;
       }
       const sourcePdfKey = extraction.sourcePdf
@@ -408,7 +435,9 @@ const processAccount = async (
       });
       processed += 1;
     } catch (error) {
-      await failEmailIngestion(ingestionId, error);
+      if (ingestionId) {
+        await failEmailIngestion(ingestionId, error);
+      }
       failed += 1;
     }
   }

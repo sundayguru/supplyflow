@@ -233,6 +233,29 @@ export const saveEmailSyncTime = async (accountId: string, date: Date) => {
     });
 };
 
+export const getEmailIngestionAttempt = async (
+  accountId: string,
+  externalId: string,
+) => {
+  const db = getDb();
+  const [attempt] = await db
+    .select({
+      id: emailIngestions.id,
+      status: emailIngestions.status,
+      updatedAt: emailIngestions.updatedAt,
+    })
+    .from(emailIngestions)
+    .where(
+      and(
+        eq(emailIngestions.accountId, accountId),
+        eq(emailIngestions.externalId, externalId),
+      ),
+    )
+    .limit(1);
+
+  return attempt ?? null;
+};
+
 export const claimEmail = async (
   accountId: string,
   provider: string,
@@ -273,6 +296,7 @@ export const claimEmail = async (
         eq(emailIngestions.externalId, message.id),
         or(
           eq(emailIngestions.status, 'failed'),
+          eq(emailIngestions.status, 'ignored'),
           and(
             eq(emailIngestions.status, 'processing'),
             lt(
