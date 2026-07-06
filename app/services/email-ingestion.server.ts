@@ -34,7 +34,10 @@ import type {
   EmailMessage,
 } from '~/services/email/types';
 import type { RfqRecord } from '~/types/rfq';
-import type { PurchaseOrderItemInput } from '~/types/purchaseOrder';
+import type {
+  PurchaseOrderItemInput,
+  PurchaseOrderRecord,
+} from '~/types/purchaseOrder';
 import { calculateRfqItemAmounts } from '~/utils/rfq';
 import { extractRfqPdfText } from '~/utils/rfqPdfExtraction.server';
 import { uploadRfqSourcePdf } from '~/utils/rfqSourcePdf.server';
@@ -307,6 +310,47 @@ const sendRfqAcknowledgement = async ({
   });
 };
 
+const buildPurchaseOrderAcknowledgementBody = (
+  purchaseOrder: PurchaseOrderRecord,
+  organizationName: string,
+) =>
+  [
+    'Hello,',
+    '',
+    'Thank you for your purchase order. We have received it and will process it as soon as possible.',
+    '',
+    `Reference: ${purchaseOrder.reference}`,
+    '',
+    'Best regards,',
+    organizationName,
+  ].join('\n');
+
+const sendPurchaseOrderAcknowledgement = async ({
+  emailClient,
+  message,
+  organizationName,
+  purchaseOrder,
+}: {
+  emailClient: EmailClient;
+  message: EmailMessage;
+  organizationName: string;
+  purchaseOrder: PurchaseOrderRecord;
+}) => {
+  if (!emailClient.sendReply || !message.from.address) {
+    return;
+  }
+  await emailClient.sendReply({
+    originalMessageId: message.id,
+    threadId: message.threadId,
+    to: message.from.address,
+    subject: message.subject || purchaseOrder.reference,
+    bodyText: buildPurchaseOrderAcknowledgementBody(
+      purchaseOrder,
+      organizationName,
+    ),
+  });
+};
+
 const processAccount = async (
   account: SelectConnectedEmailAccount,
   env: Env,
@@ -431,6 +475,33 @@ const processAccount = async (
         );
         if (!purchaseOrder) {
           throw new Error('Purchase order could not be created');
+        }
+        try {
+          await sendPurchaseOrderAcknowledgement({
+            emailClient,
+            message,
+            organizationName: organization.name,
+            purchaseOrder,
+          });
+        } catch (acknowledgementError) {
+          if (isGmailAuthenticationError(acknowledgementError)) {
+            await markConnectedEmailAccountNeedsReconnect(
+              account.id,
+              'Gmail access expired. Reconnect this account to resume inbox checks.',
+            );
+          }
+          console.warn(
+            JSON.stringify({
+              event: 'purchase_order_acknowledgement_failed',
+              accountId: account.id,
+              purchaseOrderId: purchaseOrder.id,
+              messageId: message.id,
+              error:
+                acknowledgementError instanceof Error
+                  ? acknowledgementError.message
+                  : 'Unknown acknowledgement error',
+            }),
+          );
         }
         await completeEmailIngestion(ingestionId, {
           status: 'processed',
