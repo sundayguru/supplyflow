@@ -16,6 +16,10 @@ type ParseItemResult =
   | { success: true; value: PurchaseOrderItemInput }
   | { success: false; error: string };
 
+type ParsePurchaseOrderInputOptions = {
+  allowEmptyItems?: boolean;
+};
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
@@ -78,7 +82,10 @@ export const parsePurchaseOrderItemInput = (
   };
 };
 
-export const parsePurchaseOrderInput = (value: unknown): ParseResult => {
+export const parsePurchaseOrderInput = (
+  value: unknown,
+  options: ParsePurchaseOrderInputOptions = {},
+): ParseResult => {
   if (!isRecord(value)) {
     return { success: false, error: 'Invalid request body' };
   }
@@ -126,7 +133,7 @@ export const parsePurchaseOrderInput = (value: unknown): ParseResult => {
   if (!isSupportedCurrencyCode(currency)) {
     return { success: false, error: 'Select a supported currency' };
   }
-  if (rawItems.length === 0) {
+  if (!options.allowEmptyItems && rawItems.length === 0) {
     return { success: false, error: 'Add at least one purchase order item' };
   }
 

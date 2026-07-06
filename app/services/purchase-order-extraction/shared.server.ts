@@ -31,7 +31,7 @@ Return exactly one JSON object with this shape:
     "currency": three-letter ISO code, default "EUR",
     "rfqId": null,
     "notes": string or null,
-    "items": [{
+    "items": [] or [{
       "quantity": positive number,
       "price": non-negative integer in the smallest currency unit, default 0,
       "unit": string such as "unit" or "piece",
@@ -45,7 +45,7 @@ Return exactly one JSON object with this shape:
   }
 }
 
-A purchase order is a committed order for goods or services, usually with a PO number, buyer/seller details, item quantities, and prices. Do not classify RFQs, quotes, invoices, shipping notices, newsletters, or casual sales messages as purchase orders. If the source mentions an RFQ reference such as RFQ-2026-ABC123, put the exact RFQ reference in rfqReference. Preserve technical specifications faithfully. If the source content is a purchase order, extract at least one item.`;
+A purchase order is a committed order for goods or services, usually with a PO number, buyer/seller details, item quantities, and prices. A customer message accepting a quote, approving a quotation, or confirming they want to proceed with an RFQ as quoted is also a purchase order even when no line items are repeated in the message. Do not classify RFQs, invoices, shipping notices, newsletters, or casual sales messages as purchase orders. If the source mentions an RFQ reference such as RFQ-2026-ABC123, put the exact RFQ reference in rfqReference. Preserve technical specifications faithfully. If the source content includes purchase order line items, extract them. If the source is only a quote/RFQ acceptance with no repeated line items, return an empty items array.`;
 
 export const buildPurchaseOrderExtractionPrompt = (message: EmailMessage) => {
   if (!message.from.address) {
@@ -114,7 +114,7 @@ export const parsePurchaseOrderExtractionResponse = (
               : [],
         }
       : null;
-  const parsed = parsePurchaseOrderInput(candidate);
+  const parsed = parsePurchaseOrderInput(candidate, { allowEmptyItems: true });
   if (!parsed.success) {
     throw new Error(
       `Purchase order extraction validation failed: ${parsed.error}`,

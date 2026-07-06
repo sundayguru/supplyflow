@@ -34,6 +34,8 @@ import type {
   EmailMessage,
 } from '~/services/email/types';
 import type { RfqRecord } from '~/types/rfq';
+import type { PurchaseOrderItemInput } from '~/types/purchaseOrder';
+import { calculateRfqItemAmounts } from '~/utils/rfq';
 import { extractRfqPdfText } from '~/utils/rfqPdfExtraction.server';
 import { uploadRfqSourcePdf } from '~/utils/rfqSourcePdf.server';
 
@@ -102,6 +104,39 @@ const shouldSkipStoredEmail = (attempt: EmailIngestionAttempt) => {
     attempt.status === 'processing' &&
     new Date(attempt.updatedAt).getTime() > Date.now() - STALE_PROCESSING_MS
   );
+};
+
+const toPurchaseOrderItemFromRfqItem = (
+  item: RfqRecord['items'][number],
+): PurchaseOrderItemInput => {
+  const amounts = calculateRfqItemAmounts(item);
+  return {
+    quantity: item.quantity,
+    price: Math.round(amounts.lineTotal / item.quantity),
+    unit: item.unit,
+    description: item.description,
+    status: 'ordered',
+    manufacturer: item.manufacturer,
+    manufacturerId: item.manufacturerId,
+    manufacturerPartNumber: item.manufacturerPartNumber,
+    specifications: item.specifications,
+  };
+};
+
+const resolvePurchaseOrderItems = (
+  purchaseOrderExtraction: ExtractedMessagePurchaseOrder,
+  linkedRfq: RfqRecord | null,
+) => {
+  const { items } = purchaseOrderExtraction.result.purchaseOrder;
+  if (items.length > 0) {
+    return items;
+  }
+  if (!linkedRfq) {
+    throw new Error(
+      'Purchase order accepted a quote without items, but no linked RFQ was found',
+    );
+  }
+  return linkedRfq.items.map(toPurchaseOrderItemFromRfqItem);
 };
 
 const buildPdfContextMessage = (
@@ -303,9 +338,14 @@ const processAccount = async (
   });
   const purchaseOrderExtractor: PurchaseOrderExtractor =
     createPurchaseOrderExtractor(extractorConfig);
-  const rfqCandidates = (
-    await getRfqs(account.organizationId, organization.vat)
-  ).map(({ id, reference }) => ({ id, reference }));
+  const linkedRfqCandidates = await getRfqs(
+    account.organizationId,
+    organization.vat,
+  );
+  const rfqCandidates = linkedRfqCandidates.map(({ id, reference }) => ({
+    id,
+    reference,
+  }));
   const startedAt = new Date();
   const refreshToken = await decryptToken(
     account.encryptedRefreshToken,
@@ -363,11 +403,28 @@ const processAccount = async (
           purchaseOrderExtraction.searchText,
           rfqCandidates,
         );
+        const linkedRfq =
+          linkedRfqCandidates.find((rfq) => rfq.id === rfqId) ?? null;
+        const purchaseOrderItems = resolvePurchaseOrderItems(
+          purchaseOrderExtraction,
+          linkedRfq,
+        );
+        const shouldUseLinkedRfqTerms =
+          purchaseOrderExtraction.result.purchaseOrder.items.length === 0
+            ? linkedRfq
+            : null;
         const purchaseOrder = await createPurchaseOrder(
           account.organizationId,
           account.userId,
           {
             ...purchaseOrderExtraction.result.purchaseOrder,
+            currency: shouldUseLinkedRfqTerms
+              ? shouldUseLinkedRfqTerms.currency
+              : purchaseOrderExtraction.result.purchaseOrder.currency,
+            applyVat: shouldUseLinkedRfqTerms
+              ? shouldUseLinkedRfqTerms.applyVat
+              : purchaseOrderExtraction.result.purchaseOrder.applyVat,
+            items: purchaseOrderItems,
             rfqId,
           },
           organization.vat,
