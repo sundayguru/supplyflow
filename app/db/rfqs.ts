@@ -7,9 +7,14 @@ import { calculateRfqTotals } from '~/utils/rfq';
 const createReference = () =>
   `RFQ-${new Date().getFullYear()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
 
-const createItemValues = (rfqId: string, items: RfqItemInput[]) =>
+const createItemValues = (
+  rfqId: string,
+  items: RfqItemInput[],
+  defaultPriceMarkup = 0,
+) =>
   items.map((item, position) => ({
     ...item,
+    priceMarkup: item.priceMarkup ?? defaultPriceMarkup,
     id: crypto.randomUUID(),
     rfqId,
     position,
@@ -70,6 +75,7 @@ export const createRfq = async (
   userId: string,
   input: RfqInput,
   vatRate: number,
+  defaultPriceMarkup = 0,
 ) => {
   const db = getDb();
   const id = crypto.randomUUID();
@@ -83,7 +89,7 @@ export const createRfq = async (
       organizationId,
       reference: createReference(),
     }),
-    db.insert(rfqItems).values(createItemValues(id, items)),
+    db.insert(rfqItems).values(createItemValues(id, items, defaultPriceMarkup)),
   ]);
 
   return getRfq(id, organizationId, vatRate);

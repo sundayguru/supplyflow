@@ -398,6 +398,7 @@ const processAccount = async (
         account.userId,
         { ...extraction.result.rfq, sourcePdfKey },
         organization.vat,
+        organization.priceMarkup,
       );
       if (!rfq) {
         throw new Error('RFQ could not be created');

@@ -208,6 +208,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
         ),
       },
       organization.vat,
+      organization.priceMarkup,
     );
     if (!rfq) {
       throw new Error('RFQ could not be created');

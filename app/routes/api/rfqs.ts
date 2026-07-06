@@ -80,6 +80,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
               ),
             },
             organization.vat,
+            organization.priceMarkup,
           ),
         },
         { status: 201 },

@@ -30,7 +30,7 @@ Return exactly one JSON object with this shape:
     "items": [{
       "quantity": positive number,
       "price": non-negative integer in the smallest currency unit, default 0,
-      "priceMarkup": non-negative number, default 0,
+      "priceMarkup": non-negative number only when explicitly present in the source,
       "discountType": "percentage" or "fixed", default "percentage",
       "discountValue": non-negative number, default 0,
       "shippingCost": non-negative integer in the smallest currency unit, default 0,
@@ -105,6 +105,10 @@ export const parseRfqExtractionResponse = (
                   typeof item === 'object' && item !== null
                     ? {
                         ...item,
+                        priceMarkup:
+                          'priceMarkup' in item && Number(item.priceMarkup) > 0
+                            ? item.priceMarkup
+                            : undefined,
                         discountType:
                           'discountType' in item &&
                           item.discountType === 'fixed'
