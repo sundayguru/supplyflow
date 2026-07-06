@@ -27,6 +27,8 @@ Return exactly one JSON object with this shape:
     "applyVat": false,
     "templateId": null,
     "currency": three-letter ISO code, default "EUR",
+    "incoterms": string or null,
+    "deliveryTerms": string or null,
     "items": [{
       "quantity": positive number,
       "price": non-negative integer in the smallest currency unit, default 0,

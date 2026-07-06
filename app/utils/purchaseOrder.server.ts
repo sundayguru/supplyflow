@@ -108,6 +108,14 @@ export const parsePurchaseOrderInput = (
   const applyVat = value.applyVat === true;
   const currency =
     typeof value.currency === 'string' ? value.currency.toUpperCase() : 'EUR';
+  const incoterms =
+    typeof value.incoterms === 'string' && value.incoterms.trim()
+      ? value.incoterms.trim()
+      : null;
+  const deliveryTerms =
+    typeof value.deliveryTerms === 'string' && value.deliveryTerms.trim()
+      ? value.deliveryTerms.trim()
+      : null;
   const rfqId =
     typeof value.rfqId === 'string' && value.rfqId.trim()
       ? value.rfqId.trim()
@@ -156,6 +164,8 @@ export const parsePurchaseOrderInput = (
       expectedDate,
       applyVat,
       currency,
+      incoterms,
+      deliveryTerms,
       rfqId,
       notes,
       items,

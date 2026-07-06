@@ -4,6 +4,8 @@ import {
   CalendarDays,
   CircleDollarSign,
   ClipboardList,
+  ShieldCheck,
+  ShieldAlert,
   Mail,
   Package,
   Pencil,
@@ -203,7 +205,51 @@ export const PurchaseOrderDetailDrawer = ({
                 Updated {formatDate(purchaseOrder.updatedAt)}
               </p>
             </div>
+            <div className='rounded-2xl border border-slate-200 bg-white p-4'>
+              <p className='text-xs font-bold tracking-wide text-slate-400 uppercase'>
+                Incoterms
+              </p>
+              <p className='mt-3 font-semibold text-slate-900'>
+                {purchaseOrder.incoterms ?? 'Not provided'}
+              </p>
+            </div>
+            <div className='rounded-2xl border border-slate-200 bg-white p-4'>
+              <p className='text-xs font-bold tracking-wide text-slate-400 uppercase'>
+                Delivery terms
+              </p>
+              <p className='mt-3 font-semibold text-slate-900'>
+                {purchaseOrder.deliveryTerms ?? 'Not provided'}
+              </p>
+            </div>
           </section>
+
+          {purchaseOrder.validationSummary && (
+            <section
+              className={`mt-7 rounded-2xl border p-5 shadow-sm ${
+                purchaseOrder.status === 'exception'
+                  ? 'border-rose-200 bg-rose-50'
+                  : 'border-emerald-200 bg-emerald-50'
+              }`}
+            >
+              <p
+                className={`flex items-center gap-2 text-xs font-bold tracking-[0.14em] uppercase ${
+                  purchaseOrder.status === 'exception'
+                    ? 'text-rose-700'
+                    : 'text-emerald-700'
+                }`}
+              >
+                {purchaseOrder.status === 'exception' ? (
+                  <ShieldAlert size={14} />
+                ) : (
+                  <ShieldCheck size={14} />
+                )}
+                PO validation
+              </p>
+              <p className='mt-3 text-sm leading-6 whitespace-pre-wrap text-slate-700'>
+                {purchaseOrder.validationSummary}
+              </p>
+            </section>
+          )}
 
           {(purchaseOrder.linkedRfq || purchaseOrder.notes) && (
             <section className='mt-7 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'>

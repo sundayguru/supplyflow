@@ -42,6 +42,8 @@ type ApiResponse =
 const activeStatuses: PurchaseOrderStatus[] = [
   'draft',
   'sent',
+  'validated',
+  'exception',
   'acknowledged',
   'partially_received',
 ];

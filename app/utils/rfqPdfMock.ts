@@ -36,6 +36,8 @@ export const createMockRfqForTemplate = (organization: {
     customerName: 'Atlas Industrial GmbH',
     customerEmail: 'procurement@atlas-industrial.example',
     currency: 'EUR',
+    incoterms: null,
+    deliveryTerms: null,
     dueDate: '2026-07-15',
     applyVat: true,
     sourcePdfKey: null,

@@ -24,6 +24,10 @@ const createItemValues = (
     position,
   }));
 
+type CreatePurchaseOrderOptions = {
+  validationSummary?: string | null;
+};
+
 const withTotals = <
   PurchaseOrder extends {
     items: PurchaseOrderItemInput[];
@@ -101,6 +105,7 @@ export const createPurchaseOrder = async (
   userId: string,
   input: PurchaseOrderInput,
   vatRate: number,
+  options: CreatePurchaseOrderOptions = {},
 ) => {
   const db = getDb();
   const id = crypto.randomUUID();
@@ -113,6 +118,7 @@ export const createPurchaseOrder = async (
       userId,
       organizationId,
       reference: createReference(),
+      validationSummary: options.validationSummary ?? null,
     }),
     db.insert(purchaseOrderItems).values(createItemValues(id, items)),
   ]);

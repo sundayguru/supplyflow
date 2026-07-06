@@ -132,6 +132,14 @@ export const parseRfqInput = (
       : null;
   const currency =
     typeof value.currency === 'string' ? value.currency.toUpperCase() : 'EUR';
+  const incoterms =
+    typeof value.incoterms === 'string' && value.incoterms.trim()
+      ? value.incoterms.trim()
+      : null;
+  const deliveryTerms =
+    typeof value.deliveryTerms === 'string' && value.deliveryTerms.trim()
+      ? value.deliveryTerms.trim()
+      : null;
   const rawItems = Array.isArray(value.items) ? value.items : [];
 
   if (!customerName) {
@@ -169,6 +177,8 @@ export const parseRfqInput = (
       applyVat,
       templateId,
       sourcePdfKey,
+      incoterms,
+      deliveryTerms,
       currency,
       items,
     },

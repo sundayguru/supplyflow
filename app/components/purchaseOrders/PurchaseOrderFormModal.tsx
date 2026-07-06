@@ -61,6 +61,10 @@ export const PurchaseOrderFormModal = ({
   );
   const [applyVat, setApplyVat] = useState(initialValue?.applyVat ?? false);
   const [currency, setCurrency] = useState(initialValue?.currency ?? 'EUR');
+  const [incoterms, setIncoterms] = useState(initialValue?.incoterms ?? '');
+  const [deliveryTerms, setDeliveryTerms] = useState(
+    initialValue?.deliveryTerms ?? '',
+  );
   const [rfqId, setRfqId] = useState(initialValue?.rfqId ?? '');
   const [notes, setNotes] = useState(initialValue?.notes ?? '');
   const [items, setItems] = useState<PurchaseOrderItemFormValue[]>(
@@ -78,6 +82,8 @@ export const PurchaseOrderFormModal = ({
       expectedDate: expectedDate || null,
       applyVat,
       currency,
+      incoterms: incoterms || null,
+      deliveryTerms: deliveryTerms || null,
       rfqId: rfqId || null,
       notes: notes || null,
       items,
@@ -196,6 +202,27 @@ export const PurchaseOrderFormModal = ({
                 />
               ))}
             </div>
+          </div>
+
+          <div className='grid gap-5 sm:grid-cols-2'>
+            <label className='text-sm font-semibold text-slate-700'>
+              Incoterms
+              <input
+                value={incoterms}
+                onChange={(event) => setIncoterms(event.target.value)}
+                className={inputClass}
+                placeholder='EXW, FOB, DDP'
+              />
+            </label>
+            <label className='text-sm font-semibold text-slate-700'>
+              Delivery terms
+              <input
+                value={deliveryTerms}
+                onChange={(event) => setDeliveryTerms(event.target.value)}
+                className={inputClass}
+                placeholder='4 weeks after order confirmation'
+              />
+            </label>
           </div>
 
           <div className='grid gap-5 sm:grid-cols-2'>

@@ -38,7 +38,10 @@ export const purchaseOrders = sqliteTable(
       .notNull()
       .default(false),
     currency: text('currency', { length: 3 }).notNull().default('EUR'),
+    incoterms: text('incoterms', { length: 64 }),
+    deliveryTerms: text('delivery_terms'),
     notes: text('notes'),
+    validationSummary: text('validation_summary'),
     createdAt: text('created_at')
       .notNull()
       .default(sql`(CURRENT_TIMESTAMP)`),

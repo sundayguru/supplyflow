@@ -29,6 +29,8 @@ Return exactly one JSON object with this shape:
     "expectedDate": "YYYY-MM-DD" or null,
     "applyVat": false,
     "currency": three-letter ISO code, default "EUR",
+    "incoterms": string or null,
+    "deliveryTerms": string or null,
     "rfqId": null,
     "notes": string or null,
     "items": [] or [{

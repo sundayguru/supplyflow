@@ -15,6 +15,7 @@ import { createRfq, getRfqs } from '~/db/rfqs';
 import { createEmailClient } from '~/services/email/index.server';
 import { isGmailAuthenticationError } from '~/services/email/gmail.server';
 import { createPurchaseOrderExtractor } from '~/services/purchase-order-extraction/index.server';
+import { validatePurchaseOrderAgainstRfq } from '~/services/purchase-order-validation.server';
 import type {
   PurchaseOrderExtractionResult,
   PurchaseOrderExtractor,
@@ -457,21 +458,36 @@ const processAccount = async (
           purchaseOrderExtraction.result.purchaseOrder.items.length === 0
             ? linkedRfq
             : null;
+        const purchaseOrderInput = {
+          ...purchaseOrderExtraction.result.purchaseOrder,
+          currency: shouldUseLinkedRfqTerms
+            ? shouldUseLinkedRfqTerms.currency
+            : purchaseOrderExtraction.result.purchaseOrder.currency,
+          applyVat: shouldUseLinkedRfqTerms
+            ? shouldUseLinkedRfqTerms.applyVat
+            : purchaseOrderExtraction.result.purchaseOrder.applyVat,
+          incoterms: shouldUseLinkedRfqTerms
+            ? shouldUseLinkedRfqTerms.incoterms
+            : purchaseOrderExtraction.result.purchaseOrder.incoterms,
+          deliveryTerms: shouldUseLinkedRfqTerms
+            ? shouldUseLinkedRfqTerms.deliveryTerms
+            : purchaseOrderExtraction.result.purchaseOrder.deliveryTerms,
+          items: purchaseOrderItems,
+          rfqId,
+        };
+        const validation = validatePurchaseOrderAgainstRfq(
+          purchaseOrderInput,
+          linkedRfq,
+        );
         const purchaseOrder = await createPurchaseOrder(
           account.organizationId,
           account.userId,
           {
-            ...purchaseOrderExtraction.result.purchaseOrder,
-            currency: shouldUseLinkedRfqTerms
-              ? shouldUseLinkedRfqTerms.currency
-              : purchaseOrderExtraction.result.purchaseOrder.currency,
-            applyVat: shouldUseLinkedRfqTerms
-              ? shouldUseLinkedRfqTerms.applyVat
-              : purchaseOrderExtraction.result.purchaseOrder.applyVat,
-            items: purchaseOrderItems,
-            rfqId,
+            ...purchaseOrderInput,
+            status: validation.status,
           },
           organization.vat,
+          { validationSummary: validation.summary },
         );
         if (!purchaseOrder) {
           throw new Error('Purchase order could not be created');

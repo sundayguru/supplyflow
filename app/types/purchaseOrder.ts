@@ -1,6 +1,8 @@
 export const purchaseOrderStatuses = [
   'draft',
   'sent',
+  'validated',
+  'exception',
   'acknowledged',
   'partially_received',
   'received',
@@ -39,6 +41,8 @@ export type PurchaseOrderInput = {
   expectedDate: string | null;
   applyVat: boolean;
   currency: string;
+  incoterms: string | null;
+  deliveryTerms: string | null;
   rfqId: string | null;
   notes: string | null;
   items: PurchaseOrderItemInput[];
@@ -67,6 +71,7 @@ export type PurchaseOrderRecord = Omit<PurchaseOrderInput, 'items'> & {
   updatedAt: string;
   items: PurchaseOrderItemRecord[];
   linkedRfq: LinkedRfqSummary | null;
+  validationSummary: string | null;
   subtotal: number;
   vatValue: number;
   totalValue: number;

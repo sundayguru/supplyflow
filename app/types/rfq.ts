@@ -33,6 +33,8 @@ export type RfqInput = {
   applyVat: boolean;
   templateId: string | null;
   sourcePdfKey: string | null;
+  incoterms: string | null;
+  deliveryTerms: string | null;
   currency: string;
   items: RfqItemInput[];
 };

@@ -68,6 +68,10 @@ export const RfqFormModal = ({
   const [dueDate, setDueDate] = useState(initialValue?.dueDate ?? '');
   const [applyVat, setApplyVat] = useState(initialValue?.applyVat ?? false);
   const [templateId, setTemplateId] = useState(initialValue?.templateId ?? '');
+  const [incoterms, setIncoterms] = useState(initialValue?.incoterms ?? '');
+  const [deliveryTerms, setDeliveryTerms] = useState(
+    initialValue?.deliveryTerms ?? '',
+  );
   const [currency, setCurrency] = useState(initialValue?.currency ?? 'EUR');
   const [items, setItems] = useState<RfqItemFormValue[]>(
     initialValue?.items ?? [emptyItem(defaultPriceMarkup)],
@@ -84,6 +88,8 @@ export const RfqFormModal = ({
       applyVat,
       templateId: templateId || null,
       sourcePdfKey: initialValue?.sourcePdfKey ?? null,
+      incoterms: incoterms || null,
+      deliveryTerms: deliveryTerms || null,
       currency,
       items,
     });
@@ -159,6 +165,27 @@ export const RfqFormModal = ({
               ))}
             </select>
           </label>
+
+          <div className='grid gap-5 sm:grid-cols-2'>
+            <label className='text-sm font-semibold text-slate-700'>
+              Incoterms
+              <input
+                value={incoterms}
+                onChange={(event) => setIncoterms(event.target.value)}
+                className={inputClass}
+                placeholder='EXW, FOB, DDP'
+              />
+            </label>
+            <label className='text-sm font-semibold text-slate-700'>
+              Delivery terms
+              <input
+                value={deliveryTerms}
+                onChange={(event) => setDeliveryTerms(event.target.value)}
+                className={inputClass}
+                placeholder='4 weeks after order confirmation'
+              />
+            </label>
+          </div>
 
           <div>
             <div className='mb-3 flex items-end justify-between gap-3'>

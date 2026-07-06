@@ -58,7 +58,7 @@ export const PurchaseOrderStatusMenu = ({
   const toggleMenu = () => {
     if (!isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      const menuHeight = 232;
+      const menuHeight = 304;
       setMenuPosition({
         top:
           rect.bottom + menuHeight > window.innerHeight
