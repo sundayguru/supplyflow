@@ -12,6 +12,63 @@ const requestHandler = createRequestHandler(
   import.meta.env.MODE,
 );
 
+export const executeScheduleMethods = async (env: Env) => {
+  const errors: unknown[] = [];
+  let summary = {};
+  try {
+    summary = await runEmailIngestion(env);
+  } catch (error) {
+    errors.push(error);
+    console.error(
+      JSON.stringify({
+        event: 'email_ingestion_failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }),
+    );
+  }
+
+  try {
+    await runRfqDraftSentStatusSync(env);
+  } catch (error) {
+    errors.push(error);
+    console.error(
+      JSON.stringify({
+        event: 'rfq_draft_sent_status_sync_failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }),
+    );
+  }
+
+  try {
+    await runPurchaseOrderDraftSentStatusSync(env);
+  } catch (error) {
+    errors.push(error);
+    console.error(
+      JSON.stringify({
+        event: 'po_draft_sent_status_sync_failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }),
+    );
+  }
+
+  try {
+    await runRfqQuoteReminderSync(env);
+  } catch (error) {
+    errors.push(error);
+    console.error(
+      JSON.stringify({
+        event: 'rfq_quote_reminder_sync_failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }),
+    );
+  }
+
+  if (errors.length) {
+    throw errors[0];
+  }
+  return summary;
+};
+
 export default {
   async fetch(request, env, ctx) {
     const context = new RouterContextProvider();
@@ -25,57 +82,6 @@ export default {
     return requestHandler(request, context);
   },
   async scheduled(_controller, env) {
-    const errors: unknown[] = [];
-    try {
-      await runEmailIngestion(env);
-    } catch (error) {
-      errors.push(error);
-      console.error(
-        JSON.stringify({
-          event: 'email_ingestion_failed',
-          error: error instanceof Error ? error.message : 'Unknown error',
-        }),
-      );
-    }
-
-    try {
-      await runRfqDraftSentStatusSync(env);
-    } catch (error) {
-      errors.push(error);
-      console.error(
-        JSON.stringify({
-          event: 'rfq_draft_sent_status_sync_failed',
-          error: error instanceof Error ? error.message : 'Unknown error',
-        }),
-      );
-    }
-
-    try {
-      await runPurchaseOrderDraftSentStatusSync(env);
-    } catch (error) {
-      errors.push(error);
-      console.error(
-        JSON.stringify({
-          event: 'po_draft_sent_status_sync_failed',
-          error: error instanceof Error ? error.message : 'Unknown error',
-        }),
-      );
-    }
-
-    try {
-      await runRfqQuoteReminderSync(env);
-    } catch (error) {
-      errors.push(error);
-      console.error(
-        JSON.stringify({
-          event: 'rfq_quote_reminder_sync_failed',
-          error: error instanceof Error ? error.message : 'Unknown error',
-        }),
-      );
-    }
-
-    if (errors.length) {
-      throw errors[0];
-    }
+    await executeScheduleMethods(env);
   },
 } satisfies ExportedHandler<Env>;

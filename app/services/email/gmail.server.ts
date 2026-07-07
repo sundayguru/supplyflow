@@ -422,6 +422,7 @@ const isDraftSent = async (
       id: string;
       message: GmailMessageResponse;
     }>(`/drafts/${encodeURIComponent(input.draftId)}`, accessToken);
+    console.log('res.message', res.message);
     if (wasSentAfter(res.message)) {
       return true;
     }

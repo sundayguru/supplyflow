@@ -34,7 +34,7 @@ export const runPurchaseOrderDraftSentStatusSync = async (
     await listPurchaseOrdersWithDraftedProformaInvoices();
   let sent = 0;
   let failed = 0;
-
+  console.log('draftedPurchaseOrders', draftedPurchaseOrders);
   for (const draftedPurchaseOrder of draftedPurchaseOrders) {
     if (
       !draftedPurchaseOrder.draftId ||

@@ -6,6 +6,7 @@ import { getUserFromRequest } from '~/utils/session.server';
 import { getOrganizationForUser } from '~/db/organizations';
 import { runRfqDraftSentStatusSync } from '~/services/rfq-draft-status.server';
 import { runRfqQuoteReminderSync } from '~/services/rfq-quote-reminder.server';
+import { executeScheduleMethods } from 'workers/app';
 
 export const loader = async ({ request, context }: Route.ActionArgs) => {
   const user = await getUserFromRequest(request);
@@ -32,9 +33,7 @@ export const loader = async ({ request, context }: Route.ActionArgs) => {
   }
 
   try {
-    await runRfqDraftSentStatusSync(env as Env);
-    await runRfqQuoteReminderSync(env as Env);
-    const summary = await runEmailIngestion(env as Env, organization.id);
+    const summary = await executeScheduleMethods(env);
     return data({ success: true, summary });
   } catch (error) {
     console.error(
