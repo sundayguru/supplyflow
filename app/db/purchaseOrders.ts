@@ -185,6 +185,31 @@ export const updatePurchaseOrderStatus = async (
   return updated ? getPurchaseOrder(updated.id, organizationId, vatRate) : null;
 };
 
+export const updatePurchaseOrderValidation = async (
+  id: string,
+  organizationId: string,
+  status: Extract<PurchaseOrderStatus, 'validated' | 'exception'>,
+  validationSummary: string,
+  vatRate: number,
+) => {
+  const db = getDb();
+  const [updated] = await db
+    .update(purchaseOrders)
+    .set({
+      status,
+      validationSummary,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(
+      and(
+        eq(purchaseOrders.id, id),
+        eq(purchaseOrders.organizationId, organizationId),
+      ),
+    )
+    .returning({ id: purchaseOrders.id });
+  return updated ? getPurchaseOrder(updated.id, organizationId, vatRate) : null;
+};
+
 export const deletePurchaseOrder = async (
   id: string,
   organizationId: string,

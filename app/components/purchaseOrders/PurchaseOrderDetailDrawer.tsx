@@ -9,6 +9,7 @@ import {
   Mail,
   Package,
   Pencil,
+  RefreshCw,
   Trash2,
   Truck,
   UserRound,
@@ -38,6 +39,10 @@ type ItemMutationResponse =
   | { success: true; purchaseOrder: PurchaseOrderRecord }
   | { error: string };
 
+type ValidationMutationResponse =
+  | { success: true; purchaseOrder: PurchaseOrderRecord }
+  | { error: string };
+
 const formatDate = (value: string) => new Date(value).toLocaleDateString();
 
 export const PurchaseOrderDetailDrawer = ({
@@ -48,6 +53,7 @@ export const PurchaseOrderDetailDrawer = ({
   onEdit,
 }: PurchaseOrderDetailDrawerProps) => {
   const itemMutation = useFetcher<ItemMutationResponse>();
+  const validationMutation = useFetcher<ValidationMutationResponse>();
   const [editItem, setEditItem] = useState<PurchaseOrderItemRecord | null>(
     null,
   );
@@ -83,6 +89,19 @@ export const PurchaseOrderDetailDrawer = ({
       },
     );
     setDeleteItem(null);
+  };
+
+  const canValidate =
+    purchaseOrder.status !== 'validated' && purchaseOrder.linkedRfq !== null;
+  const validatePurchaseOrder = () => {
+    validationMutation.submit(
+      { id: purchaseOrder.id, intent: 'validate' },
+      {
+        method: 'patch',
+        action: '/api/purchase-orders',
+        encType: 'application/json',
+      },
+    );
   };
 
   useEffect(() => {
@@ -144,6 +163,11 @@ export const PurchaseOrderDetailDrawer = ({
           {itemMutation.data && 'error' in itemMutation.data && (
             <p className='mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'>
               {itemMutation.data.error}
+            </p>
+          )}
+          {validationMutation.data && 'error' in validationMutation.data && (
+            <p className='mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'>
+              {validationMutation.data.error}
             </p>
           )}
           <section
@@ -411,7 +435,25 @@ export const PurchaseOrderDetailDrawer = ({
           </section>
         </div>
 
-        <footer className='border-t border-slate-200 bg-white px-5 py-4 sm:px-7'>
+        <footer className='space-y-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-7'>
+          {canValidate && (
+            <button
+              type='button'
+              onClick={validatePurchaseOrder}
+              disabled={validationMutation.state !== 'idle'}
+              className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60'
+            >
+              <RefreshCw
+                size={17}
+                className={
+                  validationMutation.state !== 'idle' ? 'animate-spin' : ''
+                }
+              />
+              {validationMutation.state !== 'idle'
+                ? 'Validating PO'
+                : 'Validate PO against RFQ'}
+            </button>
+          )}
           <button
             type='button'
             onClick={onEdit}

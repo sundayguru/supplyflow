@@ -6,6 +6,7 @@ import {
   getPurchaseOrder,
   getPurchaseOrders,
   updatePurchaseOrder,
+  updatePurchaseOrderValidation,
   updatePurchaseOrderStatus,
 } from '~/db/purchaseOrders';
 import { getRfq } from '~/db/rfqs';
@@ -16,6 +17,7 @@ import {
   purchaseOrderStatuses,
   type PurchaseOrderStatus,
 } from '~/types/purchaseOrder';
+import { validatePurchaseOrderAgainstRfq } from '~/services/purchase-order-validation.server';
 
 const hasValidLinkedRfq = async (
   rfqId: string | null,
@@ -126,6 +128,38 @@ export const action = async ({ request }: Route.ActionArgs) => {
         );
         return purchaseOrder
           ? data({ success: true, purchaseOrder })
+          : data({ error: 'Purchase order not found' }, { status: 404 });
+      }
+      if ('intent' in body && body.intent === 'validate') {
+        const purchaseOrder = await getPurchaseOrder(
+          body.id,
+          organization.id,
+          organization.vat,
+        );
+        if (!purchaseOrder) {
+          return data({ error: 'Purchase order not found' }, { status: 404 });
+        }
+        if (!purchaseOrder.rfqId) {
+          return data(
+            { error: 'This purchase order is not linked to an RFQ' },
+            { status: 400 },
+          );
+        }
+        const rfq = await getRfq(
+          purchaseOrder.rfqId,
+          organization.id,
+          organization.vat,
+        );
+        const validation = validatePurchaseOrderAgainstRfq(purchaseOrder, rfq);
+        const updatedPurchaseOrder = await updatePurchaseOrderValidation(
+          body.id,
+          organization.id,
+          validation.status,
+          validation.summary,
+          organization.vat,
+        );
+        return updatedPurchaseOrder
+          ? data({ success: true, purchaseOrder: updatedPurchaseOrder })
           : data({ error: 'Purchase order not found' }, { status: 404 });
       }
       const parsed = parsePurchaseOrderInput(body);
