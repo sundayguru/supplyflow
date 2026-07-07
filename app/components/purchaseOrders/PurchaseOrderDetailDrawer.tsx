@@ -4,12 +4,17 @@ import {
   CalendarDays,
   CircleDollarSign,
   ClipboardList,
+  Download,
+  ExternalLink,
+  FileText,
   ShieldCheck,
   ShieldAlert,
+  LoaderCircle,
   Mail,
   Package,
   Pencil,
   RefreshCw,
+  Send,
   Trash2,
   Truck,
   UserRound,
@@ -20,6 +25,7 @@ import type {
   PurchaseOrderItemRecord,
   PurchaseOrderRecord,
 } from '~/types/purchaseOrder';
+import type { RfqPdfTemplateOption } from '~/types/rfqPdfTemplate';
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
 import { ConfirmModal } from '../ConfirmModal';
 import { PurchaseOrderItemEditModal } from './PurchaseOrderItemEditModal';
@@ -31,6 +37,7 @@ type PurchaseOrderDetailDrawerProps = {
   purchaseOrder: PurchaseOrderRecord;
   vatRate: number;
   manufacturers: ManufacturerRecord[];
+  templates: RfqPdfTemplateOption[];
   onClose: () => void;
   onEdit: () => void;
 };
@@ -43,22 +50,35 @@ type ValidationMutationResponse =
   | { success: true; purchaseOrder: PurchaseOrderRecord }
   | { error: string };
 
+type ProformaDraftResponse =
+  | {
+      success: true;
+      draft: { id: string; url: string };
+      generatedReply: string;
+    }
+  | { error: string };
+
 const formatDate = (value: string) => new Date(value).toLocaleDateString();
 
 export const PurchaseOrderDetailDrawer = ({
   purchaseOrder,
   vatRate,
   manufacturers,
+  templates,
   onClose,
   onEdit,
 }: PurchaseOrderDetailDrawerProps) => {
   const itemMutation = useFetcher<ItemMutationResponse>();
   const validationMutation = useFetcher<ValidationMutationResponse>();
+  const proformaDraft = useFetcher<ProformaDraftResponse>();
   const [editItem, setEditItem] = useState<PurchaseOrderItemRecord | null>(
     null,
   );
   const [deleteItem, setDeleteItem] = useState<PurchaseOrderItemRecord | null>(
     null,
+  );
+  const [selectedTemplateId, setSelectedTemplateId] = useState(
+    templates[0]?.id ?? '',
   );
 
   const submitItem = (value: PurchaseOrderItemFormValue) => {
@@ -93,12 +113,55 @@ export const PurchaseOrderDetailDrawer = ({
 
   const canValidate =
     purchaseOrder.status !== 'validated' && purchaseOrder.linkedRfq !== null;
+  const canGenerateProforma = purchaseOrder.status === 'validated';
+  const canDraftProforma = canGenerateProforma && !!purchaseOrder.sourceEmail;
+  const selectedTemplateExists = templates.some(
+    (template) => template.id === selectedTemplateId,
+  );
+  const activeTemplateId = selectedTemplateExists
+    ? selectedTemplateId
+    : (templates[0]?.id ?? '');
+  const selectedTemplate = templates.find(
+    (template) => template.id === activeTemplateId,
+  );
+  const invoiceSearchParams = new URLSearchParams();
+  if (activeTemplateId) {
+    invoiceSearchParams.set('templateId', activeTemplateId);
+  }
+  const invoiceUrl = `/api/purchase-orders/${encodeURIComponent(purchaseOrder.id)}/proforma-invoice${
+    invoiceSearchParams.size ? `?${invoiceSearchParams.toString()}` : ''
+  }`;
+  const downloadInvoiceUrl = `${invoiceUrl}${
+    invoiceUrl.includes('?') ? '&' : '?'
+  }download=1`;
+  const draftUrl =
+    proformaDraft.data && 'success' in proformaDraft.data
+      ? proformaDraft.data.draft.url
+      : null;
+  const generatedReply =
+    proformaDraft.data && 'success' in proformaDraft.data
+      ? proformaDraft.data.generatedReply
+      : null;
   const validatePurchaseOrder = () => {
     validationMutation.submit(
       { id: purchaseOrder.id, intent: 'validate' },
       {
         method: 'patch',
         action: '/api/purchase-orders',
+        encType: 'application/json',
+      },
+    );
+  };
+
+  const createProformaDraft = () => {
+    if (!canDraftProforma) {
+      return;
+    }
+    proformaDraft.submit(
+      { templateId: activeTemplateId },
+      {
+        method: 'post',
+        action: `/api/purchase-orders/${encodeURIComponent(purchaseOrder.id)}/proforma-draft`,
         encType: 'application/json',
       },
     );
@@ -168,6 +231,11 @@ export const PurchaseOrderDetailDrawer = ({
           {validationMutation.data && 'error' in validationMutation.data && (
             <p className='mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'>
               {validationMutation.data.error}
+            </p>
+          )}
+          {proformaDraft.data && 'error' in proformaDraft.data && (
+            <p className='mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'>
+              {proformaDraft.data.error}
             </p>
           )}
           <section
@@ -272,6 +340,102 @@ export const PurchaseOrderDetailDrawer = ({
               <p className='mt-3 text-sm leading-6 whitespace-pre-wrap text-slate-700'>
                 {purchaseOrder.validationSummary}
               </p>
+            </section>
+          )}
+
+          {canGenerateProforma && (
+            <section className='mt-7 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'>
+              <div className='flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between'>
+                <div>
+                  <p className='flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-emerald-700 uppercase'>
+                    <FileText size={14} /> Proforma invoice
+                  </p>
+                  <h3 className='mt-2 text-lg font-bold text-slate-900'>
+                    Generate invoice
+                  </h3>
+                </div>
+                <div className='flex flex-wrap gap-2'>
+                  <a
+                    href={downloadInvoiceUrl}
+                    className='inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
+                  >
+                    <Download size={15} /> Download
+                  </a>
+                  <button
+                    type='button'
+                    onClick={createProformaDraft}
+                    disabled={
+                      !canDraftProforma || proformaDraft.state !== 'idle'
+                    }
+                    title={
+                      canDraftProforma
+                        ? undefined
+                        : 'This PO must come from a connected email before a draft can be created.'
+                    }
+                    className='inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60'
+                  >
+                    {proformaDraft.state !== 'idle' ? (
+                      <LoaderCircle size={15} className='animate-spin' />
+                    ) : (
+                      <Send size={15} />
+                    )}
+                    Draft email
+                  </button>
+                </div>
+              </div>
+
+              <label className='mt-5 block text-sm font-semibold text-slate-700'>
+                PDF template
+                <select
+                  value={activeTemplateId}
+                  onChange={(event) =>
+                    setSelectedTemplateId(event.target.value)
+                  }
+                  className='mt-2 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10'
+                >
+                  {templates.length === 0 ? (
+                    <option value=''>Default invoice template</option>
+                  ) : (
+                    templates.map((template) => (
+                      <option key={template.id} value={template.id}>
+                        {template.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </label>
+
+              <div className='mt-4 overflow-hidden rounded-xl border border-slate-200 bg-slate-50'>
+                <iframe
+                  key={`${purchaseOrder.id}-${selectedTemplate?.id ?? 'default'}`}
+                  title={`Proforma invoice preview for ${purchaseOrder.reference}`}
+                  src={invoiceUrl}
+                  className='h-[460px] w-full bg-white'
+                />
+              </div>
+
+              {draftUrl && (
+                <div className='mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4'>
+                  <div className='flex flex-wrap items-center justify-between gap-3'>
+                    <p className='text-sm font-semibold text-emerald-800'>
+                      Draft email created with the invoice attached.
+                    </p>
+                    <a
+                      href={draftUrl}
+                      target='_blank'
+                      rel='noreferrer'
+                      className='inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700 hover:text-emerald-900'
+                    >
+                      Open draft <ExternalLink size={14} />
+                    </a>
+                  </div>
+                  {generatedReply && (
+                    <p className='mt-3 text-sm leading-6 whitespace-pre-wrap text-slate-700'>
+                      {generatedReply}
+                    </p>
+                  )}
+                </div>
+              )}
             </section>
           )}
 

@@ -62,6 +62,14 @@ export type LinkedRfqSummary = {
   customerName: string;
 };
 
+export type PurchaseOrderEmailSource = {
+  ingestionId: string;
+  accountEmail: string;
+  fromAddress: string | null;
+  subject: string | null;
+  provider: string;
+};
+
 export type PurchaseOrderRecord = Omit<PurchaseOrderInput, 'items'> & {
   id: string;
   userId: string;
@@ -75,4 +83,5 @@ export type PurchaseOrderRecord = Omit<PurchaseOrderInput, 'items'> & {
   subtotal: number;
   vatValue: number;
   totalValue: number;
+  sourceEmail?: PurchaseOrderEmailSource | null;
 };

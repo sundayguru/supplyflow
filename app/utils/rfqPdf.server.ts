@@ -2,10 +2,12 @@ import type { SelectOrganization, SelectRfqPdfTemplate } from '~/db/schemas';
 import type { RfqRecord } from '~/types/rfq';
 import { getFromR2 } from './r2.server';
 import {
+  generateProformaInvoicePdf as generateCurrentProformaInvoicePdf,
   generateRfqPdf as generateCurrentPdf,
   generateRfqTemplateSamplePdf as generatePdf,
   type RfqPdfBannerAsset,
 } from './rfqPdfGenerator';
+import type { PurchaseOrderRecord } from '~/types/purchaseOrder';
 
 const loadAsset = async (
   key: string | null,
@@ -45,4 +47,24 @@ export const generateRfqPdf = async (
     loadAsset(template?.footerBannerKey ?? null),
   ]);
   return generateCurrentPdf(rfq, template, organization, { header, footer });
+};
+
+export const generateProformaInvoicePdf = async (
+  purchaseOrder: PurchaseOrderRecord,
+  template: SelectRfqPdfTemplate | null,
+  organization: SelectOrganization,
+) => {
+  const [header, footer] = await Promise.all([
+    loadAsset(template?.headerBannerKey ?? null),
+    loadAsset(template?.footerBannerKey ?? null),
+  ]);
+  return generateCurrentProformaInvoicePdf(
+    purchaseOrder,
+    template,
+    organization,
+    {
+      header,
+      footer,
+    },
+  );
 };

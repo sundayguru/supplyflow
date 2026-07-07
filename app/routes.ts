@@ -42,6 +42,14 @@ export default [
     route('api/rfqs', 'routes/api/rfqs.ts'),
     route('api/purchase-orders', 'routes/api/purchase-orders.ts'),
     route('api/purchase-order-items', 'routes/api/purchase-order-items.ts'),
+    route(
+      'api/purchase-orders/:purchaseOrderId/proforma-invoice',
+      'routes/api/purchase-order-proforma-invoice.ts',
+    ),
+    route(
+      'api/purchase-orders/:purchaseOrderId/proforma-draft',
+      'routes/api/purchase-order-proforma-draft.ts',
+    ),
     route('api/rfqs/:rfqId/customer-draft', 'routes/api/rfq-customer-draft.ts'),
     route('api/rfqs/:rfqId/source-pdf', 'routes/api/rfq-source-pdf.ts'),
     route('api/rfq-items', 'routes/api/rfq-items.ts'),

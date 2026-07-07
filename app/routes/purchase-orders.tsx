@@ -24,9 +24,11 @@ import {
 } from '~/components/purchaseOrders/PurchaseOrderFormModal';
 import { purchaseOrderStatusLabels } from '~/components/purchaseOrders/PurchaseOrderStatusBadge';
 import { PurchaseOrderStatusMenu } from '~/components/purchaseOrders/PurchaseOrderStatusMenu';
+import { listEmailSourcesForPurchaseOrders } from '~/db/emailIngestion';
 import { listManufacturers } from '~/db/manufacturers';
 import { getOrganizationForUser } from '~/db/organizations';
 import { getPurchaseOrders } from '~/db/purchaseOrders';
+import { listRfqPdfTemplates } from '~/db/rfqPdfTemplates';
 import { getRfqs } from '~/db/rfqs';
 import type {
   PurchaseOrderRecord,
@@ -76,19 +78,28 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   }
 
   try {
-    const [purchaseOrders, rfqs, manufacturers] = await Promise.all([
+    const [purchaseOrders, rfqs, manufacturers, templates] = await Promise.all([
       getPurchaseOrders(organization.id, organization.vat),
       getRfqs(organization.id, organization.vat),
       listManufacturers(organization.id),
+      listRfqPdfTemplates(organization.id),
     ]);
+    const emailSources = await listEmailSourcesForPurchaseOrders(
+      organization.id,
+      purchaseOrders.map((purchaseOrder) => purchaseOrder.id),
+    );
     return data({
-      purchaseOrders,
+      purchaseOrders: purchaseOrders.map((purchaseOrder) => ({
+        ...purchaseOrder,
+        sourceEmail: emailSources.get(purchaseOrder.id) ?? null,
+      })),
       rfqs: rfqs.map(({ id, reference, customerName }) => ({
         id,
         reference,
         customerName,
       })),
       manufacturers,
+      templates: templates.map(({ id, name }) => ({ id, name })),
       vatRate: organization.vat,
       loadError: null,
     });
@@ -98,6 +109,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       purchaseOrders: [],
       rfqs: [],
       manufacturers: [],
+      templates: [],
       vatRate: organization.vat,
       loadError: 'Unable to load purchase orders',
     });
@@ -402,6 +414,7 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
           purchaseOrder={selectedPurchaseOrder}
           vatRate={loaderData.vatRate}
           manufacturers={loaderData.manufacturers}
+          templates={loaderData.templates}
           onClose={closeDetails}
           onEdit={editFromDetails}
         />

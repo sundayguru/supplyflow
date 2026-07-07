@@ -181,6 +181,51 @@ export const listEmailSourcesForRfqs = async (
   );
 };
 
+export const listEmailSourcesForPurchaseOrders = async (
+  organizationId: string,
+  purchaseOrderIds: string[],
+) => {
+  if (!purchaseOrderIds.length) {
+    return new Map();
+  }
+  const db = getDb();
+  const rows = await db
+    .select({
+      purchaseOrderId: emailIngestions.purchaseOrderId,
+      ingestionId: emailIngestions.id,
+      provider: emailIngestions.provider,
+      subject: emailIngestions.subject,
+      fromAddress: emailIngestions.fromAddress,
+      accountEmail: connectedEmailAccounts.email,
+    })
+    .from(emailIngestions)
+    .innerJoin(
+      connectedEmailAccounts,
+      eq(emailIngestions.accountId, connectedEmailAccounts.id),
+    )
+    .where(
+      and(
+        eq(connectedEmailAccounts.organizationId, organizationId),
+        inArray(emailIngestions.purchaseOrderId, purchaseOrderIds),
+      ),
+    );
+
+  return new Map(
+    rows
+      .filter((row) => row.purchaseOrderId)
+      .map((row) => [
+        row.purchaseOrderId,
+        {
+          ingestionId: row.ingestionId,
+          provider: row.provider,
+          subject: row.subject,
+          fromAddress: row.fromAddress,
+          accountEmail: row.accountEmail,
+        },
+      ]),
+  );
+};
+
 export const getEmailSourceForRfq = async (
   rfqId: string,
   organizationId: string,
@@ -206,6 +251,39 @@ export const getEmailSourceForRfq = async (
     .where(
       and(
         eq(emailIngestions.rfqId, rfqId),
+        eq(connectedEmailAccounts.organizationId, organizationId),
+        eq(connectedEmailAccounts.isActive, true),
+      ),
+    )
+    .limit(1);
+  return source ?? null;
+};
+
+export const getEmailSourceForPurchaseOrder = async (
+  purchaseOrderId: string,
+  organizationId: string,
+) => {
+  const db = getDb();
+  const [source] = await db
+    .select({
+      ingestionId: emailIngestions.id,
+      provider: emailIngestions.provider,
+      externalId: emailIngestions.externalId,
+      threadId: emailIngestions.threadId,
+      subject: emailIngestions.subject,
+      fromAddress: emailIngestions.fromAddress,
+      accountEmail: connectedEmailAccounts.email,
+      accountProvider: connectedEmailAccounts.provider,
+      encryptedRefreshToken: connectedEmailAccounts.encryptedRefreshToken,
+    })
+    .from(emailIngestions)
+    .innerJoin(
+      connectedEmailAccounts,
+      eq(emailIngestions.accountId, connectedEmailAccounts.id),
+    )
+    .where(
+      and(
+        eq(emailIngestions.purchaseOrderId, purchaseOrderId),
         eq(connectedEmailAccounts.organizationId, organizationId),
         eq(connectedEmailAccounts.isActive, true),
       ),
