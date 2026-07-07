@@ -11,7 +11,7 @@ import {
   saveEmailSyncTime,
 } from '~/db/emailIngestion';
 import { createPurchaseOrder } from '~/db/purchaseOrders';
-import { createRfq, getRfqs } from '~/db/rfqs';
+import { createRfq, getRfqs, updateRfqStatus } from '~/db/rfqs';
 import { createEmailClient } from '~/services/email/index.server';
 import { isGmailAuthenticationError } from '~/services/email/gmail.server';
 import { createPurchaseOrderExtractor } from '~/services/purchase-order-extraction/index.server';
@@ -491,6 +491,14 @@ const processAccount = async (
         );
         if (!purchaseOrder) {
           throw new Error('Purchase order could not be created');
+        }
+        if (rfqId) {
+          await updateRfqStatus(
+            rfqId,
+            account.organizationId,
+            'won',
+            organization.vat,
+          );
         }
         try {
           await sendPurchaseOrderAcknowledgement({
