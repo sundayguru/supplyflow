@@ -3,6 +3,7 @@ import { cloudflareContext } from '~/contexts.server/cloudflareContext.server';
 import { userDataContext } from '~/contexts.server/userDataContext.server';
 import { getUserFromRequest } from '~/utils/session.server';
 import { runEmailIngestion } from '~/services/email-ingestion.server';
+import { runPurchaseOrderDraftSentStatusSync } from '~/services/purchase-order-draft-status.server';
 import { runRfqDraftSentStatusSync } from '~/services/rfq-draft-status.server';
 import { runRfqQuoteReminderSync } from '~/services/rfq-quote-reminder.server';
 
@@ -44,6 +45,18 @@ export default {
       console.error(
         JSON.stringify({
           event: 'rfq_draft_sent_status_sync_failed',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }),
+      );
+    }
+
+    try {
+      await runPurchaseOrderDraftSentStatusSync(env);
+    } catch (error) {
+      errors.push(error);
+      console.error(
+        JSON.stringify({
+          event: 'po_draft_sent_status_sync_failed',
           error: error instanceof Error ? error.message : 'Unknown error',
         }),
       );

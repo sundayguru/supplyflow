@@ -3,6 +3,8 @@ export const purchaseOrderStatuses = [
   'sent',
   'validated',
   'exception',
+  'review_email',
+  'awaiting_payment',
   'acknowledged',
   'partially_received',
   'received',
@@ -80,6 +82,9 @@ export type PurchaseOrderRecord = Omit<PurchaseOrderInput, 'items'> & {
   items: PurchaseOrderItemRecord[];
   linkedRfq: LinkedRfqSummary | null;
   validationSummary: string | null;
+  proformaInvoiceDraftId: string | null;
+  proformaInvoiceDraftUpdatedAt: string | null;
+  proformaInvoiceSentAt: string | null;
   subtotal: number;
   vatValue: number;
   totalValue: number;

@@ -2,7 +2,10 @@ import { data } from 'react-router';
 import { cloudflareContext } from '~/contexts.server/cloudflareContext.server';
 import { getEmailSourceForPurchaseOrder } from '~/db/emailIngestion';
 import { getOrganizationForUser } from '~/db/organizations';
-import { getPurchaseOrder } from '~/db/purchaseOrders';
+import {
+  getPurchaseOrder,
+  updatePurchaseOrderProformaDraft,
+} from '~/db/purchaseOrders';
 import { getRfqPdfTemplate } from '~/db/rfqPdfTemplates';
 import { createEmailClient } from '~/services/email/index.server';
 import { generateProformaInvoicePdf } from '~/utils/rfqPdf.server';
@@ -63,7 +66,10 @@ export const action = async ({
   if (!purchaseOrder) {
     return data({ error: 'PO not found' }, { status: 404 });
   }
-  if (purchaseOrder.status !== 'validated') {
+  if (
+    purchaseOrder.status !== 'validated' &&
+    purchaseOrder.status !== 'review_email'
+  ) {
     return data(
       { error: 'Generate a proforma invoice after the PO is validated.' },
       { status: 400 },
@@ -164,8 +170,25 @@ export const action = async ({
         bytes: pdf,
       },
     });
+    const updatedPurchaseOrder = await updatePurchaseOrderProformaDraft(
+      purchaseOrder.id,
+      organization.id,
+      draft.id,
+      organization.vat,
+    );
+    if (!updatedPurchaseOrder) {
+      return data(
+        { error: 'Draft created, but PO status could not be updated.' },
+        { status: 500 },
+      );
+    }
 
-    return data({ success: true, draft, generatedReply });
+    return data({
+      success: true,
+      draft,
+      generatedReply,
+      purchaseOrder: updatedPurchaseOrder,
+    });
   } catch (error) {
     console.error('Unable to create PO proforma invoice draft', error);
     return data(

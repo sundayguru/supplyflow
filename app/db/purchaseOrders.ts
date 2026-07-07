@@ -210,6 +210,32 @@ export const updatePurchaseOrderValidation = async (
   return updated ? getPurchaseOrder(updated.id, organizationId, vatRate) : null;
 };
 
+export const updatePurchaseOrderProformaDraft = async (
+  id: string,
+  organizationId: string,
+  draftId: string,
+  vatRate: number,
+) => {
+  const db = getDb();
+  const updatedAt = new Date().toISOString();
+  const [updated] = await db
+    .update(purchaseOrders)
+    .set({
+      status: 'review_email',
+      proformaInvoiceDraftId: draftId,
+      proformaInvoiceDraftUpdatedAt: updatedAt,
+      updatedAt,
+    })
+    .where(
+      and(
+        eq(purchaseOrders.id, id),
+        eq(purchaseOrders.organizationId, organizationId),
+      ),
+    )
+    .returning({ id: purchaseOrders.id });
+  return updated ? getPurchaseOrder(updated.id, organizationId, vatRate) : null;
+};
+
 export const deletePurchaseOrder = async (
   id: string,
   organizationId: string,

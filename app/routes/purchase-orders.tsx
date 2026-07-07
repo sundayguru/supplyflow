@@ -46,6 +46,8 @@ const activeStatuses: PurchaseOrderStatus[] = [
   'sent',
   'validated',
   'exception',
+  'review_email',
+  'awaiting_payment',
   'acknowledged',
   'partially_received',
 ];

@@ -40,6 +40,11 @@ type GmailMessageResponse = {
   payload?: GmailPart;
 };
 
+type GmailThreadResponse = {
+  id: string;
+  messages?: GmailMessageResponse[];
+};
+
 type GoogleTokenResponse = {
   access_token?: string;
   refresh_token?: string;
@@ -404,19 +409,42 @@ const isDraftSent = async (
   input: DraftSentStatusInput,
   accessToken: string,
 ) => {
-  try {
-    const res = await gmailRequest<{
-      id: string;
-      message: GmailMessageResponse;
-    }>(`/drafts/${encodeURIComponent(input.draftId)}`, accessToken);
+  const wasSentAfter = (message: GmailMessageResponse) => {
     const sentAfterMs = input.sentAfter.getTime();
-    const message = res.message;
     const internalDate = Number(message.internalDate ?? 0);
     return (
       (message.labelIds?.includes('SENT') ?? false) &&
       internalDate >= sentAfterMs
     );
-  } catch {
+  };
+  try {
+    const res = await gmailRequest<{
+      id: string;
+      message: GmailMessageResponse;
+    }>(`/drafts/${encodeURIComponent(input.draftId)}`, accessToken);
+    if (wasSentAfter(res.message)) {
+      return true;
+    }
+  } catch (error) {
+    if (isGmailAuthenticationError(error)) {
+      throw error;
+    }
+  }
+
+  if (!input.threadId) {
+    return false;
+  }
+
+  try {
+    const thread = await gmailRequest<GmailThreadResponse>(
+      `/threads/${encodeURIComponent(input.threadId)}?format=metadata`,
+      accessToken,
+    );
+    return thread.messages?.some(wasSentAfter) ?? false;
+  } catch (error) {
+    if (isGmailAuthenticationError(error)) {
+      throw error;
+    }
     return false;
   }
 };

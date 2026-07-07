@@ -42,6 +42,11 @@ export const purchaseOrders = sqliteTable(
     deliveryTerms: text('delivery_terms'),
     notes: text('notes'),
     validationSummary: text('validation_summary'),
+    proformaInvoiceDraftId: text('proforma_invoice_draft_id', {
+      length: 255,
+    }),
+    proformaInvoiceDraftUpdatedAt: text('proforma_invoice_draft_updated_at'),
+    proformaInvoiceSentAt: text('proforma_invoice_sent_at'),
     createdAt: text('created_at')
       .notNull()
       .default(sql`(CURRENT_TIMESTAMP)`),

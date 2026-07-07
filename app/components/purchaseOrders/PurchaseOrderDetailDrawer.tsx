@@ -55,6 +55,7 @@ type ProformaDraftResponse =
       success: true;
       draft: { id: string; url: string };
       generatedReply: string;
+      purchaseOrder: PurchaseOrderRecord;
     }
   | { error: string };
 
@@ -113,7 +114,10 @@ export const PurchaseOrderDetailDrawer = ({
 
   const canValidate =
     purchaseOrder.status !== 'validated' && purchaseOrder.linkedRfq !== null;
-  const canGenerateProforma = purchaseOrder.status === 'validated';
+  const canGenerateProforma =
+    purchaseOrder.status === 'validated' ||
+    purchaseOrder.status === 'review_email' ||
+    purchaseOrder.status === 'awaiting_payment';
   const canDraftProforma = canGenerateProforma && !!purchaseOrder.sourceEmail;
   const selectedTemplateExists = templates.some(
     (template) => template.id === selectedTemplateId,

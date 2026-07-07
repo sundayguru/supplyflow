@@ -27,7 +27,11 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
   if (!purchaseOrder) {
     return data({ error: 'PO not found' }, { status: 404 });
   }
-  if (purchaseOrder.status !== 'validated') {
+  if (
+    purchaseOrder.status !== 'validated' &&
+    purchaseOrder.status !== 'review_email' &&
+    purchaseOrder.status !== 'awaiting_payment'
+  ) {
     return data(
       { error: 'Generate a proforma invoice after the PO is validated.' },
       { status: 400 },
