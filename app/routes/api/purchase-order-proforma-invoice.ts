@@ -39,7 +39,8 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
   }
 
   const url = new URL(request.url);
-  const templateId = url.searchParams.get('templateId');
+  const templateId =
+    url.searchParams.get('templateId') ?? purchaseOrder.templateId;
   const template = templateId
     ? await getRfqPdfTemplate(templateId, organization.id)
     : null;

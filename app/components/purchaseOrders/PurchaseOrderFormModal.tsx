@@ -7,6 +7,7 @@ import {
   type PurchaseOrderInput,
   type PurchaseOrderStatus,
 } from '~/types/purchaseOrder';
+import type { RfqPdfTemplateOption } from '~/types/rfqPdfTemplate';
 import { currencyOptionLabel, supportedCurrencies } from '~/utils/currencies';
 import {
   PurchaseOrderItemFields,
@@ -23,6 +24,7 @@ type PurchaseOrderFormModalProps = {
   initialValue?: PurchaseOrderFormValue;
   rfqs: LinkedRfqSummary[];
   manufacturers: ManufacturerRecord[];
+  templates: RfqPdfTemplateOption[];
   onClose: () => void;
   onSubmit: (value: PurchaseOrderFormValue) => void;
 };
@@ -43,6 +45,7 @@ export const PurchaseOrderFormModal = ({
   initialValue,
   rfqs,
   manufacturers,
+  templates,
   onClose,
   onSubmit,
 }: PurchaseOrderFormModalProps) => {
@@ -61,6 +64,7 @@ export const PurchaseOrderFormModal = ({
   );
   const [applyVat, setApplyVat] = useState(initialValue?.applyVat ?? false);
   const [currency, setCurrency] = useState(initialValue?.currency ?? 'EUR');
+  const [templateId, setTemplateId] = useState(initialValue?.templateId ?? '');
   const [incoterms, setIncoterms] = useState(initialValue?.incoterms ?? '');
   const [deliveryTerms, setDeliveryTerms] = useState(
     initialValue?.deliveryTerms ?? '',
@@ -82,6 +86,7 @@ export const PurchaseOrderFormModal = ({
       expectedDate: expectedDate || null,
       applyVat,
       currency,
+      templateId: templateId || null,
       incoterms: incoterms || null,
       deliveryTerms: deliveryTerms || null,
       rfqId: rfqId || null,
@@ -156,6 +161,22 @@ export const PurchaseOrderFormModal = ({
               {rfqs.map((rfq) => (
                 <option key={rfq.id} value={rfq.id}>
                   {rfq.reference} · {rfq.customerName}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className='block text-sm font-semibold text-slate-700'>
+            PDF template
+            <select
+              value={templateId}
+              onChange={(event) => setTemplateId(event.target.value)}
+              className={inputClass}
+            >
+              <option value=''>Default invoice template</option>
+              {templates.map((template) => (
+                <option key={template.id} value={template.id}>
+                  {template.name}
                 </option>
               ))}
             </select>

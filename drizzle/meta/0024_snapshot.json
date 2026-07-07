@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "1b5e5b2b-bb88-49cb-a7f3-bf1c5d94bb5c",
-  "prevId": "6af0815d-3743-4653-a9de-b763d53642b4",
+  "id": "2c1abc66-4e4e-4606-9ab5-c54b3567d521",
+  "prevId": "1b5e5b2b-bb88-49cb-a7f3-bf1c5d94bb5c",
   "tables": {
     "users": {
       "name": "users",
@@ -1088,6 +1088,13 @@
           "notNull": false,
           "autoincrement": false
         },
+        "template_id": {
+          "name": "template_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "reference": {
           "name": "reference",
           "type": "text(32)",
@@ -1269,6 +1276,15 @@
           "tableFrom": "purchase_orders",
           "tableTo": "rfqs",
           "columnsFrom": ["rfq_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "purchase_orders_template_id_rfq_pdf_templates_id_fk": {
+          "name": "purchase_orders_template_id_rfq_pdf_templates_id_fk",
+          "tableFrom": "purchase_orders",
+          "tableTo": "rfq_pdf_templates",
+          "columnsFrom": ["template_id"],
           "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"

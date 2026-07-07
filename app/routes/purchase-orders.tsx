@@ -430,6 +430,7 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
           }
           rfqs={loaderData.rfqs}
           manufacturers={loaderData.manufacturers}
+          templates={loaderData.templates}
           onClose={() => setFormPurchaseOrder(null)}
           onSubmit={submitPurchaseOrder}
         />

@@ -108,6 +108,10 @@ export const parsePurchaseOrderInput = (
   const applyVat = value.applyVat === true;
   const currency =
     typeof value.currency === 'string' ? value.currency.toUpperCase() : 'EUR';
+  const templateId =
+    typeof value.templateId === 'string' && value.templateId.trim()
+      ? value.templateId.trim()
+      : null;
   const incoterms =
     typeof value.incoterms === 'string' && value.incoterms.trim()
       ? value.incoterms.trim()
@@ -164,6 +168,7 @@ export const parsePurchaseOrderInput = (
       expectedDate,
       applyVat,
       currency,
+      templateId,
       incoterms,
       deliveryTerms,
       rfqId,

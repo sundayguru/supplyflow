@@ -9,6 +9,7 @@ import {
   updatePurchaseOrderValidation,
   updatePurchaseOrderStatus,
 } from '~/db/purchaseOrders';
+import { getRfqPdfTemplate } from '~/db/rfqPdfTemplates';
 import { getRfq } from '~/db/rfqs';
 import { getOrganizationForUser } from '~/db/organizations';
 import { getUserFromRequest } from '~/utils/session.server';
@@ -24,6 +25,11 @@ const hasValidLinkedRfq = async (
   organizationId: string,
   vatRate: number,
 ) => !rfqId || !!(await getRfq(rfqId, organizationId, vatRate));
+
+const hasValidPdfTemplate = async (
+  templateId: string | null,
+  organizationId: string,
+) => !templateId || !!(await getRfqPdfTemplate(templateId, organizationId));
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
@@ -81,6 +87,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
         ))
       ) {
         return data({ error: 'Linked RFQ not found' }, { status: 400 });
+      }
+      if (
+        !(await hasValidPdfTemplate(parsed.value.templateId, organization.id))
+      ) {
+        return data({ error: 'PDF template not found' }, { status: 400 });
       }
       return data(
         {
@@ -174,6 +185,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
         ))
       ) {
         return data({ error: 'Linked RFQ not found' }, { status: 400 });
+      }
+      if (
+        !(await hasValidPdfTemplate(parsed.value.templateId, organization.id))
+      ) {
+        return data({ error: 'PDF template not found' }, { status: 400 });
       }
       const purchaseOrder = await updatePurchaseOrder(
         body.id,

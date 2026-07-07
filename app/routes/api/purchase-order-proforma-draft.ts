@@ -108,7 +108,7 @@ export const action = async ({
     const templateId =
       typeof body.templateId === 'string' && body.templateId
         ? body.templateId
-        : null;
+        : purchaseOrder.templateId;
     const template = templateId
       ? await getRfqPdfTemplate(templateId, organization.id)
       : null;

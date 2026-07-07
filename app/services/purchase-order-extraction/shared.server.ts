@@ -120,6 +120,7 @@ export const parsePurchaseOrderExtractionResponse = (
           supplierEmail: senderEmail(message),
           status: 'sent',
           rfqId: null,
+          templateId: null,
           items:
             'items' in envelope.purchaseOrder &&
             Array.isArray(envelope.purchaseOrder.items)

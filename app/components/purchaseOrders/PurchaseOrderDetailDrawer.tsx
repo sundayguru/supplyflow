@@ -78,9 +78,6 @@ export const PurchaseOrderDetailDrawer = ({
   const [deleteItem, setDeleteItem] = useState<PurchaseOrderItemRecord | null>(
     null,
   );
-  const [selectedTemplateId, setSelectedTemplateId] = useState(
-    templates[0]?.id ?? '',
-  );
 
   const submitItem = (value: PurchaseOrderItemFormValue) => {
     if (!editItem) {
@@ -119,12 +116,12 @@ export const PurchaseOrderDetailDrawer = ({
     purchaseOrder.status === 'review_email' ||
     purchaseOrder.status === 'awaiting_payment';
   const canDraftProforma = canGenerateProforma && !!purchaseOrder.sourceEmail;
-  const selectedTemplateExists = templates.some(
-    (template) => template.id === selectedTemplateId,
-  );
-  const activeTemplateId = selectedTemplateExists
-    ? selectedTemplateId
-    : (templates[0]?.id ?? '');
+  const savedTemplateId =
+    purchaseOrder.templateId &&
+    templates.some((template) => template.id === purchaseOrder.templateId)
+      ? purchaseOrder.templateId
+      : '';
+  const activeTemplateId = savedTemplateId;
   const selectedTemplate = templates.find(
     (template) => template.id === activeTemplateId,
   );
@@ -388,26 +385,13 @@ export const PurchaseOrderDetailDrawer = ({
                 </div>
               </div>
 
-              <label className='mt-5 block text-sm font-semibold text-slate-700'>
-                PDF template
-                <select
-                  value={activeTemplateId}
-                  onChange={(event) =>
-                    setSelectedTemplateId(event.target.value)
-                  }
-                  className='mt-2 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10'
-                >
-                  {templates.length === 0 ? (
-                    <option value=''>Default invoice template</option>
-                  ) : (
-                    templates.map((template) => (
-                      <option key={template.id} value={template.id}>
-                        {template.name}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </label>
+              <p className='mt-4 text-sm text-slate-500'>
+                Using{' '}
+                <span className='font-semibold text-slate-700'>
+                  {selectedTemplate?.name ?? 'default invoice template'}
+                </span>
+                .
+              </p>
 
               <div className='mt-4 overflow-hidden rounded-xl border border-slate-200 bg-slate-50'>
                 <iframe

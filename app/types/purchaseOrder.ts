@@ -43,6 +43,7 @@ export type PurchaseOrderInput = {
   expectedDate: string | null;
   applyVat: boolean;
   currency: string;
+  templateId: string | null;
   incoterms: string | null;
   deliveryTerms: string | null;
   rfqId: string | null;
