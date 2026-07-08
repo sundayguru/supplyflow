@@ -1,0 +1,283 @@
+import { useMemo, useState } from 'react';
+import { data, redirect, useFetcher } from 'react-router';
+import { Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import type { Route } from './+types/vendor-purchase-orders';
+import { ConfirmModal } from '~/components/ConfirmModal';
+import {
+  VendorPurchaseOrderFormModal,
+  type VendorPurchaseOrderFormValue,
+} from '~/components/vendorPurchaseOrders/VendorPurchaseOrderFormModal';
+import { VendorPurchaseOrderStatusBadge } from '~/components/vendorPurchaseOrders/VendorPurchaseOrderStatusBadge';
+import { listManufacturers } from '~/db/manufacturers';
+import { getOrganizationForUser } from '~/db/organizations';
+import { getPurchaseOrders } from '~/db/purchaseOrders';
+import { getVendorPurchaseOrders } from '~/db/vendorPurchaseOrders';
+import type { VendorPurchaseOrderRecord } from '~/types/vendorPurchaseOrder';
+import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
+import { getUserFromRequest } from '~/utils/session.server';
+
+type ApiResponse =
+  | {
+      success: true;
+      vendorPurchaseOrder?: VendorPurchaseOrderRecord;
+      id?: string;
+    }
+  | { error: string };
+
+export const loader = async ({ request }: Route.LoaderArgs) => {
+  const user = await getUserFromRequest(request);
+  if (!user) {
+    return redirect('/auth/login');
+  }
+  const organization = await getOrganizationForUser(user.id);
+  if (!organization) {
+    return redirect('/organization');
+  }
+
+  try {
+    const [vendorPurchaseOrders, purchaseOrders, manufacturers] =
+      await Promise.all([
+        getVendorPurchaseOrders(organization.id),
+        getPurchaseOrders(organization.id, organization.vat),
+        listManufacturers(organization.id),
+      ]);
+    return data({
+      vendorPurchaseOrders,
+      purchaseOrders: purchaseOrders.map(({ id, reference, supplierName }) => ({
+        id,
+        reference,
+        supplierName,
+      })),
+      manufacturers,
+      loadError: null,
+    });
+  } catch (error) {
+    console.error('Unable to load vendor POs', error);
+    return data({
+      vendorPurchaseOrders: [],
+      purchaseOrders: [],
+      manufacturers: [],
+      loadError: 'Unable to load vendor POs',
+    });
+  }
+};
+
+const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
+  const mutation = useFetcher<ApiResponse>();
+  const [query, setQuery] = useState('');
+  const [formTarget, setFormTarget] = useState<
+    VendorPurchaseOrderRecord | 'new' | null
+  >(null);
+  const [deleteTarget, setDeleteTarget] =
+    useState<VendorPurchaseOrderRecord | null>(null);
+
+  const filteredVendorPurchaseOrders = useMemo(() => {
+    const search = query.trim().toLowerCase();
+    return loaderData.vendorPurchaseOrders.filter(
+      (vendorPurchaseOrder) =>
+        !search ||
+        vendorPurchaseOrder.reference.toLowerCase().includes(search) ||
+        vendorPurchaseOrder.vendorName.toLowerCase().includes(search) ||
+        vendorPurchaseOrder.linkedPurchaseOrder.reference
+          .toLowerCase()
+          .includes(search) ||
+        vendorPurchaseOrder.items.some(
+          (item) =>
+            item.description.toLowerCase().includes(search) ||
+            item.manufacturer?.toLowerCase().includes(search) ||
+            item.manufacturerPartNumber?.toLowerCase().includes(search),
+        ),
+    );
+  }, [loaderData.vendorPurchaseOrders, query]);
+
+  const submitVendorPurchaseOrder = (value: VendorPurchaseOrderFormValue) => {
+    mutation.submit(value, {
+      method: value.id ? 'patch' : 'post',
+      action: '/api/vendor-purchase-orders',
+      encType: 'application/json',
+    });
+    setFormTarget(null);
+  };
+
+  const confirmDelete = () => {
+    if (!deleteTarget) {
+      return;
+    }
+    mutation.submit(
+      { id: deleteTarget.id },
+      {
+        method: 'delete',
+        action: '/api/vendor-purchase-orders',
+        encType: 'application/json',
+      },
+    );
+    setDeleteTarget(null);
+  };
+
+  return (
+    <div className='mx-auto max-w-[1440px] font-sans text-slate-950'>
+      <div className='flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between'>
+        <div>
+          <p className='text-xs font-bold tracking-[0.18em] text-emerald-700 uppercase'>
+            Vendor purchasing
+          </p>
+          <h1 className='mt-2 font-serif text-4xl font-semibold tracking-tight sm:text-5xl'>
+            Vendor POs
+          </h1>
+          <p className='mt-2 text-sm text-slate-500'>
+            Create and track purchase orders sent to vendors.
+          </p>
+        </div>
+        <button
+          type='button'
+          onClick={() => setFormTarget('new')}
+          disabled={loaderData.purchaseOrders.length === 0}
+          className='inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60'
+        >
+          <Plus size={18} /> New vendor PO
+        </button>
+      </div>
+
+      {loaderData.loadError && (
+        <p className='mt-4 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700'>
+          {loaderData.loadError}. Apply the latest database migration and retry.
+        </p>
+      )}
+      {mutation.data && 'error' in mutation.data && (
+        <p className='mt-4 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700'>
+          {mutation.data.error}
+        </p>
+      )}
+
+      <section className='mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm'>
+        <div className='border-b border-slate-100 p-4 sm:p-5'>
+          <label className='relative block w-full sm:max-w-sm'>
+            <Search
+              className='absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400'
+              size={17}
+            />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              className='w-full rounded-xl border border-slate-200 py-2.5 pr-3 pl-10 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10'
+              placeholder='Search vendor POs, vendors, or items'
+            />
+          </label>
+        </div>
+
+        {filteredVendorPurchaseOrders.length === 0 ? (
+          <div className='px-6 py-16 text-center'>
+            <span className='mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700'>
+              <Eye size={24} />
+            </span>
+            <h2 className='mt-4 text-lg font-bold'>No vendor POs found</h2>
+            <p className='mt-1 text-sm text-slate-500'>
+              Generate a vendor PO from a customer PO or create one here.
+            </p>
+          </div>
+        ) : (
+          <div className='overflow-x-auto'>
+            <table className='w-full min-w-[900px] text-left text-sm'>
+              <thead className='bg-slate-50/70 text-[10px] font-bold tracking-wider text-slate-400 uppercase'>
+                <tr>
+                  <th className='px-5 py-3'>Reference</th>
+                  <th className='px-5 py-3'>Vendor</th>
+                  <th className='px-5 py-3'>Linked PO</th>
+                  <th className='px-5 py-3'>Items</th>
+                  <th className='px-5 py-3'>Value</th>
+                  <th className='px-5 py-3'>Status</th>
+                  <th className='px-5 py-3 text-right'>Actions</th>
+                </tr>
+              </thead>
+              <tbody className='divide-y divide-slate-100'>
+                {filteredVendorPurchaseOrders.map((vendorPurchaseOrder) => (
+                  <tr
+                    key={vendorPurchaseOrder.id}
+                    className='transition hover:bg-slate-50/60'
+                  >
+                    <td className='px-5 py-4 font-semibold text-slate-900'>
+                      {vendorPurchaseOrder.reference}
+                    </td>
+                    <td className='px-5 py-4'>
+                      <p className='font-medium text-slate-800'>
+                        {vendorPurchaseOrder.vendorName}
+                      </p>
+                      <p className='mt-0.5 text-xs text-slate-400'>
+                        {vendorPurchaseOrder.vendorEmail ?? 'No email'}
+                      </p>
+                    </td>
+                    <td className='px-5 py-4 text-slate-600'>
+                      {vendorPurchaseOrder.linkedPurchaseOrder.reference}
+                    </td>
+                    <td className='max-w-[260px] px-5 py-4'>
+                      <p className='truncate text-slate-600'>
+                        {vendorPurchaseOrder.items[0]?.description}
+                      </p>
+                      <p className='mt-0.5 text-xs text-slate-400'>
+                        {vendorPurchaseOrder.items.length} item
+                        {vendorPurchaseOrder.items.length === 1 ? '' : 's'}
+                      </p>
+                    </td>
+                    <td className='px-5 py-4 font-medium'>
+                      {formatPurchaseOrderMoney(
+                        vendorPurchaseOrder.totalValue,
+                        vendorPurchaseOrder.currency,
+                      )}
+                    </td>
+                    <td className='px-5 py-4'>
+                      <VendorPurchaseOrderStatusBadge
+                        status={vendorPurchaseOrder.status}
+                      />
+                    </td>
+                    <td className='px-5 py-4'>
+                      <div className='flex justify-end gap-1'>
+                        <button
+                          type='button'
+                          onClick={() => setFormTarget(vendorPurchaseOrder)}
+                          className='rounded-lg p-2 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-700'
+                          aria-label={`Edit ${vendorPurchaseOrder.reference}`}
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          type='button'
+                          onClick={() => setDeleteTarget(vendorPurchaseOrder)}
+                          className='rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-700'
+                          aria-label={`Delete ${vendorPurchaseOrder.reference}`}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {formTarget && (
+        <VendorPurchaseOrderFormModal
+          key={formTarget === 'new' ? 'new' : formTarget.id}
+          initialValue={formTarget === 'new' ? undefined : formTarget}
+          purchaseOrders={loaderData.purchaseOrders}
+          manufacturers={loaderData.manufacturers}
+          onClose={() => setFormTarget(null)}
+          onSubmit={submitVendorPurchaseOrder}
+        />
+      )}
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title='Delete this vendor PO?'
+        description={`${deleteTarget?.reference ?? 'This vendor PO'} will be permanently removed.`}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+        isLoading={mutation.state !== 'idle'}
+        confirmVariant='danger'
+      />
+    </div>
+  );
+};
+
+export default VendorPurchaseOrdersPage;

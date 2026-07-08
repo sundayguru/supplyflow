@@ -16,6 +16,7 @@ import {
   Pencil,
   RefreshCw,
   Send,
+  ShoppingCart,
   Trash2,
   Truck,
   UserRound,
@@ -37,6 +38,10 @@ import {
 } from './PurchaseOrderPaymentModal';
 import type { PurchaseOrderItemFormValue } from './PurchaseOrderItemFields';
 import { PurchaseOrderStatusBadge } from './PurchaseOrderStatusBadge';
+import {
+  VendorPurchaseOrderFromPoModal,
+  type VendorPurchaseOrderFromPoValue,
+} from '../vendorPurchaseOrders/VendorPurchaseOrderFromPoModal';
 
 type PurchaseOrderDetailDrawerProps = {
   purchaseOrder: PurchaseOrderRecord;
@@ -68,6 +73,10 @@ type PaymentMutationResponse =
   | { success: true; purchaseOrder: PurchaseOrderRecord }
   | { error: string };
 
+type VendorPurchaseOrderMutationResponse =
+  | { success: true; vendorPurchaseOrder: { id: string } }
+  | { error: string };
+
 const formatDate = (value: string) => new Date(value).toLocaleDateString();
 
 export const PurchaseOrderDetailDrawer = ({
@@ -82,6 +91,8 @@ export const PurchaseOrderDetailDrawer = ({
   const validationMutation = useFetcher<ValidationMutationResponse>();
   const proformaDraft = useFetcher<ProformaDraftResponse>();
   const paymentMutation = useFetcher<PaymentMutationResponse>();
+  const vendorPurchaseOrderMutation =
+    useFetcher<VendorPurchaseOrderMutationResponse>();
   const currentPurchaseOrder =
     paymentMutation.data && 'success' in paymentMutation.data
       ? paymentMutation.data.purchaseOrder
@@ -93,6 +104,7 @@ export const PurchaseOrderDetailDrawer = ({
     null,
   );
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isVendorPoModalOpen, setIsVendorPoModalOpen] = useState(false);
 
   const submitItem = (value: PurchaseOrderItemFormValue) => {
     if (!editItem) {
@@ -198,6 +210,15 @@ export const PurchaseOrderDetailDrawer = ({
     setIsPaymentModalOpen(false);
   };
 
+  const submitVendorPurchaseOrder = (value: VendorPurchaseOrderFromPoValue) => {
+    vendorPurchaseOrderMutation.submit(value, {
+      method: 'post',
+      action: '/api/vendor-purchase-orders',
+      encType: 'application/json',
+    });
+    setIsVendorPoModalOpen(false);
+  };
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -274,6 +295,12 @@ export const PurchaseOrderDetailDrawer = ({
               {paymentMutation.data.error}
             </p>
           )}
+          {vendorPurchaseOrderMutation.data &&
+            'error' in vendorPurchaseOrderMutation.data && (
+              <p className='mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'>
+                {vendorPurchaseOrderMutation.data.error}
+              </p>
+            )}
           <section
             className='grid gap-3 sm:grid-cols-2'
             aria-label='PO summary'
@@ -723,6 +750,14 @@ export const PurchaseOrderDetailDrawer = ({
           >
             <Pencil size={17} /> Edit PO
           </button>
+          <button
+            type='button'
+            onClick={() => setIsVendorPoModalOpen(true)}
+            disabled={vendorPurchaseOrderMutation.state !== 'idle'}
+            className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60'
+          >
+            <ShoppingCart size={17} /> Generate vendor PO
+          </button>
         </footer>
       </aside>
 
@@ -751,6 +786,13 @@ export const PurchaseOrderDetailDrawer = ({
           outstandingValue={currentPurchaseOrder.outstandingValue}
           onClose={() => setIsPaymentModalOpen(false)}
           onSubmit={submitPayment}
+        />
+      )}
+      {isVendorPoModalOpen && (
+        <VendorPurchaseOrderFromPoModal
+          purchaseOrder={currentPurchaseOrder}
+          onClose={() => setIsVendorPoModalOpen(false)}
+          onSubmit={submitVendorPurchaseOrder}
         />
       )}
     </div>
