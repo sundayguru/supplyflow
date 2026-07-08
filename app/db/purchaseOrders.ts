@@ -8,7 +8,11 @@ import type {
 } from '~/types/purchaseOrder';
 import { calculatePurchaseOrderTotals } from '~/utils/purchaseOrder';
 import { getDb } from './connection';
-import { purchaseOrderItems, purchaseOrders } from './schemas';
+import {
+  purchaseOrderItems,
+  purchaseOrderPaymentConfirmations,
+  purchaseOrders,
+} from './schemas';
 
 const createReference = () =>
   `PO-${new Date().getFullYear()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
@@ -33,6 +37,21 @@ const withTotals = <
     items: PurchaseOrderItemInput[];
     applyVat: boolean;
     rfq: { id: string; reference: string; customerName: string } | null;
+    paymentConfirmations?: Array<{
+      id: string;
+      purchaseOrderId: string;
+      amountPaid: number;
+      paymentDate: string;
+      paymentReference: string;
+      confirmedByUserId: string;
+      createdAt: string;
+      confirmedBy: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+      };
+    }>;
   },
 >(
   purchaseOrder: PurchaseOrder,
@@ -40,16 +59,43 @@ const withTotals = <
 ): Omit<PurchaseOrder, 'rfq'> &
   ReturnType<typeof calculatePurchaseOrderTotals> & {
     linkedRfq: PurchaseOrder['rfq'];
+    paymentConfirmations: PurchaseOrderRecord['paymentConfirmations'];
+    totalPaid: number;
+    outstandingValue: number;
   } => {
   const { rfq, ...record } = purchaseOrder;
+  const totals = calculatePurchaseOrderTotals(
+    purchaseOrder.items,
+    vatRate,
+    purchaseOrder.applyVat,
+  );
+  const paymentConfirmations = (purchaseOrder.paymentConfirmations ?? []).map(
+    (payment) => ({
+      id: payment.id,
+      purchaseOrderId: payment.purchaseOrderId,
+      amountPaid: payment.amountPaid,
+      paymentDate: payment.paymentDate,
+      paymentReference: payment.paymentReference,
+      confirmedByUserId: payment.confirmedByUserId,
+      confirmedBy: {
+        id: payment.confirmedBy.id,
+        name: `${payment.confirmedBy.firstName} ${payment.confirmedBy.lastName}`,
+        email: payment.confirmedBy.email,
+      },
+      createdAt: payment.createdAt,
+    }),
+  );
+  const totalPaid = paymentConfirmations.reduce(
+    (total, payment) => total + payment.amountPaid,
+    0,
+  );
   return {
     ...record,
+    paymentConfirmations,
     linkedRfq: rfq,
-    ...calculatePurchaseOrderTotals(
-      purchaseOrder.items,
-      vatRate,
-      purchaseOrder.applyVat,
-    ),
+    ...totals,
+    totalPaid,
+    outstandingValue: Math.max(0, totals.totalValue - totalPaid),
   };
 };
 
@@ -63,6 +109,19 @@ export const getPurchaseOrders = async (
     orderBy: [desc(purchaseOrders.createdAt)],
     with: {
       items: { orderBy: [asc(purchaseOrderItems.position)] },
+      paymentConfirmations: {
+        orderBy: [desc(purchaseOrderPaymentConfirmations.createdAt)],
+        with: {
+          confirmedBy: {
+            columns: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+      },
       rfq: {
         columns: {
           id: true,
@@ -88,6 +147,19 @@ export const getPurchaseOrder = async (
     ),
     with: {
       items: { orderBy: [asc(purchaseOrderItems.position)] },
+      paymentConfirmations: {
+        orderBy: [desc(purchaseOrderPaymentConfirmations.createdAt)],
+        with: {
+          confirmedBy: {
+            columns: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+      },
       rfq: {
         columns: {
           id: true,
@@ -234,6 +306,63 @@ export const updatePurchaseOrderProformaDraft = async (
     )
     .returning({ id: purchaseOrders.id });
   return updated ? getPurchaseOrder(updated.id, organizationId, vatRate) : null;
+};
+
+export const createPurchaseOrderPaymentConfirmation = async (
+  purchaseOrderId: string,
+  organizationId: string,
+  confirmedByUserId: string,
+  input: {
+    amountPaid: number;
+    paymentDate: string;
+    paymentReference: string;
+  },
+  vatRate: number,
+) => {
+  const existing = await getPurchaseOrder(
+    purchaseOrderId,
+    organizationId,
+    vatRate,
+  );
+  if (!existing) {
+    return null;
+  }
+  if (
+    existing.status !== 'awaiting_payment' &&
+    existing.status !== 'partial_payment'
+  ) {
+    throw new Error(
+      'Payments can only be confirmed for POs awaiting payment or partial payment.',
+    );
+  }
+
+  const totalPaid = existing.totalPaid + input.amountPaid;
+  const nextStatus: PurchaseOrderStatus =
+    totalPaid < existing.totalValue ? 'partial_payment' : 'payment_confirmed';
+  const now = new Date().toISOString();
+  const db = getDb();
+
+  await db.batch([
+    db.insert(purchaseOrderPaymentConfirmations).values({
+      id: crypto.randomUUID(),
+      purchaseOrderId,
+      confirmedByUserId,
+      amountPaid: input.amountPaid,
+      paymentDate: input.paymentDate,
+      paymentReference: input.paymentReference,
+    }),
+    db
+      .update(purchaseOrders)
+      .set({ status: nextStatus, updatedAt: now })
+      .where(
+        and(
+          eq(purchaseOrders.id, purchaseOrderId),
+          eq(purchaseOrders.organizationId, organizationId),
+        ),
+      ),
+  ]);
+
+  return getPurchaseOrder(purchaseOrderId, organizationId, vatRate);
 };
 
 export const deletePurchaseOrder = async (

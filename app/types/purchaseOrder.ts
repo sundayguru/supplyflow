@@ -5,6 +5,8 @@ export const purchaseOrderStatuses = [
   'exception',
   'review_email',
   'awaiting_payment',
+  'partial_payment',
+  'payment_confirmed',
   'acknowledged',
   'partially_received',
   'received',
@@ -73,6 +75,21 @@ export type PurchaseOrderEmailSource = {
   provider: string;
 };
 
+export type PurchaseOrderPaymentConfirmation = {
+  id: string;
+  purchaseOrderId: string;
+  amountPaid: number;
+  paymentDate: string;
+  paymentReference: string;
+  confirmedByUserId: string;
+  confirmedBy: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: string;
+};
+
 export type PurchaseOrderRecord = Omit<PurchaseOrderInput, 'items'> & {
   id: string;
   userId: string;
@@ -86,8 +103,11 @@ export type PurchaseOrderRecord = Omit<PurchaseOrderInput, 'items'> & {
   proformaInvoiceDraftId: string | null;
   proformaInvoiceDraftUpdatedAt: string | null;
   proformaInvoiceSentAt: string | null;
+  paymentConfirmations: PurchaseOrderPaymentConfirmation[];
   subtotal: number;
   vatValue: number;
   totalValue: number;
+  totalPaid: number;
+  outstandingValue: number;
   sourceEmail?: PurchaseOrderEmailSource | null;
 };

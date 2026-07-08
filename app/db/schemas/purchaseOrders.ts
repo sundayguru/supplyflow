@@ -108,10 +108,38 @@ export const purchaseOrderItems = sqliteTable(
   ],
 );
 
+export const purchaseOrderPaymentConfirmations = sqliteTable(
+  'purchase_order_payment_confirmations',
+  {
+    id: text('id', { length: 36 }).primaryKey(),
+    purchaseOrderId: text('purchase_order_id')
+      .notNull()
+      .references(() => purchaseOrders.id, { onDelete: 'cascade' }),
+    amountPaid: integer('amount_paid').notNull(),
+    paymentDate: text('payment_date').notNull(),
+    paymentReference: text('payment_reference', { length: 255 }).notNull(),
+    confirmedByUserId: text('confirmed_by_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (table) => [
+    index('purchase_order_payment_confirmations_po_id_idx').on(
+      table.purchaseOrderId,
+    ),
+    index('purchase_order_payment_confirmations_confirmed_by_idx').on(
+      table.confirmedByUserId,
+    ),
+  ],
+);
+
 export const purchaseOrdersRelations = relations(
   purchaseOrders,
   ({ many, one }) => ({
     items: many(purchaseOrderItems),
+    paymentConfirmations: many(purchaseOrderPaymentConfirmations),
     rfq: one(rfqs, {
       fields: [purchaseOrders.rfqId],
       references: [rfqs.id],
@@ -129,7 +157,25 @@ export const purchaseOrderItemsRelations = relations(
   }),
 );
 
+export const purchaseOrderPaymentConfirmationsRelations = relations(
+  purchaseOrderPaymentConfirmations,
+  ({ one }) => ({
+    purchaseOrder: one(purchaseOrders, {
+      fields: [purchaseOrderPaymentConfirmations.purchaseOrderId],
+      references: [purchaseOrders.id],
+    }),
+    confirmedBy: one(users, {
+      fields: [purchaseOrderPaymentConfirmations.confirmedByUserId],
+      references: [users.id],
+    }),
+  }),
+);
+
 export type SelectPurchaseOrder = typeof purchaseOrders.$inferSelect;
 export type InsertPurchaseOrder = typeof purchaseOrders.$inferInsert;
 export type SelectPurchaseOrderItem = typeof purchaseOrderItems.$inferSelect;
 export type InsertPurchaseOrderItem = typeof purchaseOrderItems.$inferInsert;
+export type SelectPurchaseOrderPaymentConfirmation =
+  typeof purchaseOrderPaymentConfirmations.$inferSelect;
+export type InsertPurchaseOrderPaymentConfirmation =
+  typeof purchaseOrderPaymentConfirmations.$inferInsert;

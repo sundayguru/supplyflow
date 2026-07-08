@@ -176,6 +176,13 @@
       "when": 1783457545594,
       "tag": "0024_closed_scarlet_witch",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1783539542240,
+      "tag": "0025_chilly_silverclaw",
+      "breakpoints": true
     }
   ]
 }

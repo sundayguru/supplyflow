@@ -43,6 +43,10 @@ export default [
     route('api/purchase-orders', 'routes/api/purchase-orders.ts'),
     route('api/purchase-order-items', 'routes/api/purchase-order-items.ts'),
     route(
+      'api/purchase-order-payments',
+      'routes/api/purchase-order-payments.ts',
+    ),
+    route(
       'api/purchase-orders/:purchaseOrderId/proforma-invoice',
       'routes/api/purchase-order-proforma-invoice.ts',
     ),

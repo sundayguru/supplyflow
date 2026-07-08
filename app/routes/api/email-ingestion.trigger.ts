@@ -1,11 +1,8 @@
 import { data } from 'react-router';
 import type { Route } from './+types/email-ingestion.trigger';
 import { cloudflareContext } from '~/contexts.server/cloudflareContext.server';
-import { runEmailIngestion } from '~/services/email-ingestion.server';
 import { getUserFromRequest } from '~/utils/session.server';
 import { getOrganizationForUser } from '~/db/organizations';
-import { runRfqDraftSentStatusSync } from '~/services/rfq-draft-status.server';
-import { runRfqQuoteReminderSync } from '~/services/rfq-quote-reminder.server';
 import { executeScheduleMethods } from 'workers/app';
 
 export const loader = async ({ request, context }: Route.ActionArgs) => {
@@ -33,7 +30,7 @@ export const loader = async ({ request, context }: Route.ActionArgs) => {
   }
 
   try {
-    const summary = await executeScheduleMethods(env);
+    const summary = await executeScheduleMethods(env as Env);
     return data({ success: true, summary });
   } catch (error) {
     console.error(

@@ -4,6 +4,7 @@ import {
   CalendarDays,
   CircleDollarSign,
   ClipboardList,
+  CreditCard,
   Download,
   ExternalLink,
   FileText,
@@ -30,6 +31,10 @@ import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
 import { ConfirmModal } from '../ConfirmModal';
 import { PurchaseOrderItemEditModal } from './PurchaseOrderItemEditModal';
 import { PurchaseOrderItemStatusMenu } from './PurchaseOrderItemStatusMenu';
+import {
+  PurchaseOrderPaymentModal,
+  type PurchaseOrderPaymentFormValue,
+} from './PurchaseOrderPaymentModal';
 import type { PurchaseOrderItemFormValue } from './PurchaseOrderItemFields';
 import { PurchaseOrderStatusBadge } from './PurchaseOrderStatusBadge';
 
@@ -59,6 +64,10 @@ type ProformaDraftResponse =
     }
   | { error: string };
 
+type PaymentMutationResponse =
+  | { success: true; purchaseOrder: PurchaseOrderRecord }
+  | { error: string };
+
 const formatDate = (value: string) => new Date(value).toLocaleDateString();
 
 export const PurchaseOrderDetailDrawer = ({
@@ -72,12 +81,18 @@ export const PurchaseOrderDetailDrawer = ({
   const itemMutation = useFetcher<ItemMutationResponse>();
   const validationMutation = useFetcher<ValidationMutationResponse>();
   const proformaDraft = useFetcher<ProformaDraftResponse>();
+  const paymentMutation = useFetcher<PaymentMutationResponse>();
+  const currentPurchaseOrder =
+    paymentMutation.data && 'success' in paymentMutation.data
+      ? paymentMutation.data.purchaseOrder
+      : purchaseOrder;
   const [editItem, setEditItem] = useState<PurchaseOrderItemRecord | null>(
     null,
   );
   const [deleteItem, setDeleteItem] = useState<PurchaseOrderItemRecord | null>(
     null,
   );
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   const submitItem = (value: PurchaseOrderItemFormValue) => {
     if (!editItem) {
@@ -116,6 +131,9 @@ export const PurchaseOrderDetailDrawer = ({
     purchaseOrder.status === 'review_email' ||
     purchaseOrder.status === 'awaiting_payment';
   const canDraftProforma = canGenerateProforma && !!purchaseOrder.sourceEmail;
+  const canConfirmPayment =
+    currentPurchaseOrder.status === 'awaiting_payment' ||
+    currentPurchaseOrder.status === 'partial_payment';
   const savedTemplateId =
     purchaseOrder.templateId &&
     templates.some((template) => template.id === purchaseOrder.templateId)
@@ -166,6 +184,18 @@ export const PurchaseOrderDetailDrawer = ({
         encType: 'application/json',
       },
     );
+  };
+
+  const submitPayment = (value: PurchaseOrderPaymentFormValue) => {
+    paymentMutation.submit(
+      { purchaseOrderId: currentPurchaseOrder.id, ...value },
+      {
+        method: 'post',
+        action: '/api/purchase-order-payments',
+        encType: 'application/json',
+      },
+    );
+    setIsPaymentModalOpen(false);
   };
 
   useEffect(() => {
@@ -237,6 +267,11 @@ export const PurchaseOrderDetailDrawer = ({
           {proformaDraft.data && 'error' in proformaDraft.data && (
             <p className='mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'>
               {proformaDraft.data.error}
+            </p>
+          )}
+          {paymentMutation.data && 'error' in paymentMutation.data && (
+            <p className='mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'>
+              {paymentMutation.data.error}
             </p>
           )}
           <section
@@ -423,6 +458,81 @@ export const PurchaseOrderDetailDrawer = ({
                     </p>
                   )}
                 </div>
+              )}
+            </section>
+          )}
+
+          {(canConfirmPayment ||
+            currentPurchaseOrder.paymentConfirmations.length > 0) && (
+            <section className='mt-7 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'>
+              <div className='flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between'>
+                <div>
+                  <p className='flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-emerald-700 uppercase'>
+                    <CreditCard size={14} /> Payments
+                  </p>
+                  <h3 className='mt-2 text-lg font-bold text-slate-900'>
+                    {formatPurchaseOrderMoney(
+                      currentPurchaseOrder.totalPaid,
+                      currentPurchaseOrder.currency,
+                    )}{' '}
+                    paid
+                  </h3>
+                  <p className='mt-1 text-sm text-slate-500'>
+                    Outstanding:{' '}
+                    {formatPurchaseOrderMoney(
+                      currentPurchaseOrder.outstandingValue,
+                      currentPurchaseOrder.currency,
+                    )}
+                  </p>
+                </div>
+                {canConfirmPayment && (
+                  <button
+                    type='button'
+                    onClick={() => setIsPaymentModalOpen(true)}
+                    disabled={paymentMutation.state !== 'idle'}
+                    className='inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60'
+                  >
+                    <CreditCard size={15} /> Confirm payment
+                  </button>
+                )}
+              </div>
+
+              {currentPurchaseOrder.paymentConfirmations.length > 0 ? (
+                <div className='mt-5 space-y-3'>
+                  {currentPurchaseOrder.paymentConfirmations.map((payment) => (
+                    <article
+                      key={payment.id}
+                      className='rounded-xl border border-slate-200 bg-slate-50 p-4'
+                    >
+                      <div className='flex flex-wrap items-start justify-between gap-3'>
+                        <div>
+                          <p className='font-semibold text-slate-900'>
+                            {formatPurchaseOrderMoney(
+                              payment.amountPaid,
+                              currentPurchaseOrder.currency,
+                            )}
+                          </p>
+                          <p className='mt-1 text-sm text-slate-500'>
+                            {payment.paymentReference}
+                          </p>
+                        </div>
+                        <p className='text-sm font-medium text-slate-600'>
+                          {new Date(
+                            `${payment.paymentDate}T00:00:00`,
+                          ).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <p className='mt-3 border-t border-slate-200 pt-3 text-xs text-slate-500'>
+                        Confirmed by {payment.confirmedBy.name} on{' '}
+                        {formatDate(payment.createdAt)}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p className='mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-500'>
+                  No payments have been confirmed yet.
+                </p>
               )}
             </section>
           )}
@@ -635,6 +745,14 @@ export const PurchaseOrderDetailDrawer = ({
         isLoading={itemMutation.state !== 'idle'}
         confirmVariant='danger'
       />
+      {isPaymentModalOpen && (
+        <PurchaseOrderPaymentModal
+          currency={currentPurchaseOrder.currency}
+          outstandingValue={currentPurchaseOrder.outstandingValue}
+          onClose={() => setIsPaymentModalOpen(false)}
+          onSubmit={submitPayment}
+        />
+      )}
     </div>
   );
 };
