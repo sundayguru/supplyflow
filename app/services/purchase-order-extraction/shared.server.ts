@@ -54,7 +54,6 @@ Return exactly one JSON object with this shape:
       "unit": string such as "unit" or "piece",
       "description": string,
       "status": "ordered",
-      "manufacturer": string or null,
       "manufacturerId": null,
       "manufacturerPartNumber": string or null,
       "specifications": string or null

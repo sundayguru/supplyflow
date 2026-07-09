@@ -3,7 +3,6 @@ import {
   listProductPrices,
   updateProductPrice,
 } from '~/db/productPrices';
-import { getOrCreateManufacturer } from '~/db/manufacturers';
 import type { ProductPriceRecord } from '~/types/productPrice';
 import type { RfqItemInput } from '~/types/rfq';
 import { findProductPriceForRfqItem } from './productPrices';
@@ -23,7 +22,7 @@ const toProductPriceInput = (
   priceLastUpdated: string | null,
 ) => ({
   name: item.description,
-  manufacturer: item.manufacturer,
+  manufacturer: null,
   manufacturerId: item.manufacturerId,
   partNumber: item.manufacturerPartNumber,
   price: item.price,
@@ -42,7 +41,6 @@ const toRfqItemInput = (item: RfqItemProductPriceInput): RfqItemInput => ({
   shippingCost: item.shippingCost,
   unit: item.unit,
   description: item.description,
-  manufacturer: item.manufacturer,
   manufacturerId: item.manufacturerId,
   manufacturerPartNumber: item.manufacturerPartNumber,
   specifications: item.specifications,
@@ -53,7 +51,7 @@ const mergeProductMetadata = (
   item: RfqItemInput,
 ) => ({
   name: productPrice.name,
-  manufacturer: item.manufacturer ?? productPrice.manufacturer,
+  manufacturer: productPrice.manufacturer,
   manufacturerId: item.manufacturerId ?? productPrice.manufacturerId,
   partNumber: productPrice.partNumber,
   price: item.price,
@@ -69,19 +67,13 @@ export const syncRfqItemsWithProductPrices = async (
   currency: string,
   items: RfqItemProductPriceInput[],
 ) => {
+  void userId;
   const productPrices = await listProductPrices(organizationId);
   const syncedItems: RfqItemInput[] = [];
 
   for (const item of items) {
-    const manufacturer = await getOrCreateManufacturer(
-      organizationId,
-      userId,
-      item.manufacturer,
-    );
     const itemWithManufacturer = {
       ...item,
-      manufacturer: manufacturer?.name ?? item.manufacturer,
-      manufacturerId: manufacturer?.id ?? item.manufacturerId,
     };
     const productPrice = findProductPriceForRfqItem(
       productPrices,
@@ -109,8 +101,6 @@ export const syncRfqItemsWithProductPrices = async (
         toRfqItemInput({
           ...itemWithManufacturer,
           price: productPrice.price,
-          manufacturer:
-            productPrice.manufacturer ?? itemWithManufacturer.manufacturer,
           manufacturerId:
             productPrice.manufacturerId ?? itemWithManufacturer.manufacturerId,
         }),

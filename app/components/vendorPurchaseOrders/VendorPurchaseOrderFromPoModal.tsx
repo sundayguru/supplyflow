@@ -89,7 +89,6 @@ export const VendorPurchaseOrderFromPoModal = ({
           unit: item.unit,
           description: item.description,
           status: 'pending',
-          manufacturer: item.manufacturer,
           manufacturerId: item.manufacturerId,
           manufacturerPartNumber: item.manufacturerPartNumber,
           specifications: item.specifications,

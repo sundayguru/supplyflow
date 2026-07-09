@@ -35,6 +35,7 @@ import type {
   PurchaseOrderStatus,
 } from '~/types/purchaseOrder';
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
+import { findManufacturerName } from '~/utils/manufacturers';
 import { getUserFromRequest } from '~/utils/session.server';
 
 type ApiResponse =
@@ -158,14 +159,19 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
           purchaseOrder.reference.toLowerCase().includes(query) ||
           purchaseOrder.supplierName.toLowerCase().includes(query) ||
           purchaseOrder.linkedRfq?.reference.toLowerCase().includes(query) ||
-          purchaseOrder.items.some(
-            (item) =>
+          purchaseOrder.items.some((item) => {
+            const manufacturerName = findManufacturerName(
+              loaderData.manufacturers,
+              item.manufacturerId,
+            );
+            return (
               item.description.toLowerCase().includes(query) ||
-              item.manufacturer?.toLowerCase().includes(query) ||
-              item.manufacturerPartNumber?.toLowerCase().includes(query),
-          )),
+              manufacturerName?.toLowerCase().includes(query) ||
+              item.manufacturerPartNumber?.toLowerCase().includes(query)
+            );
+          })),
     );
-  }, [purchaseOrders, search, status]);
+  }, [loaderData.manufacturers, purchaseOrders, search, status]);
 
   const submitPurchaseOrder = (value: PurchaseOrderFormValue) => {
     const method = value.id ? 'patch' : 'post';

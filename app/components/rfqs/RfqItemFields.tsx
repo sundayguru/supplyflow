@@ -41,18 +41,6 @@ export const RfqItemFields = ({
   const hasProductPriceMismatch =
     !!matchedProductPrice && value.price !== matchedProductPrice.price;
   const amounts = calculateRfqItemAmounts(value);
-  const updateManufacturer = (manufacturerName: string) => {
-    const normalizedName = manufacturerName.trim();
-    const manufacturer = manufacturers.find(
-      (candidate) =>
-        candidate.name.toLowerCase() === normalizedName.toLowerCase(),
-    );
-    onChange({
-      ...value,
-      manufacturer: normalizedName || null,
-      manufacturerId: manufacturer?.id ?? null,
-    });
-  };
 
   useEffect(() => {
     if (
@@ -263,18 +251,20 @@ export const RfqItemFields = ({
       <div className='mt-4 grid gap-4 sm:grid-cols-2'>
         <label className='text-sm font-semibold text-slate-700'>
           Manufacturer
-          <input
-            list={`manufacturers-${index}`}
-            value={value.manufacturer ?? ''}
-            onChange={(event) => updateManufacturer(event.target.value)}
+          <select
+            value={value.manufacturerId ?? ''}
+            onChange={(event) =>
+              update('manufacturerId', event.target.value || null)
+            }
             className={inputClass}
-            placeholder='CIRCLE SEAL'
-          />
-          <datalist id={`manufacturers-${index}`}>
+          >
+            <option value=''>No manufacturer</option>
             {manufacturers.map((manufacturer) => (
-              <option key={manufacturer.id} value={manufacturer.name} />
+              <option key={manufacturer.id} value={manufacturer.id}>
+                {manufacturer.name}
+              </option>
             ))}
-          </datalist>
+          </select>
         </label>
         <label className='text-sm font-semibold text-slate-700'>
           Manufacturer part number

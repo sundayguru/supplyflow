@@ -80,7 +80,6 @@ export const vendorPurchaseOrderItems = sqliteTable(
     status: text('status', { enum: purchaseOrderItemStatuses })
       .notNull()
       .default('pending'),
-    manufacturer: text('manufacturer', { length: 255 }),
     manufacturerId: text('manufacturer_id').references(() => manufacturers.id, {
       onDelete: 'set null',
     }),

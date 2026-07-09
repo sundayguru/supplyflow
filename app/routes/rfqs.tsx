@@ -42,6 +42,7 @@ import { extractRfqPdfText } from '~/utils/rfqPdfExtraction.server';
 import { uploadRfqSourcePdf } from '~/utils/rfqSourcePdf.server';
 import type { EmailMessage } from '~/services/email/types';
 import { syncRfqItemsWithProductPrices } from '~/utils/rfqProductPrices.server';
+import { findManufacturerName } from '~/utils/manufacturers';
 
 type ApiResponse =
   | { success: true; rfq?: RfqRecord; id?: string }
@@ -274,14 +275,19 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
         (!query ||
           rfq.reference.toLowerCase().includes(query) ||
           rfq.customerName.toLowerCase().includes(query) ||
-          rfq.items.some(
-            (item) =>
+          rfq.items.some((item) => {
+            const manufacturerName = findManufacturerName(
+              loaderData.manufacturers,
+              item.manufacturerId,
+            );
+            return (
               item.description.toLowerCase().includes(query) ||
-              item.manufacturer?.toLowerCase().includes(query) ||
-              item.manufacturerPartNumber?.toLowerCase().includes(query),
-          )),
+              manufacturerName?.toLowerCase().includes(query) ||
+              item.manufacturerPartNumber?.toLowerCase().includes(query)
+            );
+          })),
     );
-  }, [rfqs, search, status]);
+  }, [loaderData.manufacturers, rfqs, search, status]);
 
   const submitRfq = (value: RfqFormValue) => {
     const method = value.id ? 'patch' : 'post';

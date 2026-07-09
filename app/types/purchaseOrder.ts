@@ -31,7 +31,6 @@ export type PurchaseOrderItemInput = {
   unit: string;
   description: string;
   status: PurchaseOrderItemStatus;
-  manufacturer: string | null;
   manufacturerId: string | null;
   manufacturerPartNumber: string | null;
   specifications: string | null;

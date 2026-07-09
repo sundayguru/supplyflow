@@ -83,10 +83,6 @@ export const parseRfqItemInput = (
       shippingCost,
       unit,
       description,
-      manufacturer:
-        typeof value.manufacturer === 'string' && value.manufacturer.trim()
-          ? value.manufacturer.trim()
-          : null,
       manufacturerId:
         typeof value.manufacturerId === 'string' && value.manufacturerId.trim()
           ? value.manufacturerId.trim()

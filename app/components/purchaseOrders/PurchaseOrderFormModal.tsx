@@ -35,7 +35,6 @@ const emptyItem = (): PurchaseOrderItemFormValue => ({
   unit: 'unit',
   description: '',
   status: 'pending',
-  manufacturer: null,
   manufacturerId: null,
   manufacturerPartNumber: null,
   specifications: null,

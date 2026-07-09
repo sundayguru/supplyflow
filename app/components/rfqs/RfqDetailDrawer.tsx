@@ -20,6 +20,7 @@ import {
 import type { ManufacturerRecord } from '~/types/manufacturer';
 import type { ProductPriceRecord } from '~/types/productPrice';
 import type { RfqItemRecord, RfqRecord } from '~/types/rfq';
+import { findManufacturerName } from '~/utils/manufacturers';
 import { calculateRfqItemAmounts, formatRfqMoney } from '~/utils/rfq';
 import { ConfirmModal } from '../ConfirmModal';
 import { RfqItemEditModal } from './RfqItemEditModal';
@@ -385,6 +386,7 @@ export const RfqDetailDrawer = ({
                   item={item}
                   index={index}
                   currency={rfq.currency}
+                  manufacturers={manufacturers}
                   canDelete={rfq.items.length > 1}
                   onEdit={() => setEditItem(item)}
                   onDelete={() => setDeleteItem(item)}
@@ -511,6 +513,7 @@ type RfqDetailItemProps = {
   item: RfqItemRecord;
   index: number;
   currency: string;
+  manufacturers: ManufacturerRecord[];
   canDelete: boolean;
   onEdit: () => void;
   onDelete: () => void;
@@ -520,11 +523,16 @@ const RfqDetailItem = ({
   item,
   index,
   currency,
+  manufacturers,
   canDelete,
   onEdit,
   onDelete,
 }: RfqDetailItemProps) => {
   const amounts = calculateRfqItemAmounts(item);
+  const manufacturerName = findManufacturerName(
+    manufacturers,
+    item.manufacturerId,
+  );
 
   return (
     <article className='rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'>
@@ -588,14 +596,14 @@ const RfqDetailItem = ({
           <p className='mt-3 text-sm leading-6 whitespace-pre-wrap text-slate-700'>
             {item.description}
           </p>
-          {(item.manufacturer || item.specifications) && (
+          {(manufacturerName || item.specifications) && (
             <div className='mt-4 border-t border-slate-100 pt-4 text-sm'>
-              {item.manufacturer && (
+              {manufacturerName && (
                 <p className='text-slate-600'>
                   <span className='font-semibold text-slate-800'>
                     Manufacturer:
                   </span>{' '}
-                  {item.manufacturer}
+                  {manufacturerName}
                 </p>
               )}
               {item.specifications && (

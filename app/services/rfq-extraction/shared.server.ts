@@ -38,7 +38,7 @@ Return exactly one JSON object with this shape:
       "shippingCost": non-negative integer in the smallest currency unit, default 0,
       "unit": string such as "unit" or "piece",
       "description": string,
-      "manufacturer": string or null,
+      "manufacturerId": null,
       "manufacturerPartNumber": string or null,
       "specifications": string or null
     }]

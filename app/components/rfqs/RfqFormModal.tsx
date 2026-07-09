@@ -41,7 +41,6 @@ const emptyItem = (priceMarkup: number): RfqItemFormValue => ({
   shippingCost: 0,
   unit: 'unit',
   description: '',
-  manufacturer: null,
   manufacturerId: null,
   manufacturerPartNumber: null,
   specifications: null,

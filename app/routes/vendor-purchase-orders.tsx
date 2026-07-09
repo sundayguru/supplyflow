@@ -15,6 +15,7 @@ import { getPurchaseOrders } from '~/db/purchaseOrders';
 import { listRfqPdfTemplates } from '~/db/rfqPdfTemplates';
 import { getVendorPurchaseOrders } from '~/db/vendorPurchaseOrders';
 import type { VendorPurchaseOrderRecord } from '~/types/vendorPurchaseOrder';
+import { findManufacturerName } from '~/utils/manufacturers';
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
 import { getUserFromRequest } from '~/utils/session.server';
 
@@ -119,14 +120,19 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
         vendorPurchaseOrder.linkedPurchaseOrder.reference
           .toLowerCase()
           .includes(search) ||
-        vendorPurchaseOrder.items.some(
-          (item) =>
+        vendorPurchaseOrder.items.some((item) => {
+          const manufacturerName = findManufacturerName(
+            loaderData.manufacturers,
+            item.manufacturerId,
+          );
+          return (
             item.description.toLowerCase().includes(search) ||
-            item.manufacturer?.toLowerCase().includes(search) ||
-            item.manufacturerPartNumber?.toLowerCase().includes(search),
-        ),
+            manufacturerName?.toLowerCase().includes(search) ||
+            item.manufacturerPartNumber?.toLowerCase().includes(search)
+          );
+        }),
     );
-  }, [loaderData.vendorPurchaseOrders, query]);
+  }, [loaderData.manufacturers, loaderData.vendorPurchaseOrders, query]);
 
   const submitVendorPurchaseOrder = (value: VendorPurchaseOrderFormValue) => {
     mutation.submit(value, {
@@ -307,6 +313,7 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
         <VendorPurchaseOrderDetailDrawer
           vendorPurchaseOrder={selectedVendorPurchaseOrder}
           templates={loaderData.templates}
+          manufacturers={loaderData.manufacturers}
           onClose={closeDetails}
           onEdit={editFromDetails}
           onDelete={deleteFromDetails}

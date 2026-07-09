@@ -120,7 +120,6 @@ const toPurchaseOrderItemFromRfqItem = (
     unit: item.unit,
     description: item.description,
     status: 'ordered',
-    manufacturer: item.manufacturer,
     manufacturerId: item.manufacturerId,
     manufacturerPartNumber: item.manufacturerPartNumber,
     specifications: item.specifications,

@@ -17,13 +17,7 @@ const manufacturerMatches = (
     return product.manufacturerId === item.manufacturerId;
   }
 
-  const productManufacturer = normalizeProductText(product.manufacturer);
-  const itemManufacturer = normalizeProductText(item.manufacturer);
-  return (
-    !productManufacturer ||
-    !itemManufacturer ||
-    productManufacturer === itemManufacturer
-  );
+  return !product.manufacturerId || !item.manufacturerId;
 };
 
 export const findProductPriceForRfqItem = <

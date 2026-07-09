@@ -13,8 +13,10 @@ import {
   UserRound,
   X,
 } from 'lucide-react';
+import type { ManufacturerRecord } from '~/types/manufacturer';
 import type { RfqPdfTemplateOption } from '~/types/rfqPdfTemplate';
 import type { VendorPurchaseOrderRecord } from '~/types/vendorPurchaseOrder';
+import { findManufacturerName } from '~/utils/manufacturers';
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
 import { PurchaseOrderItemStatusBadge } from '../purchaseOrders/PurchaseOrderStatusBadge';
 import { VendorPurchaseOrderStatusBadge } from './VendorPurchaseOrderStatusBadge';
@@ -22,6 +24,7 @@ import { VendorPurchaseOrderStatusBadge } from './VendorPurchaseOrderStatusBadge
 type VendorPurchaseOrderDetailDrawerProps = {
   vendorPurchaseOrder: VendorPurchaseOrderRecord;
   templates: RfqPdfTemplateOption[];
+  manufacturers: ManufacturerRecord[];
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -32,6 +35,7 @@ const formatDate = (value: string) => new Date(value).toLocaleDateString();
 export const VendorPurchaseOrderDetailDrawer = ({
   vendorPurchaseOrder,
   templates,
+  manufacturers,
   onClose,
   onEdit,
   onDelete,
@@ -235,23 +239,29 @@ export const VendorPurchaseOrderDetailDrawer = ({
                       <p className='mt-3 text-sm leading-6 whitespace-pre-wrap text-slate-700'>
                         {item.description}
                       </p>
-                      {(item.manufacturer || item.specifications) && (
-                        <div className='mt-4 border-t border-slate-100 pt-4 text-sm'>
-                          {item.manufacturer && (
-                            <p className='text-slate-600'>
-                              <span className='font-semibold text-slate-800'>
-                                Manufacturer:
-                              </span>{' '}
-                              {item.manufacturer}
-                            </p>
-                          )}
-                          {item.specifications && (
-                            <p className='mt-2 leading-6 whitespace-pre-wrap text-slate-500'>
-                              {item.specifications}
-                            </p>
-                          )}
-                        </div>
-                      )}
+                      {(() => {
+                        const manufacturerName = findManufacturerName(
+                          manufacturers,
+                          item.manufacturerId,
+                        );
+                        return manufacturerName || item.specifications ? (
+                          <div className='mt-4 border-t border-slate-100 pt-4 text-sm'>
+                            {manufacturerName && (
+                              <p className='text-slate-600'>
+                                <span className='font-semibold text-slate-800'>
+                                  Manufacturer:
+                                </span>{' '}
+                                {manufacturerName}
+                              </p>
+                            )}
+                            {item.specifications && (
+                              <p className='mt-2 leading-6 whitespace-pre-wrap text-slate-500'>
+                                {item.specifications}
+                              </p>
+                            )}
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
                   </div>
                 </article>

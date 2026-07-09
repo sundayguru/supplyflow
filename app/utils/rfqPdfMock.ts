@@ -20,7 +20,6 @@ const mockItems = (priceMarkup: number): RfqItemInput[] =>
     discountType: 'percentage',
     discountValue: 0,
     shippingCost: 0,
-    manufacturer: null,
     manufacturerId: null,
     manufacturerPartNumber: null,
     specifications: null,

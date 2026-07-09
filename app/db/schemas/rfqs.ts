@@ -81,7 +81,6 @@ export const rfqItems = sqliteTable(
     shippingCost: integer('shipping_cost').notNull().default(0),
     unit: text('unit', { length: 32 }).notNull(),
     description: text('description').notNull(),
-    manufacturer: text('manufacturer', { length: 255 }),
     manufacturerId: text('manufacturer_id').references(() => manufacturers.id, {
       onDelete: 'set null',
     }),

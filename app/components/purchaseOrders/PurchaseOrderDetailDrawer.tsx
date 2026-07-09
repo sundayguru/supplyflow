@@ -28,6 +28,7 @@ import type {
   PurchaseOrderRecord,
 } from '~/types/purchaseOrder';
 import type { RfqPdfTemplateOption } from '~/types/rfqPdfTemplate';
+import { findManufacturerName } from '~/utils/manufacturers';
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
 import { ConfirmModal } from '../ConfirmModal';
 import { PurchaseOrderItemEditModal } from './PurchaseOrderItemEditModal';
@@ -662,23 +663,29 @@ export const PurchaseOrderDetailDrawer = ({
                       <p className='mt-3 text-sm leading-6 whitespace-pre-wrap text-slate-700'>
                         {item.description}
                       </p>
-                      {(item.manufacturer || item.specifications) && (
-                        <div className='mt-4 border-t border-slate-100 pt-4 text-sm'>
-                          {item.manufacturer && (
-                            <p className='text-slate-600'>
-                              <span className='font-semibold text-slate-800'>
-                                Manufacturer:
-                              </span>{' '}
-                              {item.manufacturer}
-                            </p>
-                          )}
-                          {item.specifications && (
-                            <p className='mt-2 leading-6 whitespace-pre-wrap text-slate-500'>
-                              {item.specifications}
-                            </p>
-                          )}
-                        </div>
-                      )}
+                      {(() => {
+                        const manufacturerName = findManufacturerName(
+                          manufacturers,
+                          item.manufacturerId,
+                        );
+                        return manufacturerName || item.specifications ? (
+                          <div className='mt-4 border-t border-slate-100 pt-4 text-sm'>
+                            {manufacturerName && (
+                              <p className='text-slate-600'>
+                                <span className='font-semibold text-slate-800'>
+                                  Manufacturer:
+                                </span>{' '}
+                                {manufacturerName}
+                              </p>
+                            )}
+                            {item.specifications && (
+                              <p className='mt-2 leading-6 whitespace-pre-wrap text-slate-500'>
+                                {item.specifications}
+                              </p>
+                            )}
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
                   </div>
                 </article>
