@@ -17,6 +17,7 @@ import {
   applyProductPriceUpdateFlags,
   syncRfqItemsWithProductPrices,
 } from '~/utils/rfqProductPrices.server';
+import { resolveItemManufacturers } from '~/utils/itemManufacturers.server';
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
@@ -76,7 +77,15 @@ export const action = async ({ request }: Route.ActionArgs) => {
                 organization.id,
                 user.id,
                 parsed.value.currency,
-                applyProductPriceUpdateFlags(body, parsed.value.items),
+                applyProductPriceUpdateFlags(
+                  body,
+                  await resolveItemManufacturers(
+                    parsed.value.items,
+                    body,
+                    organization.id,
+                    user.id,
+                  ),
+                ),
               ),
             },
             organization.vat,
@@ -139,7 +148,15 @@ export const action = async ({ request }: Route.ActionArgs) => {
             organization.id,
             user.id,
             parsed.value.currency,
-            applyProductPriceUpdateFlags(body, parsed.value.items),
+            applyProductPriceUpdateFlags(
+              body,
+              await resolveItemManufacturers(
+                parsed.value.items,
+                body,
+                organization.id,
+                user.id,
+              ),
+            ),
           ),
         },
         organization.vat,

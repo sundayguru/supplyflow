@@ -12,6 +12,7 @@ import {
   applyProductPriceUpdateFlag,
   syncRfqItemsWithProductPrices,
 } from '~/utils/rfqProductPrices.server';
+import { resolveItemManufacturer } from '~/utils/itemManufacturers.server';
 
 const getItemId = (value: unknown) => {
   if (
@@ -55,7 +56,17 @@ export const action = async ({ request }: Route.ActionArgs) => {
         organization.id,
         user.id,
         itemContext.currency,
-        [applyProductPriceUpdateFlag(body, parsed.value)],
+        [
+          applyProductPriceUpdateFlag(
+            body,
+            await resolveItemManufacturer({
+              item: parsed.value,
+              source: body,
+              organizationId: organization.id,
+              userId: user.id,
+            }),
+          ),
+        ],
       );
       const rfq = await updateRfqItem(
         id,

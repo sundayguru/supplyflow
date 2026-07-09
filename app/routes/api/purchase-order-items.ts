@@ -8,6 +8,7 @@ import {
 import { getOrganizationForUser } from '~/db/organizations';
 import { getUserFromRequest } from '~/utils/session.server';
 import { parsePurchaseOrderItemInput } from '~/utils/purchaseOrder.server';
+import { resolveItemManufacturer } from '~/utils/itemManufacturers.server';
 import {
   purchaseOrderItemStatuses,
   type PurchaseOrderItemStatus,
@@ -79,7 +80,12 @@ export const action = async ({ request }: Route.ActionArgs) => {
       const purchaseOrder = await updatePurchaseOrderItem(
         id,
         organization.id,
-        parsed.value,
+        await resolveItemManufacturer({
+          item: parsed.value,
+          source: body,
+          organizationId: organization.id,
+          userId: user.id,
+        }),
         organization.vat,
       );
       return purchaseOrder

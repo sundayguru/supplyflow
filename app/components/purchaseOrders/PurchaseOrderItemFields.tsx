@@ -5,9 +5,12 @@ import {
   type PurchaseOrderItemInput,
   type PurchaseOrderItemStatus,
 } from '~/types/purchaseOrder';
+import { findManufacturerName } from '~/utils/manufacturers';
 import { purchaseOrderItemStatusLabels } from './PurchaseOrderStatusBadge';
 
-export type PurchaseOrderItemFormValue = PurchaseOrderItemInput;
+export type PurchaseOrderItemFormValue = PurchaseOrderItemInput & {
+  manufacturerName?: string;
+};
 
 type PurchaseOrderItemFieldsProps = {
   index: number;
@@ -32,6 +35,22 @@ export const PurchaseOrderItemFields = ({
     key: Key,
     nextValue: PurchaseOrderItemFormValue[Key],
   ) => onChange({ ...value, [key]: nextValue });
+  const manufacturerInputValue =
+    value.manufacturerName ??
+    findManufacturerName(manufacturers, value.manufacturerId) ??
+    '';
+  const updateManufacturer = (manufacturerName: string) => {
+    const normalizedName = manufacturerName.trim();
+    const manufacturer = manufacturers.find(
+      (candidate) =>
+        candidate.name.toLowerCase() === normalizedName.toLowerCase(),
+    );
+    onChange({
+      ...value,
+      manufacturerId: manufacturer?.id ?? null,
+      manufacturerName: normalizedName ? manufacturerName : undefined,
+    });
+  };
 
   return (
     <fieldset className='rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5'>
@@ -129,20 +148,18 @@ export const PurchaseOrderItemFields = ({
       <div className='mt-4 grid gap-4 sm:grid-cols-2'>
         <label className='text-sm font-semibold text-slate-700'>
           Manufacturer
-          <select
-            value={value.manufacturerId ?? ''}
-            onChange={(event) =>
-              update('manufacturerId', event.target.value || null)
-            }
+          <input
+            list={`po-manufacturers-${index}`}
+            value={manufacturerInputValue}
+            onChange={(event) => updateManufacturer(event.target.value)}
             className={inputClass}
-          >
-            <option value=''>No manufacturer</option>
+            placeholder='CIRCLE SEAL'
+          />
+          <datalist id={`po-manufacturers-${index}`}>
             {manufacturers.map((manufacturer) => (
-              <option key={manufacturer.id} value={manufacturer.id}>
-                {manufacturer.name}
-              </option>
+              <option key={manufacturer.id} value={manufacturer.name} />
             ))}
-          </select>
+          </datalist>
         </label>
         <label className='text-sm font-semibold text-slate-700'>
           Manufacturer part number

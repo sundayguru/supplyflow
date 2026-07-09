@@ -15,6 +15,7 @@ import {
   updateVendorPurchaseOrder,
 } from '~/db/vendorPurchaseOrders';
 import type { VendorPurchaseOrderInput } from '~/types/vendorPurchaseOrder';
+import { resolveItemManufacturers } from '~/utils/itemManufacturers.server';
 import { parseVendorPurchaseOrderInput } from '~/utils/vendorPurchaseOrder.server';
 import { getUserFromRequest } from '~/utils/session.server';
 import type { Route } from './+types/vendor-purchase-orders';
@@ -130,7 +131,15 @@ export const action = async ({ request }: Route.ActionArgs) => {
         return data({ error: 'PDF template not found' }, { status: 400 });
       }
       const resolved = await resolveVendorManufacturer(
-        parsed.value,
+        {
+          ...parsed.value,
+          items: await resolveItemManufacturers(
+            parsed.value.items,
+            body,
+            organization.id,
+            user.id,
+          ),
+        },
         organization.id,
         user.id,
       );
@@ -178,7 +187,15 @@ export const action = async ({ request }: Route.ActionArgs) => {
         return data({ error: 'PDF template not found' }, { status: 400 });
       }
       const resolved = await resolveVendorManufacturer(
-        parsed.value,
+        {
+          ...parsed.value,
+          items: await resolveItemManufacturers(
+            parsed.value.items,
+            body,
+            organization.id,
+            user.id,
+          ),
+        },
         organization.id,
         user.id,
       );

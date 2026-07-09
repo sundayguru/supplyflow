@@ -14,6 +14,7 @@ import { getRfq } from '~/db/rfqs';
 import { getOrganizationForUser } from '~/db/organizations';
 import { getUserFromRequest } from '~/utils/session.server';
 import { parsePurchaseOrderInput } from '~/utils/purchaseOrder.server';
+import { resolveItemManufacturers } from '~/utils/itemManufacturers.server';
 import {
   purchaseOrderStatuses,
   type PurchaseOrderStatus,
@@ -99,7 +100,15 @@ export const action = async ({ request }: Route.ActionArgs) => {
           purchaseOrder: await createPurchaseOrder(
             organization.id,
             user.id,
-            parsed.value,
+            {
+              ...parsed.value,
+              items: await resolveItemManufacturers(
+                parsed.value.items,
+                body,
+                organization.id,
+                user.id,
+              ),
+            },
             organization.vat,
           ),
         },
@@ -194,7 +203,15 @@ export const action = async ({ request }: Route.ActionArgs) => {
       const purchaseOrder = await updatePurchaseOrder(
         body.id,
         organization.id,
-        parsed.value,
+        {
+          ...parsed.value,
+          items: await resolveItemManufacturers(
+            parsed.value.items,
+            body,
+            organization.id,
+            user.id,
+          ),
+        },
         organization.vat,
       );
       if (!purchaseOrder) {
