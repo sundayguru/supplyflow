@@ -87,6 +87,10 @@ export const parseVendorPurchaseOrderInput = (value: unknown): ParseResult => {
     typeof value.purchaseOrderId === 'string'
       ? value.purchaseOrderId.trim()
       : '';
+  const templateId =
+    typeof value.templateId === 'string' && value.templateId.trim()
+      ? value.templateId.trim()
+      : null;
   const vendorName =
     typeof value.vendorName === 'string' ? value.vendorName.trim() : '';
   const vendorEmail =
@@ -150,6 +154,7 @@ export const parseVendorPurchaseOrderInput = (value: unknown): ParseResult => {
     success: true,
     value: {
       purchaseOrderId,
+      templateId,
       vendorName,
       vendorEmail,
       vendorContactName,

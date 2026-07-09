@@ -13,6 +13,7 @@ import {
 import { manufacturers } from './manufacturers';
 import { organizations } from './organizations';
 import { purchaseOrders } from './purchaseOrders';
+import { rfqPdfTemplates } from './rfqPdfTemplates';
 import { users } from './users';
 
 export const vendorPurchaseOrders = sqliteTable(
@@ -28,6 +29,9 @@ export const vendorPurchaseOrders = sqliteTable(
     purchaseOrderId: text('purchase_order_id')
       .notNull()
       .references(() => purchaseOrders.id, { onDelete: 'cascade' }),
+    templateId: text('template_id').references(() => rfqPdfTemplates.id, {
+      onDelete: 'set null',
+    }),
     reference: text('reference', { length: 32 }).notNull().unique(),
     vendorName: text('vendor_name', { length: 255 }).notNull(),
     vendorEmail: text('vendor_email', { length: 255 }),

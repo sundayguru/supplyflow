@@ -1,0 +1,1 @@
+ALTER TABLE `vendor_purchase_orders` ADD `template_id` text REFERENCES rfq_pdf_templates(id);

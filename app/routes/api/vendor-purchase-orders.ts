@@ -1,5 +1,6 @@
 import { data } from 'react-router';
 import { getOrganizationForUser } from '~/db/organizations';
+import { getRfqPdfTemplate } from '~/db/rfqPdfTemplates';
 import {
   createVendorPurchaseOrder,
   deleteVendorPurchaseOrder,
@@ -11,6 +12,11 @@ import {
 import { parseVendorPurchaseOrderInput } from '~/utils/vendorPurchaseOrder.server';
 import { getUserFromRequest } from '~/utils/session.server';
 import type { Route } from './+types/vendor-purchase-orders';
+
+const hasValidPdfTemplate = async (
+  templateId: string | null,
+  organizationId: string,
+) => !templateId || !!(await getRfqPdfTemplate(templateId, organizationId));
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
@@ -61,6 +67,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
       ) {
         return data({ error: 'Linked PO not found' }, { status: 400 });
       }
+      if (
+        !(await hasValidPdfTemplate(parsed.value.templateId, organization.id))
+      ) {
+        return data({ error: 'PDF template not found' }, { status: 400 });
+      }
       return data(
         {
           success: true,
@@ -95,6 +106,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
         ))
       ) {
         return data({ error: 'Linked PO not found' }, { status: 400 });
+      }
+      if (
+        !(await hasValidPdfTemplate(parsed.value.templateId, organization.id))
+      ) {
+        return data({ error: 'PDF template not found' }, { status: 400 });
       }
       const vendorPurchaseOrder = await updateVendorPurchaseOrder(
         body.id,

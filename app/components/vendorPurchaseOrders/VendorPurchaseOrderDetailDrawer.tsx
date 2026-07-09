@@ -4,6 +4,7 @@ import {
   CalendarDays,
   ClipboardList,
   CircleDollarSign,
+  FileText,
   Mail,
   Package,
   Pencil,
@@ -12,6 +13,7 @@ import {
   UserRound,
   X,
 } from 'lucide-react';
+import type { RfqPdfTemplateOption } from '~/types/rfqPdfTemplate';
 import type { VendorPurchaseOrderRecord } from '~/types/vendorPurchaseOrder';
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
 import { PurchaseOrderItemStatusBadge } from '../purchaseOrders/PurchaseOrderStatusBadge';
@@ -19,6 +21,7 @@ import { VendorPurchaseOrderStatusBadge } from './VendorPurchaseOrderStatusBadge
 
 type VendorPurchaseOrderDetailDrawerProps = {
   vendorPurchaseOrder: VendorPurchaseOrderRecord;
+  templates: RfqPdfTemplateOption[];
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -28,10 +31,17 @@ const formatDate = (value: string) => new Date(value).toLocaleDateString();
 
 export const VendorPurchaseOrderDetailDrawer = ({
   vendorPurchaseOrder,
+  templates,
   onClose,
   onEdit,
   onDelete,
 }: VendorPurchaseOrderDetailDrawerProps) => {
+  const templateName = vendorPurchaseOrder.templateId
+    ? templates.find(
+        (template) => template.id === vendorPurchaseOrder.templateId,
+      )?.name
+    : null;
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -167,6 +177,10 @@ export const VendorPurchaseOrderDetailDrawer = ({
               {vendorPurchaseOrder.linkedPurchaseOrder.reference} ·{' '}
               {vendorPurchaseOrder.linkedPurchaseOrder.supplierName}
             </Link>
+            <p className='mt-4 flex items-center gap-2 border-t border-slate-100 pt-4 text-sm text-slate-500'>
+              <FileText size={14} />
+              PDF template: {templateName ?? 'Default vendor PO template'}
+            </p>
             {vendorPurchaseOrder.notes && (
               <p className='mt-4 border-t border-slate-100 pt-4 text-sm leading-6 whitespace-pre-wrap text-slate-600'>
                 {vendorPurchaseOrder.notes}

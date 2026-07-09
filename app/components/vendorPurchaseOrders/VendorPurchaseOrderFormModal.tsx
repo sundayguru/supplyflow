@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Plus, X } from 'lucide-react';
 import type { ManufacturerRecord } from '~/types/manufacturer';
+import type { RfqPdfTemplateOption } from '~/types/rfqPdfTemplate';
 import {
   vendorPurchaseOrderStatuses,
   type LinkedPurchaseOrderSummary,
@@ -26,6 +27,7 @@ type VendorPurchaseOrderFormModalProps = {
   initialValue?: VendorPurchaseOrderFormValue;
   purchaseOrders: LinkedPurchaseOrderSummary[];
   manufacturers: ManufacturerRecord[];
+  templates: RfqPdfTemplateOption[];
   onClose: () => void;
   onSubmit: (value: VendorPurchaseOrderFormValue) => void;
 };
@@ -46,12 +48,14 @@ export const VendorPurchaseOrderFormModal = ({
   initialValue,
   purchaseOrders,
   manufacturers,
+  templates,
   onClose,
   onSubmit,
 }: VendorPurchaseOrderFormModalProps) => {
   const [purchaseOrderId, setPurchaseOrderId] = useState(
     initialValue?.purchaseOrderId ?? purchaseOrders[0]?.id ?? '',
   );
+  const [templateId, setTemplateId] = useState(initialValue?.templateId ?? '');
   const [vendorName, setVendorName] = useState(initialValue?.vendorName ?? '');
   const [vendorEmail, setVendorEmail] = useState(
     initialValue?.vendorEmail ?? '',
@@ -77,6 +81,7 @@ export const VendorPurchaseOrderFormModal = ({
     onSubmit({
       id: initialValue?.id,
       purchaseOrderId,
+      templateId: templateId || null,
       vendorName,
       vendorEmail: vendorEmail || null,
       vendorContactName: vendorContactName || null,
@@ -132,6 +137,22 @@ export const VendorPurchaseOrderFormModal = ({
               {purchaseOrders.map((purchaseOrder) => (
                 <option key={purchaseOrder.id} value={purchaseOrder.id}>
                   {purchaseOrder.reference} · {purchaseOrder.supplierName}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className='block text-sm font-semibold text-slate-700'>
+            PDF template
+            <select
+              value={templateId}
+              onChange={(event) => setTemplateId(event.target.value)}
+              className={inputClass}
+            >
+              <option value=''>Default vendor PO template</option>
+              {templates.map((template) => (
+                <option key={template.id} value={template.id}>
+                  {template.name}
                 </option>
               ))}
             </select>

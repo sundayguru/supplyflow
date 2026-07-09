@@ -12,6 +12,7 @@ import { VendorPurchaseOrderStatusBadge } from '~/components/vendorPurchaseOrder
 import { listManufacturers } from '~/db/manufacturers';
 import { getOrganizationForUser } from '~/db/organizations';
 import { getPurchaseOrders } from '~/db/purchaseOrders';
+import { listRfqPdfTemplates } from '~/db/rfqPdfTemplates';
 import { getVendorPurchaseOrders } from '~/db/vendorPurchaseOrders';
 import type { VendorPurchaseOrderRecord } from '~/types/vendorPurchaseOrder';
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
@@ -36,11 +37,12 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   }
 
   try {
-    const [vendorPurchaseOrders, purchaseOrders, manufacturers] =
+    const [vendorPurchaseOrders, purchaseOrders, manufacturers, templates] =
       await Promise.all([
         getVendorPurchaseOrders(organization.id),
         getPurchaseOrders(organization.id, organization.vat),
         listManufacturers(organization.id),
+        listRfqPdfTemplates(organization.id),
       ]);
     return data({
       vendorPurchaseOrders,
@@ -50,6 +52,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
         supplierName,
       })),
       manufacturers,
+      templates: templates.map(({ id, name }) => ({ id, name })),
       loadError: null,
     });
   } catch (error) {
@@ -58,6 +61,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       vendorPurchaseOrders: [],
       purchaseOrders: [],
       manufacturers: [],
+      templates: [],
       loadError: 'Unable to load vendor POs',
     });
   }
@@ -302,6 +306,7 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
       {selectedVendorPurchaseOrder && (
         <VendorPurchaseOrderDetailDrawer
           vendorPurchaseOrder={selectedVendorPurchaseOrder}
+          templates={loaderData.templates}
           onClose={closeDetails}
           onEdit={editFromDetails}
           onDelete={deleteFromDetails}
@@ -314,6 +319,7 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
           initialValue={formTarget === 'new' ? undefined : formTarget}
           purchaseOrders={loaderData.purchaseOrders}
           manufacturers={loaderData.manufacturers}
+          templates={loaderData.templates}
           onClose={() => setFormTarget(null)}
           onSubmit={submitVendorPurchaseOrder}
         />

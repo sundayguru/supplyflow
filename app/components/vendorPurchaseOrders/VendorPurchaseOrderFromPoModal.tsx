@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { X } from 'lucide-react';
 import type { PurchaseOrderRecord } from '~/types/purchaseOrder';
+import type { RfqPdfTemplateOption } from '~/types/rfqPdfTemplate';
 import type { VendorPurchaseOrderInput } from '~/types/vendorPurchaseOrder';
 import { currencyOptionLabel, supportedCurrencies } from '~/utils/currencies';
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
@@ -9,15 +10,23 @@ export type VendorPurchaseOrderFromPoValue = VendorPurchaseOrderInput;
 
 type VendorPurchaseOrderFromPoModalProps = {
   purchaseOrder: PurchaseOrderRecord;
+  templates: RfqPdfTemplateOption[];
   onClose: () => void;
   onSubmit: (value: VendorPurchaseOrderFromPoValue) => void;
 };
 
 export const VendorPurchaseOrderFromPoModal = ({
   purchaseOrder,
+  templates,
   onClose,
   onSubmit,
 }: VendorPurchaseOrderFromPoModalProps) => {
+  const initialTemplateId =
+    purchaseOrder.templateId &&
+    templates.some((template) => template.id === purchaseOrder.templateId)
+      ? purchaseOrder.templateId
+      : '';
+  const [templateId, setTemplateId] = useState(initialTemplateId);
   const [vendorName, setVendorName] = useState('');
   const [vendorEmail, setVendorEmail] = useState('');
   const [vendorContactName, setVendorContactName] = useState('');
@@ -45,6 +54,7 @@ export const VendorPurchaseOrderFromPoModal = ({
     event.preventDefault();
     onSubmit({
       purchaseOrderId: purchaseOrder.id,
+      templateId: templateId || null,
       vendorName,
       vendorEmail: vendorEmail || null,
       vendorContactName: vendorContactName || null,
@@ -162,6 +172,22 @@ export const VendorPurchaseOrderFromPoModal = ({
               />
             </label>
           </div>
+
+          <label className='block text-sm font-semibold text-slate-700'>
+            PDF template
+            <select
+              value={templateId}
+              onChange={(event) => setTemplateId(event.target.value)}
+              className={inputClass}
+            >
+              <option value=''>Default vendor PO template</option>
+              {templates.map((template) => (
+                <option key={template.id} value={template.id}>
+                  {template.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
           <input type='hidden' value={orderDate} readOnly />
 
