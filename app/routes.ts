@@ -50,6 +50,10 @@ export default [
     ),
     route('api/vendor-purchase-orders', 'routes/api/vendor-purchase-orders.ts'),
     route(
+      'api/vendor-purchase-orders/:vendorPurchaseOrderId/pdf',
+      'routes/api/vendor-purchase-order-pdf.ts',
+    ),
+    route(
       'api/purchase-orders/:purchaseOrderId/proforma-invoice',
       'routes/api/purchase-order-proforma-invoice.ts',
     ),

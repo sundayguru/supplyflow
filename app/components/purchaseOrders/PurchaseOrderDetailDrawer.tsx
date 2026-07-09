@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useFetcher } from 'react-router';
+import { Link, useFetcher, useNavigate } from 'react-router';
 import {
   CalendarDays,
   CircleDollarSign,
@@ -88,6 +88,7 @@ export const PurchaseOrderDetailDrawer = ({
   onClose,
   onEdit,
 }: PurchaseOrderDetailDrawerProps) => {
+  const navigate = useNavigate();
   const itemMutation = useFetcher<ItemMutationResponse>();
   const validationMutation = useFetcher<ValidationMutationResponse>();
   const proformaDraft = useFetcher<ProformaDraftResponse>();
@@ -106,6 +107,19 @@ export const PurchaseOrderDetailDrawer = ({
   );
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isVendorPoModalOpen, setIsVendorPoModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (
+      vendorPurchaseOrderMutation.data &&
+      'success' in vendorPurchaseOrderMutation.data
+    ) {
+      navigate(
+        `/vendor-purchase-orders?vendorPo=${encodeURIComponent(
+          vendorPurchaseOrderMutation.data.vendorPurchaseOrder.id,
+        )}`,
+      );
+    }
+  }, [navigate, vendorPurchaseOrderMutation.data]);
 
   const submitItem = (value: PurchaseOrderItemFormValue) => {
     if (!editItem) {

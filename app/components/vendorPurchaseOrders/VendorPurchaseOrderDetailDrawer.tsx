@@ -4,6 +4,7 @@ import {
   CalendarDays,
   ClipboardList,
   CircleDollarSign,
+  Download,
   FileText,
   Mail,
   Package,
@@ -40,6 +41,9 @@ export const VendorPurchaseOrderDetailDrawer = ({
   onEdit,
   onDelete,
 }: VendorPurchaseOrderDetailDrawerProps) => {
+  const downloadPdfUrl = `/api/vendor-purchase-orders/${encodeURIComponent(
+    vendorPurchaseOrder.id,
+  )}/pdf?download=1`;
   const templateName = vendorPurchaseOrder.templateId
     ? templates.find(
         (template) => template.id === vendorPurchaseOrder.templateId,
@@ -297,6 +301,12 @@ export const VendorPurchaseOrderDetailDrawer = ({
         </div>
 
         <footer className='space-y-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-7'>
+          <a
+            href={downloadPdfUrl}
+            className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100'
+          >
+            <Download size={17} /> Download vendor PO PDF
+          </a>
           <button
             type='button'
             onClick={onEdit}

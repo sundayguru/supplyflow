@@ -12,6 +12,10 @@ import type {
   PurchaseOrderRecord,
 } from '~/types/purchaseOrder';
 import type { RfqItemInput, RfqRecord } from '~/types/rfq';
+import type {
+  VendorPurchaseOrderItemInput,
+  VendorPurchaseOrderRecord,
+} from '~/types/vendorPurchaseOrder';
 import { calculateRfqItemAmounts } from './rfq';
 import { richTextToPlainText } from './richText';
 import { createMockRfqForTemplate } from './rfqPdfMock';
@@ -118,6 +122,26 @@ type ProformaInvoiceData = Omit<
 > & {
   items: PurchaseOrderItemInput[];
   linkedRfq: { reference: string } | null;
+};
+
+type VendorPurchaseOrderPdfData = Omit<
+  Pick<
+    VendorPurchaseOrderRecord,
+    | 'reference'
+    | 'orderDate'
+    | 'expectedDate'
+    | 'vendorName'
+    | 'vendorEmail'
+    | 'vendorContactName'
+    | 'items'
+    | 'currency'
+    | 'subtotal'
+    | 'totalValue'
+    | 'linkedPurchaseOrder'
+  >,
+  'items'
+> & {
+  items: VendorPurchaseOrderItemInput[];
 };
 
 const loadBanner = async (
@@ -639,6 +663,248 @@ export const generateProformaInvoicePdf = async (
     }
     page.drawText(line, { x: SIDE_MARGIN, y, font: regular, size: 10 });
     y -= 15;
+  }
+
+  document.getPages().forEach((pdfPage, index, pages) => {
+    pdfPage.drawText(`Page ${index + 1} of ${pages.length}`, {
+      x: PAGE_WIDTH - 92,
+      y: 24,
+      font: regular,
+      size: 8,
+      color: rgb(0.45, 0.48, 0.52),
+    });
+  });
+
+  return document.save();
+};
+
+export const generateVendorPurchaseOrderPdf = async (
+  vendorPurchaseOrder: VendorPurchaseOrderPdfData,
+  template: RfqPdfTemplateContent | null,
+  organization: SelectOrganization,
+  banners: {
+    header: RfqPdfBannerAsset | null;
+    footer: RfqPdfBannerAsset | null;
+  } = { header: null, footer: null },
+) => {
+  const document = await PDFDocument.create();
+  const regular = await document.embedFont(StandardFonts.Helvetica);
+  const bold = await document.embedFont(StandardFonts.HelveticaBold);
+  const [headerBanner, footerBanner] = await Promise.all([
+    loadBanner(document, banners.header),
+    loadBanner(document, banners.footer),
+  ]);
+
+  const addPage = () => {
+    const page = document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    if (headerBanner) {
+      drawFullWidthBanner(
+        page,
+        headerBanner,
+        PAGE_HEIGHT - HEADER_HEIGHT,
+        HEADER_HEIGHT,
+      );
+    } else {
+      page.drawText(safePdfText(organization.name), {
+        x: SIDE_MARGIN,
+        y: PAGE_HEIGHT - 48,
+        font: bold,
+        size: 18,
+        color: rgb(0.06, 0.36, 0.27),
+      });
+    }
+    if (footerBanner) {
+      drawFullWidthBanner(page, footerBanner, 0, FOOTER_HEIGHT);
+    } else {
+      page.drawText('SupplyFlow vendor purchase order', {
+        x: SIDE_MARGIN,
+        y: 24,
+        font: regular,
+        size: 8,
+        color: rgb(0.45, 0.48, 0.52),
+      });
+    }
+    return page;
+  };
+
+  let page = addPage();
+  let y = PAGE_HEIGHT - (headerBanner ? 112 : 80);
+  page.drawText('VENDOR PURCHASE ORDER', {
+    x: SIDE_MARGIN,
+    y,
+    font: bold,
+    size: 22,
+    color: rgb(0.08, 0.11, 0.15),
+  });
+  y -= 30;
+  page.drawText(`Vendor PO: ${vendorPurchaseOrder.reference}`, {
+    x: SIDE_MARGIN,
+    y,
+    font: bold,
+    size: 10,
+  });
+  page.drawText(
+    `Customer PO: ${vendorPurchaseOrder.linkedPurchaseOrder.reference}`,
+    {
+      x: 390,
+      y,
+      font: regular,
+      size: 10,
+    },
+  );
+  y -= 16;
+  page.drawText(
+    `Order date: ${vendorPurchaseOrder.orderDate ?? 'Not specified'}`,
+    {
+      x: SIDE_MARGIN,
+      y,
+      font: regular,
+      size: 10,
+    },
+  );
+  page.drawText(
+    `Expected: ${vendorPurchaseOrder.expectedDate ?? 'Not specified'}`,
+    {
+      x: 390,
+      y,
+      font: regular,
+      size: 10,
+    },
+  );
+  y -= 24;
+  page.drawText(`Vendor: ${safePdfText(vendorPurchaseOrder.vendorName)}`, {
+    x: SIDE_MARGIN,
+    y,
+    font: regular,
+    size: 10,
+  });
+  y -= 16;
+  page.drawText(`Email: ${vendorPurchaseOrder.vendorEmail ?? 'Not provided'}`, {
+    x: SIDE_MARGIN,
+    y,
+    font: regular,
+    size: 10,
+  });
+  if (vendorPurchaseOrder.vendorContactName) {
+    page.drawText(
+      `Contact: ${safePdfText(vendorPurchaseOrder.vendorContactName)}`,
+      {
+        x: 390,
+        y,
+        font: regular,
+        size: 10,
+      },
+    );
+  }
+  y -= 30;
+
+  const columns = [SIDE_MARGIN, 70, 154, 318, 374, 462];
+  const drawTableHeader = () => {
+    page.drawRectangle({
+      x: SIDE_MARGIN,
+      y: y - 6,
+      width: PAGE_WIDTH - SIDE_MARGIN * 2,
+      height: 24,
+      color: rgb(0.91, 0.96, 0.94),
+    });
+    ['#', 'Part no.', 'Description', 'Qty', 'Unit price', 'Line total'].forEach(
+      (label, index) =>
+        page.drawText(label, {
+          x: columns[index],
+          y,
+          font: bold,
+          size: 8,
+          color: rgb(0.1, 0.28, 0.22),
+        }),
+    );
+    y -= 30;
+  };
+  drawTableHeader();
+  vendorPurchaseOrder.items.forEach((item, index) => {
+    if (y < 100) {
+      page = addPage();
+      y = PAGE_HEIGHT - (headerBanner ? 112 : 80);
+      drawTableHeader();
+    }
+    const lineTotal = item.quantity * item.price;
+    const values = [
+      String(index + 1),
+      safePdfText(item.manufacturerPartNumber ?? '-').slice(0, 18),
+      safePdfText(item.description).slice(0, 28),
+      `${item.quantity} ${safePdfText(item.unit)}`,
+      formatMoney(item.price, vendorPurchaseOrder.currency),
+      formatMoney(lineTotal, vendorPurchaseOrder.currency),
+    ];
+    values.forEach((value, columnIndex) =>
+      page.drawText(value, {
+        x: columns[columnIndex],
+        y,
+        font: regular,
+        size: columnIndex === 2 ? 7.5 : 8,
+      }),
+    );
+    page.drawLine({
+      start: { x: SIDE_MARGIN, y: y - 7 },
+      end: { x: PAGE_WIDTH - SIDE_MARGIN, y: y - 7 },
+      thickness: 0.5,
+      color: rgb(0.86, 0.88, 0.9),
+    });
+    y -= 27;
+  });
+
+  y -= 15;
+  [
+    [
+      'Subtotal',
+      formatMoney(vendorPurchaseOrder.subtotal, vendorPurchaseOrder.currency),
+    ],
+    [
+      'Total',
+      formatMoney(vendorPurchaseOrder.totalValue, vendorPurchaseOrder.currency),
+    ],
+  ].forEach(([label, value], index, summary) => {
+    page.drawText(label, {
+      x: 350,
+      y,
+      font: index === summary.length - 1 ? bold : regular,
+      size: index === summary.length - 1 ? 11 : 9,
+    });
+    page.drawText(value, {
+      x: 445,
+      y,
+      font: index === summary.length - 1 ? bold : regular,
+      size: index === summary.length - 1 ? 11 : 9,
+    });
+    y -= 18;
+  });
+
+  const terms =
+    richTextToPlainText(template?.termsHtml ?? '') ||
+    'No terms and conditions have been added to this template.';
+  if (terms) {
+    page = addPage();
+    y = PAGE_HEIGHT - (headerBanner ? 112 : 80);
+    page.drawText('TERMS AND CONDITIONS', {
+      x: SIDE_MARGIN,
+      y,
+      font: bold,
+      size: 18,
+      color: rgb(0.08, 0.11, 0.15),
+    });
+    y -= 28;
+    for (const line of wrapText(
+      terms,
+      regular,
+      10,
+      PAGE_WIDTH - SIDE_MARGIN * 2,
+    )) {
+      if (y < 75) {
+        page = addPage();
+        y = PAGE_HEIGHT - (headerBanner ? 112 : 80);
+      }
+      page.drawText(line, { x: SIDE_MARGIN, y, font: regular, size: 10 });
+      y -= 15;
+    }
   }
 
   document.getPages().forEach((pdfPage, index, pages) => {
