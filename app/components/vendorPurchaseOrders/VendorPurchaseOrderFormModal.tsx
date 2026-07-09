@@ -56,6 +56,9 @@ export const VendorPurchaseOrderFormModal = ({
     initialValue?.purchaseOrderId ?? purchaseOrders[0]?.id ?? '',
   );
   const [templateId, setTemplateId] = useState(initialValue?.templateId ?? '');
+  const [vendorManufacturerId, setVendorManufacturerId] = useState(
+    initialValue?.vendorManufacturerId ?? '',
+  );
   const [vendorName, setVendorName] = useState(initialValue?.vendorName ?? '');
   const [vendorEmail, setVendorEmail] = useState(
     initialValue?.vendorEmail ?? '',
@@ -75,6 +78,19 @@ export const VendorPurchaseOrderFormModal = ({
   const [items, setItems] = useState<PurchaseOrderItemFormValue[]>(
     initialValue?.items ?? [emptyItem()],
   );
+  const updateVendorManufacturer = (manufacturerName: string) => {
+    const normalizedName = manufacturerName.trim();
+    const manufacturer = manufacturers.find(
+      (candidate) =>
+        candidate.name.toLowerCase() === normalizedName.toLowerCase(),
+    );
+    setVendorName(manufacturerName);
+    setVendorManufacturerId(manufacturer?.id ?? '');
+    if (manufacturer) {
+      setVendorEmail(manufacturer.email ?? '');
+      setVendorContactName(manufacturer.contactName ?? '');
+    }
+  };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -82,6 +98,7 @@ export const VendorPurchaseOrderFormModal = ({
       id: initialValue?.id,
       purchaseOrderId,
       templateId: templateId || null,
+      vendorManufacturerId: vendorManufacturerId || null,
       vendorName,
       vendorEmail: vendorEmail || null,
       vendorContactName: vendorContactName || null,
@@ -160,14 +177,22 @@ export const VendorPurchaseOrderFormModal = ({
 
           <div className='grid gap-5 sm:grid-cols-2'>
             <label className='text-sm font-semibold text-slate-700'>
-              Vendor name
+              Vendor manufacturer
               <input
                 required
+                list='vendor-po-manufacturers'
                 value={vendorName}
-                onChange={(event) => setVendorName(event.target.value)}
+                onChange={(event) =>
+                  updateVendorManufacturer(event.target.value)
+                }
                 className={inputClass}
                 placeholder='Acme Manufacturing'
               />
+              <datalist id='vendor-po-manufacturers'>
+                {manufacturers.map((manufacturer) => (
+                  <option key={manufacturer.id} value={manufacturer.name} />
+                ))}
+              </datalist>
             </label>
             <label className='text-sm font-semibold text-slate-700'>
               Vendor email

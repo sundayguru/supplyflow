@@ -791,6 +791,7 @@ export const PurchaseOrderDetailDrawer = ({
       {isVendorPoModalOpen && (
         <VendorPurchaseOrderFromPoModal
           purchaseOrder={currentPurchaseOrder}
+          manufacturers={manufacturers}
           templates={templates}
           onClose={() => setIsVendorPoModalOpen(false)}
           onSubmit={submitVendorPurchaseOrder}

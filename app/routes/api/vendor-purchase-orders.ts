@@ -1,4 +1,9 @@
 import { data } from 'react-router';
+import {
+  getManufacturer,
+  updateManufacturer,
+  upsertManufacturerFromVendorDetails,
+} from '~/db/manufacturers';
 import { getOrganizationForUser } from '~/db/organizations';
 import { getRfqPdfTemplate } from '~/db/rfqPdfTemplates';
 import {
@@ -9,6 +14,7 @@ import {
   hasOrganizationPurchaseOrder,
   updateVendorPurchaseOrder,
 } from '~/db/vendorPurchaseOrders';
+import type { VendorPurchaseOrderInput } from '~/types/vendorPurchaseOrder';
 import { parseVendorPurchaseOrderInput } from '~/utils/vendorPurchaseOrder.server';
 import { getUserFromRequest } from '~/utils/session.server';
 import type { Route } from './+types/vendor-purchase-orders';
@@ -17,6 +23,57 @@ const hasValidPdfTemplate = async (
   templateId: string | null,
   organizationId: string,
 ) => !templateId || !!(await getRfqPdfTemplate(templateId, organizationId));
+
+const resolveVendorManufacturer = async (
+  value: VendorPurchaseOrderInput,
+  organizationId: string,
+  userId: string,
+) => {
+  if (value.vendorManufacturerId) {
+    const manufacturer = await getManufacturer(
+      value.vendorManufacturerId,
+      organizationId,
+    );
+    const updatedManufacturer = manufacturer
+      ? await updateManufacturer(manufacturer.id, organizationId, {
+          name: manufacturer.name,
+          email: value.vendorEmail,
+          contactName: value.vendorContactName,
+        })
+      : null;
+    return updatedManufacturer
+      ? {
+          success: true as const,
+          value: {
+            ...value,
+            vendorName: updatedManufacturer.name,
+            vendorEmail: updatedManufacturer.email,
+            vendorContactName: updatedManufacturer.contactName,
+          },
+        }
+      : { success: false as const, error: 'Manufacturer not found' };
+  }
+
+  const manufacturer = await upsertManufacturerFromVendorDetails(
+    organizationId,
+    userId,
+    {
+      name: value.vendorName,
+      email: value.vendorEmail,
+      contactName: value.vendorContactName,
+    },
+  );
+  return {
+    success: true as const,
+    value: {
+      ...value,
+      vendorManufacturerId: manufacturer.id,
+      vendorName: manufacturer.name,
+      vendorEmail: manufacturer.email,
+      vendorContactName: manufacturer.contactName,
+    },
+  };
+};
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
@@ -72,13 +129,21 @@ export const action = async ({ request }: Route.ActionArgs) => {
       ) {
         return data({ error: 'PDF template not found' }, { status: 400 });
       }
+      const resolved = await resolveVendorManufacturer(
+        parsed.value,
+        organization.id,
+        user.id,
+      );
+      if (!resolved.success) {
+        return data({ error: resolved.error }, { status: 400 });
+      }
       return data(
         {
           success: true,
           vendorPurchaseOrder: await createVendorPurchaseOrder(
             organization.id,
             user.id,
-            parsed.value,
+            resolved.value,
           ),
         },
         { status: 201 },
@@ -112,10 +177,18 @@ export const action = async ({ request }: Route.ActionArgs) => {
       ) {
         return data({ error: 'PDF template not found' }, { status: 400 });
       }
+      const resolved = await resolveVendorManufacturer(
+        parsed.value,
+        organization.id,
+        user.id,
+      );
+      if (!resolved.success) {
+        return data({ error: resolved.error }, { status: 400 });
+      }
       const vendorPurchaseOrder = await updateVendorPurchaseOrder(
         body.id,
         organization.id,
-        parsed.value,
+        resolved.value,
       );
       return vendorPurchaseOrder
         ? data({ success: true, vendorPurchaseOrder })

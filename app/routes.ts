@@ -25,6 +25,7 @@ export default [
     route('rfqs', 'routes/rfqs.tsx'),
     route('purchase-orders', 'routes/purchase-orders.tsx'),
     route('vendor-purchase-orders', 'routes/vendor-purchase-orders.tsx'),
+    route('manufacturers', 'routes/manufacturers.tsx'),
     route('product-prices', 'routes/product-prices.tsx'),
     route('rfq-pdf-templates', 'routes/rfq-pdf-templates.tsx'),
     route('connected-accounts', 'routes/connected-accounts.tsx'),

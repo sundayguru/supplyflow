@@ -32,6 +32,10 @@ export const vendorPurchaseOrders = sqliteTable(
     templateId: text('template_id').references(() => rfqPdfTemplates.id, {
       onDelete: 'set null',
     }),
+    vendorManufacturerId: text('vendor_manufacturer_id').references(
+      () => manufacturers.id,
+      { onDelete: 'set null' },
+    ),
     reference: text('reference', { length: 32 }).notNull().unique(),
     vendorName: text('vendor_name', { length: 255 }).notNull(),
     vendorEmail: text('vendor_email', { length: 255 }),
@@ -53,6 +57,9 @@ export const vendorPurchaseOrders = sqliteTable(
   (table) => [
     index('vendor_purchase_orders_org_idx').on(table.organizationId),
     index('vendor_purchase_orders_po_id_idx').on(table.purchaseOrderId),
+    index('vendor_purchase_orders_vendor_manufacturer_id_idx').on(
+      table.vendorManufacturerId,
+    ),
     index('vendor_purchase_orders_status_idx').on(table.status),
     index('vendor_purchase_orders_created_at_idx').on(table.createdAt),
   ],

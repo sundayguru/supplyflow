@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { X } from 'lucide-react';
+import type { ManufacturerRecord } from '~/types/manufacturer';
 import type { PurchaseOrderRecord } from '~/types/purchaseOrder';
 import type { RfqPdfTemplateOption } from '~/types/rfqPdfTemplate';
 import type { VendorPurchaseOrderInput } from '~/types/vendorPurchaseOrder';
@@ -10,6 +11,7 @@ export type VendorPurchaseOrderFromPoValue = VendorPurchaseOrderInput;
 
 type VendorPurchaseOrderFromPoModalProps = {
   purchaseOrder: PurchaseOrderRecord;
+  manufacturers: ManufacturerRecord[];
   templates: RfqPdfTemplateOption[];
   onClose: () => void;
   onSubmit: (value: VendorPurchaseOrderFromPoValue) => void;
@@ -17,6 +19,7 @@ type VendorPurchaseOrderFromPoModalProps = {
 
 export const VendorPurchaseOrderFromPoModal = ({
   purchaseOrder,
+  manufacturers,
   templates,
   onClose,
   onSubmit,
@@ -27,6 +30,7 @@ export const VendorPurchaseOrderFromPoModal = ({
       ? purchaseOrder.templateId
       : '';
   const [templateId, setTemplateId] = useState(initialTemplateId);
+  const [vendorManufacturerId, setVendorManufacturerId] = useState('');
   const [vendorName, setVendorName] = useState('');
   const [vendorEmail, setVendorEmail] = useState('');
   const [vendorContactName, setVendorContactName] = useState('');
@@ -37,6 +41,19 @@ export const VendorPurchaseOrderFromPoModal = ({
   const [selectedItemIds, setSelectedItemIds] = useState(
     new Set(purchaseOrder.items.map((item) => item.id)),
   );
+  const updateVendorManufacturer = (manufacturerName: string) => {
+    const normalizedName = manufacturerName.trim();
+    const manufacturer = manufacturers.find(
+      (candidate) =>
+        candidate.name.toLowerCase() === normalizedName.toLowerCase(),
+    );
+    setVendorName(manufacturerName);
+    setVendorManufacturerId(manufacturer?.id ?? '');
+    if (manufacturer) {
+      setVendorEmail(manufacturer.email ?? '');
+      setVendorContactName(manufacturer.contactName ?? '');
+    }
+  };
 
   const toggleItem = (itemId: string) => {
     setSelectedItemIds((current) => {
@@ -55,6 +72,7 @@ export const VendorPurchaseOrderFromPoModal = ({
     onSubmit({
       purchaseOrderId: purchaseOrder.id,
       templateId: templateId || null,
+      vendorManufacturerId: vendorManufacturerId || null,
       vendorName,
       vendorEmail: vendorEmail || null,
       vendorContactName: vendorContactName || null,
@@ -116,14 +134,22 @@ export const VendorPurchaseOrderFromPoModal = ({
         <form onSubmit={handleSubmit} className='mt-7 space-y-5'>
           <div className='grid gap-5 sm:grid-cols-2'>
             <label className='text-sm font-semibold text-slate-700'>
-              Vendor name
+              Vendor manufacturer
               <input
                 required
+                list='vendor-po-manufacturers'
                 value={vendorName}
-                onChange={(event) => setVendorName(event.target.value)}
+                onChange={(event) =>
+                  updateVendorManufacturer(event.target.value)
+                }
                 className={inputClass}
                 placeholder='Acme Manufacturing'
               />
+              <datalist id='vendor-po-manufacturers'>
+                {manufacturers.map((manufacturer) => (
+                  <option key={manufacturer.id} value={manufacturer.name} />
+                ))}
+              </datalist>
             </label>
             <label className='text-sm font-semibold text-slate-700'>
               Vendor email
