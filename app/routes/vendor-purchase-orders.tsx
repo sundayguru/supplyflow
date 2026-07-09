@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { data, redirect, useFetcher } from 'react-router';
+import { data, redirect, useFetcher, useSearchParams } from 'react-router';
 import { Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import type { Route } from './+types/vendor-purchase-orders';
 import { ConfirmModal } from '~/components/ConfirmModal';
@@ -7,6 +7,7 @@ import {
   VendorPurchaseOrderFormModal,
   type VendorPurchaseOrderFormValue,
 } from '~/components/vendorPurchaseOrders/VendorPurchaseOrderFormModal';
+import { VendorPurchaseOrderDetailDrawer } from '~/components/vendorPurchaseOrders/VendorPurchaseOrderDetailDrawer';
 import { VendorPurchaseOrderStatusBadge } from '~/components/vendorPurchaseOrders/VendorPurchaseOrderStatusBadge';
 import { listManufacturers } from '~/db/manufacturers';
 import { getOrganizationForUser } from '~/db/organizations';
@@ -64,12 +65,45 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
 const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
   const mutation = useFetcher<ApiResponse>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState('');
   const [formTarget, setFormTarget] = useState<
     VendorPurchaseOrderRecord | 'new' | null
   >(null);
   const [deleteTarget, setDeleteTarget] =
     useState<VendorPurchaseOrderRecord | null>(null);
+  const selectedVendorPurchaseOrder = loaderData.vendorPurchaseOrders.find(
+    (vendorPurchaseOrder) =>
+      vendorPurchaseOrder.id === searchParams.get('vendorPo'),
+  );
+
+  const openDetails = (vendorPurchaseOrder: VendorPurchaseOrderRecord) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('vendorPo', vendorPurchaseOrder.id);
+    setSearchParams(next);
+  };
+
+  const closeDetails = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('vendorPo');
+    setSearchParams(next, { replace: true });
+  };
+
+  const editFromDetails = () => {
+    if (!selectedVendorPurchaseOrder) {
+      return;
+    }
+    setFormTarget(selectedVendorPurchaseOrder);
+    closeDetails();
+  };
+
+  const deleteFromDetails = () => {
+    if (!selectedVendorPurchaseOrder) {
+      return;
+    }
+    setDeleteTarget(selectedVendorPurchaseOrder);
+    closeDetails();
+  };
 
   const filteredVendorPurchaseOrders = useMemo(() => {
     const search = query.trim().toLowerCase();
@@ -233,6 +267,14 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
                       <div className='flex justify-end gap-1'>
                         <button
                           type='button'
+                          onClick={() => openDetails(vendorPurchaseOrder)}
+                          className='rounded-lg p-2 text-slate-400 transition hover:bg-sky-50 hover:text-sky-700'
+                          aria-label={`View ${vendorPurchaseOrder.reference}`}
+                        >
+                          <Eye size={16} />
+                        </button>
+                        <button
+                          type='button'
                           onClick={() => setFormTarget(vendorPurchaseOrder)}
                           className='rounded-lg p-2 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-700'
                           aria-label={`Edit ${vendorPurchaseOrder.reference}`}
@@ -256,6 +298,15 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
           </div>
         )}
       </section>
+
+      {selectedVendorPurchaseOrder && (
+        <VendorPurchaseOrderDetailDrawer
+          vendorPurchaseOrder={selectedVendorPurchaseOrder}
+          onClose={closeDetails}
+          onEdit={editFromDetails}
+          onDelete={deleteFromDetails}
+        />
+      )}
 
       {formTarget && (
         <VendorPurchaseOrderFormModal
