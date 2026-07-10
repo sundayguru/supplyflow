@@ -382,7 +382,7 @@ export default function SettingsPage({ loaderData }: Route.ComponentProps) {
                       onChange={(e) => setIsPrivate(e.target.checked)}
                       className='peer sr-only'
                     />
-                    <div className="h-6 w-11 rounded-full bg-black/10 transition peer-checked:bg-[#5A5A40] after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-5" />
+                    <div className="h-6 w-11 rounded-full bg-black/10 transition after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#5A5A40] peer-checked:after:translate-x-5" />
                   </label>
                 </div>
               </div>
@@ -549,7 +549,7 @@ export default function SettingsPage({ loaderData }: Route.ComponentProps) {
                   <button
                     type='button'
                     onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    className='absolute top-1/2 right-3 -translate-y-1/2 text-black/40 hover:text-black/60'
+                    className='absolute right-3 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/60'
                   >
                     {showCurrentPassword ? (
                       <EyeOff size={18} />
@@ -573,7 +573,7 @@ export default function SettingsPage({ loaderData }: Route.ComponentProps) {
                   <button
                     type='button'
                     onClick={() => setShowNewPassword(!showNewPassword)}
-                    className='absolute top-1/2 right-3 -translate-y-1/2 text-black/40 hover:text-black/60'
+                    className='absolute right-3 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/60'
                   >
                     {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -593,7 +593,7 @@ export default function SettingsPage({ loaderData }: Route.ComponentProps) {
                   <button
                     type='button'
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className='absolute top-1/2 right-3 -translate-y-1/2 text-black/40 hover:text-black/60'
+                    className='absolute right-3 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/60'
                   >
                     {showConfirmPassword ? (
                       <EyeOff size={18} />

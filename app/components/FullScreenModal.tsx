@@ -47,11 +47,11 @@ export const FullScreenModal = ({
                   {icon}
                 </div>
                 <div>
-                  <h3 className='leading-tight font-bold text-[#1a1a1a]'>
+                  <h3 className='font-bold leading-tight text-[#1a1a1a]'>
                     {title}
                   </h3>
                   {code && (
-                    <p className='text-xs font-bold tracking-widest text-black/40 uppercase'>
+                    <p className='text-xs font-bold uppercase tracking-widest text-black/40'>
                       {code}
                     </p>
                   )}

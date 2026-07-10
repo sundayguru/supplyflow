@@ -116,14 +116,14 @@ const SectionHeading = ({
     className={centered ? 'mx-auto max-w-2xl text-center' : 'max-w-2xl'}
   >
     <p
-      className={`mb-4 text-xs font-bold tracking-[0.2em] uppercase ${
+      className={`mb-4 text-xs font-bold uppercase tracking-[0.2em] ${
         inverted ? 'text-emerald-300' : 'text-emerald-700'
       }`}
     >
       {eyebrow}
     </p>
     <h2
-      className={`font-serif text-4xl leading-[1.05] font-semibold tracking-tight sm:text-5xl ${
+      className={`font-serif text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl ${
         inverted ? 'text-white' : 'text-slate-950'
       }`}
     >
@@ -262,7 +262,7 @@ const LandingPage = () => {
                 <span className='h-2 w-2 rounded-full bg-emerald-500' />
                 RFQ operations, finally in flow
               </div>
-              <h1 className='max-w-3xl font-serif text-5xl leading-[0.98] font-semibold tracking-[-0.035em] text-slate-950 sm:text-6xl lg:text-7xl'>
+              <h1 className='max-w-3xl font-serif text-5xl font-semibold leading-[0.98] tracking-[-0.035em] text-slate-950 sm:text-6xl lg:text-7xl'>
                 Turn every RFQ into an{' '}
                 <span className='text-emerald-600'>opportunity.</span>
               </h1>
@@ -395,7 +395,7 @@ const LandingPage = () => {
                     repeat: Infinity,
                     ease: 'easeInOut',
                   }}
-                  className='absolute -right-3 -bottom-5 flex items-center gap-3 rounded-2xl border border-emerald-100 bg-white p-3 shadow-xl sm:-right-8 sm:p-4'
+                  className='absolute -bottom-5 -right-3 flex items-center gap-3 rounded-2xl border border-emerald-100 bg-white p-3 shadow-xl sm:-right-8 sm:p-4'
                 >
                   <span className='flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700'>
                     <Check className='h-4 w-4' aria-hidden='true' />
@@ -493,10 +493,10 @@ const LandingPage = () => {
           >
             <div className='grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-end'>
               <div>
-                <p className='mb-4 text-xs font-bold tracking-[0.2em] text-emerald-800 uppercase'>
+                <p className='mb-4 text-xs font-bold uppercase tracking-[0.2em] text-emerald-800'>
                   Built for better outcomes
                 </p>
-                <h2 className='font-serif text-4xl leading-tight font-semibold tracking-tight sm:text-5xl'>
+                <h2 className='font-serif text-4xl font-semibold leading-tight tracking-tight sm:text-5xl'>
                   Move faster. Know more. Win smarter.
                 </h2>
                 <p className='mt-5 max-w-lg text-base leading-7 text-slate-600'>
@@ -540,14 +540,14 @@ const LandingPage = () => {
             transition={{ duration: 0.6 }}
             className='relative mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-emerald-700 px-6 py-14 text-center text-white sm:px-10 sm:py-20'
           >
-            <div className='absolute -top-24 -left-24 h-64 w-64 rounded-full border-[40px] border-white/5' />
-            <div className='absolute -right-20 -bottom-32 h-72 w-72 rounded-full bg-emerald-500/30 blur-2xl' />
+            <div className='absolute -left-24 -top-24 h-64 w-64 rounded-full border-[40px] border-white/5' />
+            <div className='absolute -bottom-32 -right-20 h-72 w-72 rounded-full bg-emerald-500/30 blur-2xl' />
             <div className='relative mx-auto max-w-2xl'>
               <ShieldCheck
                 className='mx-auto h-8 w-8 text-emerald-200'
                 aria-hidden='true'
               />
-              <h2 className='mt-5 font-serif text-4xl leading-tight font-semibold sm:text-5xl'>
+              <h2 className='mt-5 font-serif text-4xl font-semibold leading-tight sm:text-5xl'>
                 Ready to make every RFQ count?
               </h2>
               <p className='mx-auto mt-5 max-w-xl text-base leading-7 text-emerald-50/80'>

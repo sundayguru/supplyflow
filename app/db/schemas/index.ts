@@ -8,6 +8,7 @@ export * from './notifications';
 export * from './rfqs';
 export * from './purchaseOrders';
 export * from './vendorPurchaseOrders';
+export * from './vendorPurchaseOrderAcknowledgements';
 export * from './emailIngestion';
 export * from './connectedEmailAccounts';
 export * from './organizations';

@@ -162,7 +162,7 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
     <div className='mx-auto max-w-[1440px] font-sans text-slate-950'>
       <div className='flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between'>
         <div>
-          <p className='text-xs font-bold tracking-[0.18em] text-emerald-700 uppercase'>
+          <p className='text-xs font-bold uppercase tracking-[0.18em] text-emerald-700'>
             Vendor purchasing
           </p>
           <h1 className='mt-2 font-serif text-4xl font-semibold tracking-tight sm:text-5xl'>
@@ -197,13 +197,13 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
         <div className='border-b border-slate-100 p-4 sm:p-5'>
           <label className='relative block w-full sm:max-w-sm'>
             <Search
-              className='absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400'
+              className='absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400'
               size={17}
             />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              className='w-full rounded-xl border border-slate-200 py-2.5 pr-3 pl-10 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10'
+              className='w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10'
               placeholder='Search vendor POs, vendors, or items'
             />
           </label>
@@ -222,7 +222,7 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
         ) : (
           <div className='overflow-x-auto'>
             <table className='w-full min-w-[900px] text-left text-sm'>
-              <thead className='bg-slate-50/70 text-[10px] font-bold tracking-wider text-slate-400 uppercase'>
+              <thead className='bg-slate-50/70 text-[10px] font-bold uppercase tracking-wider text-slate-400'>
                 <tr>
                   <th className='px-5 py-3'>Reference</th>
                   <th className='px-5 py-3'>Vendor</th>

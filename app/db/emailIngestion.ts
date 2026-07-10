@@ -395,6 +395,7 @@ export const completeEmailIngestion = async (
   outcome:
     | { status: 'processed'; rfqId: string; purchaseOrderId?: null }
     | { status: 'processed'; purchaseOrderId: string; rfqId?: null }
+    | { status: 'processed'; rfqId?: null; purchaseOrderId?: null }
     | { status: 'ignored' },
 ) => {
   const db = getDb();

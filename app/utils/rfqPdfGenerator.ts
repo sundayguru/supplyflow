@@ -493,12 +493,18 @@ export const generateProformaInvoicePdf = async (
     font: regular,
     size: 10,
   });
-  page.drawText(`Expected: ${purchaseOrder.expectedDate ?? 'Not specified'}`, {
-    x: 410,
-    y,
-    font: regular,
-    size: 10,
-  });
+  if (purchaseOrder.expectedDate) {
+    page.drawText(
+      `Expected: ${purchaseOrder.expectedDate ?? 'Not specified'}`,
+      {
+        x: 410,
+        y,
+        font: regular,
+        size: 10,
+      },
+    );
+  }
+
   y -= 24;
   page.drawText(`Bill to: ${safePdfText(purchaseOrder.supplierName)}`, {
     x: SIDE_MARGIN,
@@ -716,7 +722,7 @@ export const generateVendorPurchaseOrderPdf = async (
     if (footerBanner) {
       drawFullWidthBanner(page, footerBanner, 0, FOOTER_HEIGHT);
     } else {
-      page.drawText('SupplyFlow vendor purchase order', {
+      page.drawText('SupplyFlow purchase order', {
         x: SIDE_MARGIN,
         y: 24,
         font: regular,
@@ -729,7 +735,7 @@ export const generateVendorPurchaseOrderPdf = async (
 
   let page = addPage();
   let y = PAGE_HEIGHT - (headerBanner ? 112 : 80);
-  page.drawText('VENDOR PURCHASE ORDER', {
+  page.drawText('PURCHASE ORDER', {
     x: SIDE_MARGIN,
     y,
     font: bold,
@@ -737,7 +743,7 @@ export const generateVendorPurchaseOrderPdf = async (
     color: rgb(0.08, 0.11, 0.15),
   });
   y -= 30;
-  page.drawText(`Vendor PO: ${vendorPurchaseOrder.reference}`, {
+  page.drawText(`PO: ${vendorPurchaseOrder.reference}`, {
     x: SIDE_MARGIN,
     y,
     font: bold,

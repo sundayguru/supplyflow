@@ -25,6 +25,10 @@ export default [
     route('rfqs', 'routes/rfqs.tsx'),
     route('purchase-orders', 'routes/purchase-orders.tsx'),
     route('vendor-purchase-orders', 'routes/vendor-purchase-orders.tsx'),
+    route(
+      'vendor-purchase-order-acknowledgements',
+      'routes/vendor-purchase-order-acknowledgements.tsx',
+    ),
     route('manufacturers', 'routes/manufacturers.tsx'),
     route('product-prices', 'routes/product-prices.tsx'),
     route('rfq-pdf-templates', 'routes/rfq-pdf-templates.tsx'),
@@ -49,6 +53,10 @@ export default [
       'routes/api/purchase-order-payments.ts',
     ),
     route('api/vendor-purchase-orders', 'routes/api/vendor-purchase-orders.ts'),
+    route(
+      'api/vendor-purchase-order-acknowledgements',
+      'routes/api/vendor-purchase-order-acknowledgements.ts',
+    ),
     route(
       'api/vendor-purchase-orders/:vendorPurchaseOrderId/pdf',
       'routes/api/vendor-purchase-order-pdf.ts',

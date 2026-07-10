@@ -45,6 +45,11 @@ export const Header = () => {
     { to: '/rfqs', label: 'RFQ management', icon: ClipboardList },
     { to: '/purchase-orders', label: 'PO management', icon: ShoppingCart },
     { to: '/vendor-purchase-orders', label: 'Vendor POs', icon: Package },
+    {
+      to: '/vendor-purchase-order-acknowledgements',
+      label: 'Vendor PO acks',
+      icon: MailCheck,
+    },
     { to: '/manufacturers', label: 'Manufacturers', icon: Factory },
     { to: '/product-prices', label: 'Product prices', icon: Package },
     { to: '/rfq-pdf-templates', label: 'PDF templates', icon: FileText },
@@ -103,12 +108,12 @@ export const Header = () => {
       )}
 
       <aside
-        className={`fixed top-16 bottom-0 left-0 z-40 flex w-72 flex-col border-r border-slate-200 bg-white px-4 py-5 shadow-xl shadow-slate-950/5 transition-transform duration-300 lg:translate-x-0 lg:shadow-none ${
+        className={`fixed bottom-0 left-0 top-16 z-40 flex w-72 flex-col border-r border-slate-200 bg-white px-4 py-5 shadow-xl shadow-slate-950/5 transition-transform duration-300 lg:translate-x-0 lg:shadow-none ${
           showSidebar ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className='px-3 pb-4'>
-          <p className='text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase'>
+          <p className='text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400'>
             Workspace
           </p>
           <p className='mt-1 text-sm font-semibold text-slate-900'>

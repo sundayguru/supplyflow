@@ -190,7 +190,7 @@ export default function NotificationsPage({
                 <button
                   onClick={(e) => handleMarkRead(notification.id, e)}
                   title='Mark as read'
-                  className='rounded-full p-2 text-black/40 opacity-0 transition-all group-hover:opacity-100 hover:bg-black/5 hover:text-black/70'
+                  className='rounded-full p-2 text-black/40 opacity-0 transition-all hover:bg-black/5 hover:text-black/70 group-hover:opacity-100'
                 >
                   <CheckCircle size={18} />
                 </button>

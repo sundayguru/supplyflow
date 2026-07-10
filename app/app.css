@@ -14,7 +14,7 @@
 }
 
 .markdown-body h2 {
-  @apply mt-12 mb-6 text-2xl font-bold;
+  @apply mb-6 mt-12 text-2xl font-bold;
 }
 
 .markdown-body p {
@@ -49,19 +49,19 @@
 }
 
 .lesson-markdown h1 {
-  @apply mt-0 mb-8 text-4xl leading-tight md:text-5xl;
+  @apply mb-8 mt-0 text-4xl leading-tight md:text-5xl;
 }
 
 .lesson-markdown h2 {
-  @apply mt-12 mb-5 border-t border-black/5 pt-8 text-3xl leading-tight;
+  @apply mb-5 mt-12 border-t border-black/5 pt-8 text-3xl leading-tight;
 }
 
 .lesson-markdown h3 {
-  @apply mt-10 mb-4 text-2xl leading-snug;
+  @apply mb-4 mt-10 text-2xl leading-snug;
 }
 
 .lesson-markdown h4 {
-  @apply mt-8 mb-3 text-xl leading-snug;
+  @apply mb-3 mt-8 text-xl leading-snug;
 }
 
 .lesson-markdown p {

@@ -125,7 +125,7 @@ export const RfqPdfTemplateFormModal = ({
           />
 
           <div className='grid gap-4 sm:grid-cols-2'>
-            <label className='text-xs font-bold tracking-widest text-black/50 uppercase'>
+            <label className='text-xs font-bold uppercase tracking-widest text-black/50'>
               Header banner
               <input
                 name='headerBanner'
@@ -138,7 +138,7 @@ export const RfqPdfTemplateFormModal = ({
                 className='mt-2 block w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:font-semibold'
               />
             </label>
-            <label className='text-xs font-bold tracking-widest text-black/50 uppercase'>
+            <label className='text-xs font-bold uppercase tracking-widest text-black/50'>
               Footer banner
               <input
                 name='footerBanner'

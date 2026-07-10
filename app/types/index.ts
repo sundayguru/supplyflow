@@ -3,6 +3,7 @@ export * from './empty-object';
 export * from './rfq';
 export * from './purchaseOrder';
 export * from './vendorPurchaseOrder';
+export * from './vendorPurchaseOrderAcknowledgement';
 export * from './organization';
 export * from './rfqPdfTemplate';
 export * from './manufacturer';

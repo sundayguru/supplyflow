@@ -37,7 +37,7 @@ export const DropdownMenu = ({
   return (
     <div
       ref={menuRef}
-      className='absolute top-10 right-0 z-20 min-w-[160px] rounded-xl border border-black/10 bg-white py-1 shadow-lg'
+      className='absolute right-0 top-10 z-20 min-w-[160px] rounded-xl border border-black/10 bg-white py-1 shadow-lg'
     >
       {children}
     </div>
