@@ -1,7 +1,15 @@
-export const GoogleAuthButton = () => {
+type GoogleAuthButtonProps = {
+  callbackUrl?: string;
+};
+
+export const GoogleAuthButton = ({ callbackUrl }: GoogleAuthButtonProps) => {
+  const href = callbackUrl
+    ? `/api/auth/google?state=${encodeURIComponent(callbackUrl)}`
+    : '/api/auth/google';
+
   return (
     <a
-      href='/api/auth/google'
+      href={href}
       className='flex w-full items-center justify-center gap-2.5 rounded-full border border-slate-200 bg-white py-3.5 text-sm font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-slate-50'
     >
       <svg className='h-5 w-5' viewBox='0 0 24 24' aria-hidden='true'>

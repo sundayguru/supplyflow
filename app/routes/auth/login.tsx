@@ -7,6 +7,16 @@ import { AuthPageLayout } from '~/components/AuthPageLayout';
 import { GoogleAuthButton } from '~/components/GoogleAuthButton';
 import { LogIn } from 'lucide-react';
 
+const loginErrorMessages: Record<string, string> = {
+  access_denied: 'Google sign-in was cancelled. Please try again.',
+  token_exchange_failed:
+    'Google sign-in could not be completed. Please try again.',
+  userinfo_failed:
+    'We could not read your Google account details. Please try again.',
+  creation_failed:
+    'We could not create your account from Google. Please try again.',
+};
+
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const url = new URL(request.url);
   const callbackUrl = url.searchParams.get('callbackUrl') || '/dashboard';
@@ -50,8 +60,17 @@ export const action = async ({ request }: Route.ActionArgs) => {
   return redirect(callbackUrl, { headers });
 };
 
-export default function LoginPage({ loaderData }: Route.ComponentProps) {
-  const { callbackUrl, error, resetSuccess } = loaderData;
+export default function LoginPage({
+  loaderData,
+  actionData,
+}: Route.ComponentProps) {
+  const { callbackUrl, error: queryError, resetSuccess } = loaderData;
+  const actionError =
+    actionData && 'error' in actionData ? actionData.error : null;
+  const queryErrorMessage = queryError
+    ? (loginErrorMessages[queryError] ?? queryError)
+    : null;
+  const error = actionError ?? queryErrorMessage;
 
   return (
     <AuthPageLayout
@@ -68,7 +87,7 @@ export default function LoginPage({ loaderData }: Route.ComponentProps) {
           <input
             type='email'
             name='email'
-            className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
+            className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm transition outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
             placeholder='you@example.com'
             required
           />
@@ -88,7 +107,7 @@ export default function LoginPage({ loaderData }: Route.ComponentProps) {
           <input
             type='password'
             name='password'
-            className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
+            className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm transition outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
             placeholder='••••••••'
             required
           />
@@ -124,7 +143,7 @@ export default function LoginPage({ loaderData }: Route.ComponentProps) {
           </div>
         </div>
 
-        <GoogleAuthButton />
+        <GoogleAuthButton callbackUrl={callbackUrl} />
       </Form>
 
       <div className='mt-6 text-center text-sm text-slate-500'>
