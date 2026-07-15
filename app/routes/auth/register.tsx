@@ -4,6 +4,7 @@ import { getUserByEmail, createUserWithPassword } from '~/db/auth';
 import { generateSessionToken } from '~/utils/auth.server';
 import { AuthPageLayout } from '~/components/AuthPageLayout';
 import { GoogleAuthButton } from '~/components/GoogleAuthButton';
+import { PasswordField } from '~/components/PasswordField';
 import { UserPlus } from 'lucide-react';
 
 export const loader = ({ request }: Route.LoaderArgs) => {
@@ -91,7 +92,7 @@ export default function RegisterPage({ loaderData }: Route.ComponentProps) {
             <input
               type='text'
               name='firstName'
-              className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
+              className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm transition outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
               placeholder='John'
               required
             />
@@ -103,7 +104,7 @@ export default function RegisterPage({ loaderData }: Route.ComponentProps) {
             <input
               type='text'
               name='lastName'
-              className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
+              className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm transition outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
               placeholder='Doe'
               required
             />
@@ -116,35 +117,21 @@ export default function RegisterPage({ loaderData }: Route.ComponentProps) {
           <input
             type='email'
             name='email'
-            className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
+            className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm transition outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
             placeholder='you@example.com'
             required
           />
         </div>
-        <div>
-          <label className='mb-1 block text-sm font-medium text-black/70'>
-            Password
-          </label>
-          <input
-            type='password'
-            name='password'
-            className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
-            placeholder='••••••••'
-            required
-          />
-        </div>
-        <div>
-          <label className='mb-1 block text-sm font-medium text-black/70'>
-            Confirm Password
-          </label>
-          <input
-            type='password'
-            name='confirmPassword'
-            className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
-            placeholder='••••••••'
-            required
-          />
-        </div>
+        <PasswordField
+          label='Password'
+          name='password'
+          autoComplete='new-password'
+        />
+        <PasswordField
+          label='Confirm Password'
+          name='confirmPassword'
+          autoComplete='new-password'
+        />
 
         <button
           type='submit'

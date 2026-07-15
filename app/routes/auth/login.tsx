@@ -5,6 +5,7 @@ import { ensureProfileForUser } from '~/db/profile';
 import { generateSessionToken } from '~/utils/auth.server';
 import { AuthPageLayout } from '~/components/AuthPageLayout';
 import { GoogleAuthButton } from '~/components/GoogleAuthButton';
+import { PasswordField } from '~/components/PasswordField';
 import { LogIn } from 'lucide-react';
 
 const loginErrorMessages: Record<string, string> = {
@@ -92,26 +93,19 @@ export default function LoginPage({
             required
           />
         </div>
-        <div>
-          <div className='mb-1 flex items-center justify-between'>
-            <label className='block text-sm font-medium text-black/70'>
-              Password
-            </label>
+        <PasswordField
+          label='Password'
+          name='password'
+          autoComplete='current-password'
+          labelAction={
             <a
               href='/auth/forgot-password'
               className='text-xs font-semibold text-emerald-700 hover:underline'
             >
               Forgot password?
             </a>
-          </div>
-          <input
-            type='password'
-            name='password'
-            className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm transition outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
-            placeholder='••••••••'
-            required
-          />
-        </div>
+          }
+        />
 
         {error && (
           <p className='rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700'>
