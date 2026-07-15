@@ -6,7 +6,9 @@ import { generateSessionToken } from '~/utils/auth.server';
 import { AuthPageLayout } from '~/components/AuthPageLayout';
 import { GoogleAuthButton } from '~/components/GoogleAuthButton';
 import { PasswordField } from '~/components/PasswordField';
+import { normalizeEmailAddress } from '~/utils/email';
 import { LogIn } from 'lucide-react';
+import { useState } from 'react';
 
 const loginErrorMessages: Record<string, string> = {
   access_denied: 'Google sign-in was cancelled. Please try again.',
@@ -28,7 +30,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
 export const action = async ({ request }: Route.ActionArgs) => {
   const formData = await request.formData();
-  const email = formData.get('email') as string;
+  const email = normalizeEmailAddress(formData.get('email'));
   const password = formData.get('password') as string;
   const callbackUrl = (formData.get('callbackUrl') as string) || '/dashboard';
 
@@ -72,6 +74,14 @@ export default function LoginPage({
     ? (loginErrorMessages[queryError] ?? queryError)
     : null;
   const error = actionError ?? queryErrorMessage;
+  const errorKey = error
+    ? `${actionError ? 'action' : 'query'}:${error}`
+    : null;
+  const [hiddenLoginErrorKey, setHiddenLoginErrorKey] = useState<string | null>(
+    null,
+  );
+  const isLoginErrorHidden =
+    errorKey !== null && hiddenLoginErrorKey === errorKey;
 
   return (
     <AuthPageLayout
@@ -79,7 +89,16 @@ export default function LoginPage({
       title='Keep every quotation moving.'
       description='Sign in to pick up your RFQ workflow, pricing history, and team activity.'
     >
-      <Form method='post' className='space-y-4'>
+      <Form
+        method='post'
+        className='space-y-4'
+        onChange={() => {
+          if (errorKey) {
+            setHiddenLoginErrorKey(errorKey);
+          }
+        }}
+        onSubmit={() => setHiddenLoginErrorKey(null)}
+      >
         <input type='hidden' name='callbackUrl' value={callbackUrl} />
         <div>
           <label className='mb-1 block text-sm font-medium text-black/70'>
@@ -107,7 +126,7 @@ export default function LoginPage({
           }
         />
 
-        {error && (
+        {error && !isLoginErrorHidden && (
           <p className='rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700'>
             {error}
           </p>

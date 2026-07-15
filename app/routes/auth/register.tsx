@@ -5,6 +5,7 @@ import { generateSessionToken } from '~/utils/auth.server';
 import { AuthPageLayout } from '~/components/AuthPageLayout';
 import { GoogleAuthButton } from '~/components/GoogleAuthButton';
 import { PasswordField } from '~/components/PasswordField';
+import { normalizeEmailAddress } from '~/utils/email';
 import { UserPlus } from 'lucide-react';
 
 export const loader = ({ request }: Route.LoaderArgs) => {
@@ -15,7 +16,7 @@ export const loader = ({ request }: Route.LoaderArgs) => {
 
 export const action = async ({ request }: Route.ActionArgs) => {
   const formData = await request.formData();
-  const email = formData.get('email') as string;
+  const email = normalizeEmailAddress(formData.get('email'));
   const password = formData.get('password') as string;
   const confirmPassword = formData.get('confirmPassword') as string;
   const firstName = formData.get('firstName') as string;
