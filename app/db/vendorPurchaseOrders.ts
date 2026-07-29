@@ -179,6 +179,30 @@ export const deleteVendorPurchaseOrder = async (
   return record ?? null;
 };
 
+export const updateVendorPurchaseOrderEmailDraft = async (
+  id: string,
+  organizationId: string,
+  draftId: string,
+) => {
+  const db = getDb();
+  const [record] = await db
+    .update(vendorPurchaseOrders)
+    .set({
+      status: 'review_email',
+      generatedEmailDraftId: draftId,
+      generatedEmailDraftUpdatedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })
+    .where(
+      and(
+        eq(vendorPurchaseOrders.id, id),
+        eq(vendorPurchaseOrders.organizationId, organizationId),
+      ),
+    )
+    .returning({ id: vendorPurchaseOrders.id });
+  return record ? await getVendorPurchaseOrder(id, organizationId) : null;
+};
+
 export const hasOrganizationPurchaseOrder = async (
   id: string,
   organizationId: string,

@@ -47,6 +47,8 @@ export const vendorPurchaseOrders = sqliteTable(
     expectedDate: text('expected_date'),
     currency: text('currency', { length: 3 }).notNull().default('EUR'),
     notes: text('notes'),
+    generatedEmailDraftId: text('generated_email_draft_id', { length: 255 }),
+    generatedEmailDraftUpdatedAt: text('generated_email_draft_updated_at'),
     createdAt: text('created_at')
       .notNull()
       .default(sql`(CURRENT_TIMESTAMP)`),

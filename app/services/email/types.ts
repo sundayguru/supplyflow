@@ -40,6 +40,11 @@ export type CreateDraftReplyInput = {
   };
 };
 
+export type CreateDraftEmailInput = Omit<
+  CreateDraftReplyInput,
+  'originalMessageId' | 'threadId'
+>;
+
 export type SendReplyInput = {
   originalMessageId: string;
   threadId: string | null;
@@ -69,6 +74,9 @@ export type EmailClient = {
   getMessage?: (id: string) => Promise<EmailMessage>;
   createDraftReply?: (
     input: CreateDraftReplyInput,
+  ) => Promise<DraftReplyResult>;
+  createDraftEmail?: (
+    input: CreateDraftEmailInput,
   ) => Promise<DraftReplyResult>;
   updateDraftReply?: (
     input: UpdateDraftReplyInput,

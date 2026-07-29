@@ -2,6 +2,7 @@ import type { PurchaseOrderItemInput } from './purchaseOrder';
 
 export const vendorPurchaseOrderStatuses = [
   'draft',
+  'review_email',
   'sent',
   'acknowledged',
   'partially_received',
@@ -51,6 +52,8 @@ export type VendorPurchaseOrderRecord = Omit<
   userId: string;
   organizationId: string | null;
   reference: string;
+  generatedEmailDraftId: string | null;
+  generatedEmailDraftUpdatedAt: string | null;
   createdAt: string;
   updatedAt: string;
   items: VendorPurchaseOrderItemRecord[];

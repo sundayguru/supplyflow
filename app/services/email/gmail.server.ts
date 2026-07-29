@@ -3,6 +3,7 @@ import type {
   EmailAttachment,
   EmailClient,
   EmailMessage,
+  CreateDraftEmailInput,
   CreateDraftReplyInput,
   ListMessagesOptions,
   UpdateDraftReplyInput,
@@ -242,12 +243,16 @@ const encodeAttachment = (bytes: Uint8Array) =>
 
 const sanitizeMimeFilename = (value: string) => value.replace(/["\r\n]/g, '-');
 
-const createMultipartDraftMessage = (input: CreateDraftReplyInput) => {
+const createMultipartDraftMessage = (
+  input: CreateDraftReplyInput | CreateDraftEmailInput,
+  options: { isReply: boolean },
+) => {
   const boundary = `supplyflow-${crypto.randomUUID()}`;
   const filename = sanitizeMimeFilename(input.attachment.filename);
-  const subject = /^re:/i.test(input.subject)
-    ? input.subject
-    : `Re: ${input.subject}`;
+  const subject =
+    options.isReply && !/^re:/i.test(input.subject)
+      ? `Re: ${input.subject}`
+      : input.subject;
   const message = [
     `To: ${sanitizeHeader(input.to)}`,
     `Subject: ${encodeMimeHeader(subject)}`,
@@ -492,7 +497,23 @@ export const createGmailClient = (config: GmailClientConfig): EmailClient => ({
       body: JSON.stringify({
         message: {
           threadId: input.threadId ?? undefined,
-          raw: createMultipartDraftMessage(input),
+          raw: createMultipartDraftMessage(input, { isReply: true }),
+        },
+      }),
+    });
+    return {
+      id: draft.id,
+      url: createDraftUrl(input.accountEmail),
+    };
+  },
+  async createDraftEmail(input) {
+    const accessToken = await getAccessToken(config);
+    const draft = await gmailRequest<{ id: string }>('/drafts', accessToken, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: {
+          raw: createMultipartDraftMessage(input, { isReply: false }),
         },
       }),
     });
@@ -513,7 +534,7 @@ export const createGmailClient = (config: GmailClientConfig): EmailClient => ({
           id: input.draftId,
           message: {
             threadId: input.threadId ?? undefined,
-            raw: createMultipartDraftMessage(input),
+            raw: createMultipartDraftMessage(input, { isReply: true }),
           },
         }),
       },

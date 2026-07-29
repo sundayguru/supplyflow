@@ -62,6 +62,10 @@ export default [
       'routes/api/vendor-purchase-order-pdf.ts',
     ),
     route(
+      'api/vendor-purchase-orders/:vendorPurchaseOrderId/draft',
+      'routes/api/vendor-purchase-order-draft.ts',
+    ),
+    route(
       'api/purchase-orders/:purchaseOrderId/proforma-invoice',
       'routes/api/purchase-order-proforma-invoice.ts',
     ),

@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router';
+import { Link, useFetcher } from 'react-router';
 import {
   CalendarDays,
   ClipboardList,
   CircleDollarSign,
   Download,
+  ExternalLink,
   FileText,
   Mail,
+  MailPlus,
   Package,
   Pencil,
   Trash2,
@@ -31,6 +33,15 @@ type VendorPurchaseOrderDetailDrawerProps = {
   onDelete: () => void;
 };
 
+type DraftVendorPurchaseOrderResponse =
+  | {
+      success: true;
+      draft: { id: string; url: string };
+      generatedReply: string;
+      vendorPurchaseOrder: VendorPurchaseOrderRecord;
+    }
+  | { error: string };
+
 const formatDate = (value: string) => new Date(value).toLocaleDateString();
 
 export const VendorPurchaseOrderDetailDrawer = ({
@@ -41,14 +52,38 @@ export const VendorPurchaseOrderDetailDrawer = ({
   onEdit,
   onDelete,
 }: VendorPurchaseOrderDetailDrawerProps) => {
+  const draftEmail = useFetcher<DraftVendorPurchaseOrderResponse>();
+  const currentVendorPurchaseOrder =
+    draftEmail.data &&
+    'success' in draftEmail.data &&
+    draftEmail.data.vendorPurchaseOrder
+      ? draftEmail.data.vendorPurchaseOrder
+      : vendorPurchaseOrder;
   const downloadPdfUrl = `/api/vendor-purchase-orders/${encodeURIComponent(
-    vendorPurchaseOrder.id,
+    currentVendorPurchaseOrder.id,
   )}/pdf?download=1`;
-  const templateName = vendorPurchaseOrder.templateId
+  const templateName = currentVendorPurchaseOrder.templateId
     ? templates.find(
-        (template) => template.id === vendorPurchaseOrder.templateId,
+        (template) => template.id === currentVendorPurchaseOrder.templateId,
       )?.name
     : null;
+  const draftUrl =
+    draftEmail.data && 'success' in draftEmail.data
+      ? draftEmail.data.draft.url
+      : null;
+
+  const createDraftEmail = () => {
+    draftEmail.submit(
+      {},
+      {
+        method: 'post',
+        action: `/api/vendor-purchase-orders/${encodeURIComponent(
+          currentVendorPurchaseOrder.id,
+        )}/draft`,
+        encType: 'application/json',
+      },
+    );
+  };
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -90,10 +125,10 @@ export const VendorPurchaseOrderDetailDrawer = ({
                 id='vendor-po-detail-title'
                 className='font-serif text-3xl font-semibold text-slate-950'
               >
-                {vendorPurchaseOrder.reference}
+                {currentVendorPurchaseOrder.reference}
               </h2>
               <VendorPurchaseOrderStatusBadge
-                status={vendorPurchaseOrder.status}
+                status={currentVendorPurchaseOrder.status}
               />
             </div>
           </div>
@@ -117,15 +152,15 @@ export const VendorPurchaseOrderDetailDrawer = ({
                 <UserRound size={14} /> Vendor
               </p>
               <p className='mt-3 font-semibold text-slate-900'>
-                {vendorPurchaseOrder.vendorName}
+                {currentVendorPurchaseOrder.vendorName}
               </p>
               <p className='mt-1 flex items-center gap-1.5 text-sm text-slate-500'>
                 <Mail size={14} />{' '}
-                {vendorPurchaseOrder.vendorEmail ?? 'No email provided'}
+                {currentVendorPurchaseOrder.vendorEmail ?? 'No email provided'}
               </p>
-              {vendorPurchaseOrder.vendorContactName && (
+              {currentVendorPurchaseOrder.vendorContactName && (
                 <p className='mt-1 text-sm text-slate-500'>
-                  Contact: {vendorPurchaseOrder.vendorContactName}
+                  Contact: {currentVendorPurchaseOrder.vendorContactName}
                 </p>
               )}
             </div>
@@ -135,8 +170,8 @@ export const VendorPurchaseOrderDetailDrawer = ({
               </p>
               <p className='mt-3 text-2xl font-semibold text-slate-900'>
                 {formatPurchaseOrderMoney(
-                  vendorPurchaseOrder.totalValue,
-                  vendorPurchaseOrder.currency,
+                  currentVendorPurchaseOrder.totalValue,
+                  currentVendorPurchaseOrder.currency,
                 )}
               </p>
             </div>
@@ -146,17 +181,17 @@ export const VendorPurchaseOrderDetailDrawer = ({
               </p>
               <p className='mt-3 font-semibold text-slate-900'>
                 Ordered{' '}
-                {vendorPurchaseOrder.orderDate
+                {currentVendorPurchaseOrder.orderDate
                   ? new Date(
-                      `${vendorPurchaseOrder.orderDate}T00:00:00`,
+                      `${currentVendorPurchaseOrder.orderDate}T00:00:00`,
                     ).toLocaleDateString()
                   : 'not set'}
               </p>
               <p className='mt-1 text-sm text-slate-500'>
                 Expected{' '}
-                {vendorPurchaseOrder.expectedDate
+                {currentVendorPurchaseOrder.expectedDate
                   ? new Date(
-                      `${vendorPurchaseOrder.expectedDate}T00:00:00`,
+                      `${currentVendorPurchaseOrder.expectedDate}T00:00:00`,
                     ).toLocaleDateString()
                   : 'not set'}
               </p>
@@ -166,10 +201,10 @@ export const VendorPurchaseOrderDetailDrawer = ({
                 Created
               </p>
               <p className='mt-3 font-semibold text-slate-900'>
-                {formatDate(vendorPurchaseOrder.createdAt)}
+                {formatDate(currentVendorPurchaseOrder.createdAt)}
               </p>
               <p className='mt-1 text-xs text-slate-400'>
-                Updated {formatDate(vendorPurchaseOrder.updatedAt)}
+                Updated {formatDate(currentVendorPurchaseOrder.updatedAt)}
               </p>
             </div>
           </section>
@@ -179,19 +214,19 @@ export const VendorPurchaseOrderDetailDrawer = ({
               <ClipboardList size={14} /> Linked customer PO
             </p>
             <Link
-              to={`/purchase-orders?po=${encodeURIComponent(vendorPurchaseOrder.linkedPurchaseOrder.id)}`}
+              to={`/purchase-orders?po=${encodeURIComponent(currentVendorPurchaseOrder.linkedPurchaseOrder.id)}`}
               className='mt-2 inline-flex font-semibold text-slate-900 hover:text-emerald-700'
             >
-              {vendorPurchaseOrder.linkedPurchaseOrder.reference} ·{' '}
-              {vendorPurchaseOrder.linkedPurchaseOrder.supplierName}
+              {currentVendorPurchaseOrder.linkedPurchaseOrder.reference} ·{' '}
+              {currentVendorPurchaseOrder.linkedPurchaseOrder.supplierName}
             </Link>
             <p className='mt-4 flex items-center gap-2 border-t border-slate-100 pt-4 text-sm text-slate-500'>
               <FileText size={14} />
               PDF template: {templateName ?? 'Default vendor PO template'}
             </p>
-            {vendorPurchaseOrder.notes && (
+            {currentVendorPurchaseOrder.notes && (
               <p className='mt-4 border-t border-slate-100 pt-4 text-sm leading-6 whitespace-pre-wrap text-slate-600'>
-                {vendorPurchaseOrder.notes}
+                {currentVendorPurchaseOrder.notes}
               </p>
             )}
           </section>
@@ -203,8 +238,8 @@ export const VendorPurchaseOrderDetailDrawer = ({
                   Vendor PO items
                 </p>
                 <h3 className='mt-1 text-lg font-bold text-slate-900'>
-                  {vendorPurchaseOrder.items.length} line item
-                  {vendorPurchaseOrder.items.length === 1 ? '' : 's'}
+                  {currentVendorPurchaseOrder.items.length} line item
+                  {currentVendorPurchaseOrder.items.length === 1 ? '' : 's'}
                 </h3>
               </div>
               <span className='flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700'>
@@ -213,7 +248,7 @@ export const VendorPurchaseOrderDetailDrawer = ({
             </div>
 
             <div className='mt-4 space-y-4'>
-              {vendorPurchaseOrder.items.map((item, index) => (
+              {currentVendorPurchaseOrder.items.map((item, index) => (
                 <article
                   key={item.id}
                   className='rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'
@@ -230,7 +265,7 @@ export const VendorPurchaseOrderDetailDrawer = ({
                         <p className='text-sm font-semibold text-emerald-700'>
                           {formatPurchaseOrderMoney(
                             item.price,
-                            vendorPurchaseOrder.currency,
+                            currentVendorPurchaseOrder.currency,
                           )}
                         </p>
                         <PurchaseOrderItemStatusBadge status={item.status} />
@@ -282,8 +317,8 @@ export const VendorPurchaseOrderDetailDrawer = ({
                 <dt>Items subtotal</dt>
                 <dd>
                   {formatPurchaseOrderMoney(
-                    vendorPurchaseOrder.subtotal,
-                    vendorPurchaseOrder.currency,
+                    currentVendorPurchaseOrder.subtotal,
+                    currentVendorPurchaseOrder.currency,
                   )}
                 </dd>
               </div>
@@ -291,8 +326,8 @@ export const VendorPurchaseOrderDetailDrawer = ({
                 <dt>Total</dt>
                 <dd>
                   {formatPurchaseOrderMoney(
-                    vendorPurchaseOrder.totalValue,
-                    vendorPurchaseOrder.currency,
+                    currentVendorPurchaseOrder.totalValue,
+                    currentVendorPurchaseOrder.currency,
                   )}
                 </dd>
               </div>
@@ -301,6 +336,35 @@ export const VendorPurchaseOrderDetailDrawer = ({
         </div>
 
         <footer className='space-y-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-7'>
+          {draftEmail.data && 'error' in draftEmail.data && (
+            <p className='rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'>
+              {draftEmail.data.error}
+            </p>
+          )}
+          {draftUrl && (
+            <a
+              href={draftUrl}
+              target='_blank'
+              rel='noreferrer'
+              className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-5 py-3 text-sm font-semibold text-sky-700 transition hover:bg-sky-100'
+            >
+              <ExternalLink size={17} /> Open draft in Gmail
+            </a>
+          )}
+          <button
+            type='button'
+            onClick={createDraftEmail}
+            disabled={
+              draftEmail.state !== 'idle' ||
+              !currentVendorPurchaseOrder.vendorEmail
+            }
+            className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60'
+          >
+            <MailPlus size={17} />
+            {draftEmail.state !== 'idle'
+              ? 'Drafting vendor email'
+              : 'Draft email to vendor'}
+          </button>
           <a
             href={downloadPdfUrl}
             className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100'

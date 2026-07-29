@@ -9,6 +9,7 @@ export const vendorPurchaseOrderStatusLabels: Record<
   string
 > = {
   draft: 'Draft',
+  review_email: 'Review email',
   sent: 'Sent',
   acknowledged: 'Acknowledged',
   partially_received: 'Partially received',
@@ -18,6 +19,7 @@ export const vendorPurchaseOrderStatusLabels: Record<
 
 const statusStyles: Record<VendorPurchaseOrderStatus, string> = {
   draft: 'bg-slate-100 text-slate-700 ring-slate-200',
+  review_email: 'bg-amber-50 text-amber-700 ring-amber-200',
   sent: 'bg-sky-50 text-sky-700 ring-sky-200',
   acknowledged: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
   partially_received: 'bg-amber-50 text-amber-700 ring-amber-200',
