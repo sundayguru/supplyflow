@@ -136,7 +136,7 @@ export const VendorPurchaseOrderAcknowledgementFormModal = ({
       <div className='relative max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8'>
         <div className='flex items-start justify-between gap-4'>
           <div>
-            <p className='text-xs font-bold uppercase tracking-[0.16em] text-emerald-700'>
+            <p className='text-xs font-bold tracking-[0.16em] text-emerald-700 uppercase'>
               Vendor PO acknowledgement
             </p>
             <h2 className='mt-2 font-serif text-3xl font-semibold text-slate-950'>
@@ -254,7 +254,7 @@ export const VendorPurchaseOrderAcknowledgementFormModal = ({
                   className='rounded-2xl border border-slate-200 bg-slate-50/50 p-4'
                 >
                   <div className='flex items-start justify-between gap-3'>
-                    <p className='text-xs font-bold uppercase tracking-wide text-slate-400'>
+                    <p className='text-xs font-bold tracking-wide text-slate-400 uppercase'>
                       Item {index + 1}
                     </p>
                     <button

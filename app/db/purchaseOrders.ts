@@ -6,12 +6,14 @@ import type {
   PurchaseOrderRecord,
   PurchaseOrderStatus,
 } from '~/types/purchaseOrder';
+import type { RfqItemRecord } from '~/types/rfq';
 import { calculatePurchaseOrderTotals } from '~/utils/purchaseOrder';
 import { getDb } from './connection';
 import {
   purchaseOrderItems,
   purchaseOrderPaymentConfirmations,
   purchaseOrders,
+  rfqItems,
 } from './schemas';
 
 const createReference = () =>
@@ -36,7 +38,12 @@ const withTotals = <
   PurchaseOrder extends {
     items: PurchaseOrderItemInput[];
     applyVat: boolean;
-    rfq: { id: string; reference: string; customerName: string } | null;
+    rfq: {
+      id: string;
+      reference: string;
+      customerName: string;
+      items: RfqItemRecord[];
+    } | null;
     paymentConfirmations?: Array<{
       id: string;
       purchaseOrderId: string;
@@ -56,13 +63,7 @@ const withTotals = <
 >(
   purchaseOrder: PurchaseOrder,
   vatRate: number,
-): Omit<PurchaseOrder, 'rfq'> &
-  ReturnType<typeof calculatePurchaseOrderTotals> & {
-    linkedRfq: PurchaseOrder['rfq'];
-    paymentConfirmations: PurchaseOrderRecord['paymentConfirmations'];
-    totalPaid: number;
-    outstandingValue: number;
-  } => {
+) => {
   const { rfq, ...record } = purchaseOrder;
   const totals = calculatePurchaseOrderTotals(
     purchaseOrder.items,
@@ -128,6 +129,9 @@ export const getPurchaseOrders = async (
           reference: true,
           customerName: true,
         },
+        with: {
+          items: { orderBy: [asc(rfqItems.position)] },
+        },
       },
     },
   });
@@ -165,6 +169,9 @@ export const getPurchaseOrder = async (
           id: true,
           reference: true,
           customerName: true,
+        },
+        with: {
+          items: { orderBy: [asc(rfqItems.position)] },
         },
       },
     },

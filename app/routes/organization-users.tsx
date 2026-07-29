@@ -185,7 +185,7 @@ export default function OrganizationUsersPage({
                   {member.email}
                 </p>
               </div>
-              <span className='w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-600'>
+              <span className='w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 capitalize'>
                 {member.role}
               </span>
               {isOwner && (

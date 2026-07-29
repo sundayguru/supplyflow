@@ -6,6 +6,7 @@ import type { RfqPdfTemplateOption } from '~/types/rfqPdfTemplate';
 import type { VendorPurchaseOrderInput } from '~/types/vendorPurchaseOrder';
 import { currencyOptionLabel, supportedCurrencies } from '~/utils/currencies';
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
+import { getUnmarkedRfqPriceForPurchaseOrderItem } from '~/utils/vendorPurchaseOrderPricing';
 
 export type VendorPurchaseOrderFromPoValue = VendorPurchaseOrderInput;
 
@@ -82,10 +83,15 @@ export const VendorPurchaseOrderFromPoModal = ({
       currency,
       notes: notes || null,
       items: purchaseOrder.items
-        .filter((item) => selectedItemIds.has(item.id))
-        .map((item) => ({
+        .map((item, index) => ({ item, index }))
+        .filter(({ item }) => selectedItemIds.has(item.id))
+        .map(({ item, index }) => ({
           quantity: item.quantity,
-          price: item.price,
+          price: getUnmarkedRfqPriceForPurchaseOrderItem(
+            item,
+            purchaseOrder.linkedRfq?.items,
+            index,
+          ),
           unit: item.unit,
           description: item.description,
           status: 'pending',
@@ -110,7 +116,7 @@ export const VendorPurchaseOrderFromPoModal = ({
       <div className='relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8'>
         <div className='flex items-start justify-between gap-4'>
           <div>
-            <p className='text-xs font-bold uppercase tracking-[0.16em] text-emerald-700'>
+            <p className='text-xs font-bold tracking-[0.16em] text-emerald-700 uppercase'>
               Vendor purchase order
             </p>
             <h2 className='mt-2 font-serif text-3xl font-semibold text-slate-950'>
@@ -221,36 +227,48 @@ export const VendorPurchaseOrderFromPoModal = ({
               Select items to include
             </p>
             <div className='mt-3 space-y-3'>
-              {purchaseOrder.items.map((item) => (
-                <label
-                  key={item.id}
-                  className='flex gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4'
-                >
-                  <input
-                    type='checkbox'
-                    checked={selectedItemIds.has(item.id)}
-                    onChange={() => toggleItem(item.id)}
-                    className='mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600'
-                  />
-                  <span className='min-w-0 flex-1'>
-                    <span className='block font-semibold text-slate-900'>
-                      {item.quantity} {item.unit} ·{' '}
-                      {formatPurchaseOrderMoney(
-                        item.price,
-                        purchaseOrder.currency,
+              {purchaseOrder.items.map((item, index) => {
+                const vendorPrice = getUnmarkedRfqPriceForPurchaseOrderItem(
+                  item,
+                  purchaseOrder.linkedRfq?.items,
+                  index,
+                );
+                return (
+                  <label
+                    key={item.id}
+                    className='flex gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4'
+                  >
+                    <input
+                      type='checkbox'
+                      checked={selectedItemIds.has(item.id)}
+                      onChange={() => toggleItem(item.id)}
+                      className='mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600'
+                    />
+                    <span className='min-w-0 flex-1'>
+                      <span className='block font-semibold text-slate-900'>
+                        {item.quantity} {item.unit} ·{' '}
+                        {formatPurchaseOrderMoney(
+                          vendorPrice,
+                          purchaseOrder.currency,
+                        )}
+                      </span>
+                      {vendorPrice !== item.price && (
+                        <span className='mt-1 block text-xs text-slate-400'>
+                          Using RFQ price before markup
+                        </span>
+                      )}
+                      <span className='mt-1 block text-sm text-slate-600'>
+                        {item.description}
+                      </span>
+                      {item.manufacturerPartNumber && (
+                        <span className='mt-2 inline-flex rounded-lg bg-white px-2 py-1 font-mono text-xs text-slate-500'>
+                          {item.manufacturerPartNumber}
+                        </span>
                       )}
                     </span>
-                    <span className='mt-1 block text-sm text-slate-600'>
-                      {item.description}
-                    </span>
-                    {item.manufacturerPartNumber && (
-                      <span className='mt-2 inline-flex rounded-lg bg-white px-2 py-1 font-mono text-xs text-slate-500'>
-                        {item.manufacturerPartNumber}
-                      </span>
-                    )}
-                  </span>
-                </label>
-              ))}
+                  </label>
+                );
+              })}
             </div>
           </section>
 

@@ -105,7 +105,7 @@ export const ProductPriceFormModal = ({
               name='currency'
               defaultValue={productPrice?.currency ?? 'EUR'}
               required
-              className='mt-2 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10'
+              className='mt-2 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 transition outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10'
             >
               {supportedCurrencies.map((option) => (
                 <option key={option.code} value={option.code}>

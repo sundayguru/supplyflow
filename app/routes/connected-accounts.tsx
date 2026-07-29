@@ -84,7 +84,7 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
     <div className='mx-auto max-w-5xl font-sans text-slate-950'>
       <div className='flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between'>
         <div>
-          <p className='text-xs font-bold uppercase tracking-[0.18em] text-emerald-700'>
+          <p className='text-xs font-bold tracking-[0.18em] text-emerald-700 uppercase'>
             Inbox automation
           </p>
           <h1 className='mt-2 font-serif text-4xl font-semibold tracking-tight sm:text-5xl'>

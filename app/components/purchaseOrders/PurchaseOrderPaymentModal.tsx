@@ -52,7 +52,7 @@ export const PurchaseOrderPaymentModal = ({
       <div className='relative w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl sm:p-8'>
         <div className='flex items-start justify-between gap-4'>
           <div>
-            <p className='text-xs font-bold uppercase tracking-[0.16em] text-emerald-700'>
+            <p className='text-xs font-bold tracking-[0.16em] text-emerald-700 uppercase'>
               Payment confirmation
             </p>
             <h2 className='mt-2 font-serif text-3xl font-semibold text-slate-950'>

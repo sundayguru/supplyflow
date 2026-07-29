@@ -1,3 +1,5 @@
+import type { RfqItemRecord } from './rfq';
+
 export const purchaseOrderStatuses = [
   'draft',
   'sent',
@@ -66,6 +68,10 @@ export type LinkedRfqSummary = {
   customerName: string;
 };
 
+export type LinkedPurchaseOrderRfq = LinkedRfqSummary & {
+  items: RfqItemRecord[];
+};
+
 export type PurchaseOrderEmailSource = {
   ingestionId: string;
   accountEmail: string;
@@ -97,7 +103,7 @@ export type PurchaseOrderRecord = Omit<PurchaseOrderInput, 'items'> & {
   createdAt: string;
   updatedAt: string;
   items: PurchaseOrderItemRecord[];
-  linkedRfq: LinkedRfqSummary | null;
+  linkedRfq: LinkedPurchaseOrderRfq | null;
   validationSummary: string | null;
   proformaInvoiceDraftId: string | null;
   proformaInvoiceDraftUpdatedAt: string | null;
