@@ -11,6 +11,7 @@ export const listConnectedEmailAccounts = (organizationId: string) => {
       email: connectedEmailAccounts.email,
       displayName: connectedEmailAccounts.displayName,
       isActive: connectedEmailAccounts.isActive,
+      emailFolder: connectedEmailAccounts.emailFolder,
       needsReconnect: connectedEmailAccounts.needsReconnect,
       reconnectReason: connectedEmailAccounts.reconnectReason,
       reconnectRequiredAt: connectedEmailAccounts.reconnectRequiredAt,
@@ -103,6 +104,28 @@ export const setConnectedEmailAccountActive = async (
   const [account] = await db
     .update(connectedEmailAccounts)
     .set({ isActive, updatedAt: new Date().toISOString() })
+    .where(
+      and(
+        eq(connectedEmailAccounts.id, id),
+        eq(connectedEmailAccounts.organizationId, organizationId),
+      ),
+    )
+    .returning({ id: connectedEmailAccounts.id });
+  return account ?? null;
+};
+
+export const setConnectedEmailAccountFolder = async (
+  id: string,
+  organizationId: string,
+  emailFolder: string | null,
+) => {
+  const db = getDb();
+  const [account] = await db
+    .update(connectedEmailAccounts)
+    .set({
+      emailFolder,
+      updatedAt: new Date().toISOString(),
+    })
     .where(
       and(
         eq(connectedEmailAccounts.id, id),
