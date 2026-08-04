@@ -133,11 +133,11 @@ export const FullScreenModal = ({
                   {icon}
                 </div>
                 <div>
-                  <h3 className='font-bold leading-tight text-[#1a1a1a]'>
+                  <h3 className='leading-tight font-bold text-[#1a1a1a]'>
                     {title}
                   </h3>
                   {code && (
-                    <p className='text-xs font-bold uppercase tracking-widest text-black/40'>
+                    <p className='text-xs font-bold tracking-widest text-black/40 uppercase'>
                       {code}
                     </p>
                   )}
@@ -225,11 +225,11 @@ export const EditModal = ({
                   </svg>
                 </div>
                 <div>
-                  <h3 className='font-bold leading-tight text-[#1a1a1a]'>
+                  <h3 className='leading-tight font-bold text-[#1a1a1a]'>
                     {title}
                   </h3>
                   {subtitle && (
-                    <p className='text-xs font-bold uppercase tracking-widest text-black/40'>
+                    <p className='text-xs font-bold tracking-widest text-black/40 uppercase'>
                       {subtitle}
                     </p>
                   )}
@@ -248,7 +248,7 @@ export const EditModal = ({
               <textarea
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
-                className='h-full min-h-[24rem] w-full rounded-2xl border border-black/5 bg-white p-6 font-mono text-sm leading-6 text-[#1a1a1a] outline-none transition focus:border-[#5A5A40]'
+                className='h-full min-h-[24rem] w-full rounded-2xl border border-black/5 bg-white p-6 font-mono text-sm leading-6 text-[#1a1a1a] transition outline-none focus:border-[#5A5A40]'
               />
             </div>
             <div className='flex items-center justify-between border-t border-black/5 bg-white p-6'>

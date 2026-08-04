@@ -34,7 +34,7 @@ export const Logo = ({
     >
       <svg
         aria-hidden='true'
-        className={`${markSizeClasses[size]} shrink-0 transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-105`}
+        className={`${markSizeClasses[size]} shrink-0 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3`}
         viewBox='0 0 40 40'
         fill='none'
       >
