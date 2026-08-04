@@ -559,6 +559,7 @@ const processAccount = async (
   const messages = await emailClient.listMessages({
     receivedAfter,
     limit: MAX_MESSAGES_PER_RUN,
+    folder: organization.emailFolder || 'INBOX',
   });
   let processed = 0;
   let ignored = 0;

@@ -3,6 +3,7 @@ import {
   Bot,
   Building2,
   ExternalLink,
+  Inbox,
   MapPin,
   Pencil,
   Percent,
@@ -53,6 +54,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
   const preferredModel = formData.get('preferredModel');
   const vat = Number(formData.get('vat'));
   const priceMarkup = Number(formData.get('priceMarkup'));
+  const emailFolderRaw = formData.get('emailFolder');
+  const emailFolder =
+    typeof emailFolderRaw === 'string' && emailFolderRaw.trim()
+      ? emailFolderRaw.trim()
+      : 'INBOX';
   if (!name) {
     return data({ error: 'Organization name is required' }, { status: 400 });
   }
@@ -68,6 +74,12 @@ export const action = async ({ request }: Route.ActionArgs) => {
       { status: 400 },
     );
   }
+  if (emailFolder.length > 255) {
+    return data(
+      { error: 'Email folder must be 255 characters or fewer' },
+      { status: 400 },
+    );
+  }
   const values = {
     name,
     description: optionalField(formData, 'description'),
@@ -77,6 +89,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
     preferredModel,
     vat,
     priceMarkup,
+    emailFolder,
   };
 
   if (values.website) {
@@ -183,7 +196,7 @@ export default function OrganizationPage({ loaderData }: Route.ComponentProps) {
           </p>
           <dl className='mt-7 grid gap-5 border-t border-slate-100 pt-6 sm:grid-cols-2'>
             <div>
-              <dt className='flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400'>
+              <dt className='flex items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase'>
                 <ExternalLink size={14} /> Website
               </dt>
               <dd className='mt-2 text-sm text-slate-700'>
@@ -202,7 +215,7 @@ export default function OrganizationPage({ loaderData }: Route.ComponentProps) {
               </dd>
             </div>
             <div>
-              <dt className='flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400'>
+              <dt className='flex items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase'>
                 <Phone size={14} /> Phone
               </dt>
               <dd className='mt-2 text-sm text-slate-700'>
@@ -210,7 +223,7 @@ export default function OrganizationPage({ loaderData }: Route.ComponentProps) {
               </dd>
             </div>
             <div className='sm:col-span-2'>
-              <dt className='flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400'>
+              <dt className='flex items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase'>
                 <MapPin size={14} /> Address
               </dt>
               <dd className='mt-2 text-sm text-slate-700'>
@@ -218,7 +231,7 @@ export default function OrganizationPage({ loaderData }: Route.ComponentProps) {
               </dd>
             </div>
             <div>
-              <dt className='flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400'>
+              <dt className='flex items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase'>
                 <Bot size={14} /> Preferred AI model
               </dt>
               <dd className='mt-2 text-sm text-slate-700'>
@@ -226,11 +239,19 @@ export default function OrganizationPage({ loaderData }: Route.ComponentProps) {
               </dd>
             </div>
             <div>
-              <dt className='flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400'>
+              <dt className='flex items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase'>
                 <Percent size={14} /> Pricing defaults
               </dt>
               <dd className='mt-2 text-sm text-slate-700'>
                 {organization.vat}% VAT · {organization.priceMarkup}% markup
+              </dd>
+            </div>
+            <div>
+              <dt className='flex items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase'>
+                <Inbox size={14} /> Email folder
+              </dt>
+              <dd className='mt-2 text-sm text-slate-700'>
+                {organization.emailFolder || 'INBOX'}
               </dd>
             </div>
           </dl>

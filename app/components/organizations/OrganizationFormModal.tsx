@@ -18,6 +18,7 @@ type OrganizationFormValues = {
   preferredModel: OrganizationAiModel;
   vat: number;
   priceMarkup: number;
+  emailFolder: string;
 };
 
 type OrganizationFormModalProps = {
@@ -123,7 +124,7 @@ export const OrganizationFormModal = ({
         <div>
           <label
             htmlFor='organization-preferred-model'
-            className='mb-2 block text-xs font-bold uppercase tracking-widest text-black/50'
+            className='mb-2 block text-xs font-bold tracking-widest text-black/50 uppercase'
           >
             Preferred AI model
           </label>
@@ -142,6 +143,18 @@ export const OrganizationFormModal = ({
             ))}
           </select>
         </div>
+        <Input
+          id='organization-email-folder'
+          name='emailFolder'
+          label='Email folder'
+          placeholder='INBOX'
+          defaultValue={organization?.emailFolder ?? 'INBOX'}
+          maxLength={255}
+          required
+        />
+        <p className='-mt-2 text-xs text-black/45'>
+          Gmail folder or label to pull emails from. Defaults to INBOX.
+        </p>
         {fetcher.data && 'error' in fetcher.data && (
           <p className='rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700'>
             {fetcher.data.error}

@@ -32,6 +32,9 @@ export const organizations = sqliteTable(
       .default('llama-3.3-70b-versatile'),
     vat: real('vat').notNull().default(0),
     priceMarkup: real('price_markup').notNull().default(0),
+    emailFolder: text('email_folder', { length: 255 })
+      .notNull()
+      .default('INBOX'),
     createdBy: text('created_by')
       .notNull()
       .references(() => users.id, { onDelete: 'restrict' }),

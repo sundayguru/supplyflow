@@ -81,6 +81,26 @@ class GmailApiError extends Error {
 
 const GMAIL_API_URL = 'https://gmail.googleapis.com/gmail/v1/users/me';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const GMAIL_SYSTEM_FOLDERS = new Set([
+  'INBOX',
+  'SENT',
+  'DRAFT',
+  'SPAM',
+  'TRASH',
+  'STARRED',
+  'IMPORTANT',
+  'UNREAD',
+]);
+
+const buildGmailFolderQuery = (folder: string) => {
+  const normalized = folder.trim() || 'INBOX';
+  const upper = normalized.toUpperCase();
+  if (GMAIL_SYSTEM_FOLDERS.has(upper)) {
+    return `in:${upper.toLowerCase()}`;
+  }
+  const escaped = normalized.replaceAll('"', '');
+  return /\s/.test(escaped) ? `label:"${escaped}"` : `label:${escaped}`;
+};
 
 export const createGmailAuthorizationUrl = (input: {
   clientId: string;
@@ -455,15 +475,20 @@ export const createGmailClient = (config: GmailClientConfig): EmailClient => ({
   async getMessage(id) {
     return await getMessage(id, await getAccessToken(config));
   },
-  async listMessages({ receivedAfter, limit }: ListMessagesOptions) {
+  async listMessages({
+    receivedAfter,
+    limit,
+    folder = 'INBOX',
+  }: ListMessagesOptions) {
     const accessToken = await getAccessToken(config);
     const messageIds: string[] = [];
     let pageToken: string | undefined;
+    const folderQuery = buildGmailFolderQuery(folder);
 
     do {
       const search = new URLSearchParams({
         maxResults: String(Math.min(limit - messageIds.length, 100)),
-        q: `in:inbox after:${Math.floor(receivedAfter.getTime() / 1000)}`,
+        q: `${folderQuery} after:${Math.floor(receivedAfter.getTime() / 1000)}`,
       });
       if (pageToken) {
         search.set('pageToken', pageToken);

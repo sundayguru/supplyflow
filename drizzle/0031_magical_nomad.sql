@@ -1,0 +1,1 @@
+ALTER TABLE `organizations` ADD `email_folder` text(255) DEFAULT 'INBOX' NOT NULL;

@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "224b6090-80d2-47e9-bc62-e5d4897e1c87",
-  "prevId": "582b22a3-e6da-4652-8947-670dea2d8afc",
+  "id": "abdb3d95-6f15-4eb7-bf40-0c483a157786",
+  "prevId": "224b6090-80d2-47e9-bc62-e5d4897e1c87",
   "tables": {
     "users": {
       "name": "users",
@@ -2713,6 +2713,14 @@
           "notNull": true,
           "autoincrement": false,
           "default": 0
+        },
+        "email_folder": {
+          "name": "email_folder",
+          "type": "text(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'INBOX'"
         },
         "created_by": {
           "name": "created_by",
