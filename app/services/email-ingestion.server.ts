@@ -55,10 +55,15 @@ import { calculateRfqItemAmounts } from '~/utils/rfq';
 import { extractRfqPdfText } from '~/utils/rfqPdfExtraction.server';
 import { uploadRfqSourcePdf } from '~/utils/rfqSourcePdf.server';
 
-const FIRST_SYNC_LOOKBACK_MS = 24 * 60 * 60 * 1000;
 const OVERLAP_MS = 5 * 60 * 1000;
 const MAX_MESSAGES_PER_RUN = 25;
 const STALE_PROCESSING_MS = 10 * 60 * 1000;
+
+const getStartOfUtcDay = (date: Date) => {
+  const start = new Date(date);
+  start.setUTCHours(0, 0, 0, 0);
+  return start;
+};
 
 type AccountResult = {
   accountId: string;
@@ -552,15 +557,19 @@ const processAccount = async (
     refreshToken,
   });
   const lastSync = await getEmailSyncTime(account.id);
-  const receivedAfter = new Date(
-    (lastSync?.getTime() ?? startedAt.getTime() - FIRST_SYNC_LOOKBACK_MS) -
-      OVERLAP_MS,
-  );
-  const messages = await emailClient.listMessages({
-    receivedAfter,
-    limit: MAX_MESSAGES_PER_RUN,
-    folder: account.emailFolder || organization.emailFolder || 'INBOX',
-  });
+  const startOfToday = getStartOfUtcDay(startedAt);
+  const receivedAfter = lastSync
+    ? new Date(
+        Math.max(startOfToday.getTime(), lastSync.getTime() - OVERLAP_MS),
+      )
+    : startOfToday;
+  const messages = (
+    await emailClient.listMessages({
+      receivedAfter,
+      limit: MAX_MESSAGES_PER_RUN,
+      folder: account.emailFolder || organization.emailFolder || 'INBOX',
+    })
+  ).filter((message) => message.receivedAt.getTime() >= startOfToday.getTime());
   let processed = 0;
   let ignored = 0;
   let failed = 0;
