@@ -54,6 +54,8 @@ export type VendorPurchaseOrderRecord = Omit<
   reference: string;
   generatedEmailDraftId: string | null;
   generatedEmailDraftUpdatedAt: string | null;
+  generatedEmailDraftThreadId: string | null;
+  generatedEmailDraftAccountId: string | null;
   createdAt: string;
   updatedAt: string;
   items: VendorPurchaseOrderItemRecord[];

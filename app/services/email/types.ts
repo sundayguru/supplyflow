@@ -61,6 +61,7 @@ export type UpdateDraftReplyInput = CreateDraftReplyInput & {
 export type DraftReplyResult = {
   id: string;
   url: string;
+  threadId?: string | null;
 };
 
 export type DraftSentStatusInput = {

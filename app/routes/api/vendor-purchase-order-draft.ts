@@ -154,6 +154,8 @@ export const action = async ({
         vendorPurchaseOrder.id,
         organization.id,
         draft.id,
+        account.id,
+        draft.threadId ?? null,
       );
     if (!updatedVendorPurchaseOrder) {
       return data(

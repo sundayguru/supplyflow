@@ -15,6 +15,7 @@ import { organizations } from './organizations';
 import { purchaseOrders } from './purchaseOrders';
 import { rfqPdfTemplates } from './rfqPdfTemplates';
 import { users } from './users';
+import { connectedEmailAccounts } from './connectedEmailAccounts';
 
 export const vendorPurchaseOrders = sqliteTable(
   'vendor_purchase_orders',
@@ -49,6 +50,12 @@ export const vendorPurchaseOrders = sqliteTable(
     notes: text('notes'),
     generatedEmailDraftId: text('generated_email_draft_id', { length: 255 }),
     generatedEmailDraftUpdatedAt: text('generated_email_draft_updated_at'),
+    generatedEmailDraftThreadId: text('generated_email_draft_thread_id', {
+      length: 255,
+    }),
+    generatedEmailDraftAccountId: text(
+      'generated_email_draft_account_id',
+    ).references(() => connectedEmailAccounts.id, { onDelete: 'set null' }),
     createdAt: text('created_at')
       .notNull()
       .default(sql`(CURRENT_TIMESTAMP)`),
@@ -63,6 +70,9 @@ export const vendorPurchaseOrders = sqliteTable(
       table.vendorManufacturerId,
     ),
     index('vendor_purchase_orders_status_idx').on(table.status),
+    index('vendor_purchase_orders_draft_account_idx').on(
+      table.generatedEmailDraftAccountId,
+    ),
     index('vendor_purchase_orders_created_at_idx').on(table.createdAt),
   ],
 );

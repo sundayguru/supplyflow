@@ -6,6 +6,7 @@ import { runEmailIngestion } from '~/services/email-ingestion.server';
 import { runPurchaseOrderDraftSentStatusSync } from '~/services/purchase-order-draft-status.server';
 import { runRfqDraftSentStatusSync } from '~/services/rfq-draft-status.server';
 import { runRfqQuoteReminderSync } from '~/services/rfq-quote-reminder.server';
+import { runVendorPurchaseOrderDraftSentStatusSync } from '~/services/vendor-purchase-order-draft-status.server';
 
 const requestHandler = createRequestHandler(
   () => import('virtual:react-router/server-build'),
@@ -46,6 +47,18 @@ export const executeScheduleMethods = async (env: Env) => {
     console.error(
       JSON.stringify({
         event: 'po_draft_sent_status_sync_failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }),
+    );
+  }
+
+  try {
+    await runVendorPurchaseOrderDraftSentStatusSync(env);
+  } catch (error) {
+    errors.push(error);
+    console.error(
+      JSON.stringify({
+        event: 'vendor_po_draft_sent_status_sync_failed',
         error: error instanceof Error ? error.message : 'Unknown error',
       }),
     );

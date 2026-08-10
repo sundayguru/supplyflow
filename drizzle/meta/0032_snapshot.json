@@ -2,7 +2,7 @@
   "version": "6",
   "dialect": "sqlite",
   "id": "abdb3d95-6f15-4eb7-bf40-0c483a157786",
-  "prevId": "224b6090-80d2-47e9-bc62-e5d4897e1c87",
+  "prevId": "74f68fb7-3a97-4c10-986e-366ed3047fa9",
   "tables": {
     "users": {
       "name": "users",
@@ -1616,6 +1616,20 @@
         },
         "notes": {
           "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "generated_email_draft_id": {
+          "name": "generated_email_draft_id",
+          "type": "text(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "generated_email_draft_updated_at": {
+          "name": "generated_email_draft_updated_at",
           "type": "text",
           "primaryKey": false,
           "notNull": false,

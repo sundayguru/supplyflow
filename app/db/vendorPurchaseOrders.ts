@@ -183,6 +183,8 @@ export const updateVendorPurchaseOrderEmailDraft = async (
   id: string,
   organizationId: string,
   draftId: string,
+  draftAccountId: string,
+  draftThreadId: string | null,
 ) => {
   const db = getDb();
   const [record] = await db
@@ -191,6 +193,8 @@ export const updateVendorPurchaseOrderEmailDraft = async (
       status: 'review_email',
       generatedEmailDraftId: draftId,
       generatedEmailDraftUpdatedAt: new Date().toISOString(),
+      generatedEmailDraftAccountId: draftAccountId,
+      generatedEmailDraftThreadId: draftThreadId,
       updatedAt: new Date().toISOString(),
     })
     .where(

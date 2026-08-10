@@ -516,7 +516,10 @@ export const createGmailClient = (config: GmailClientConfig): EmailClient => ({
   },
   async createDraftReply(input) {
     const accessToken = await getAccessToken(config);
-    const draft = await gmailRequest<{ id: string }>('/drafts', accessToken, {
+    const draft = await gmailRequest<{
+      id: string;
+      message?: { threadId?: string };
+    }>('/drafts', accessToken, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -529,6 +532,7 @@ export const createGmailClient = (config: GmailClientConfig): EmailClient => ({
     return {
       id: draft.id,
       url: createDraftUrl(input.accountEmail),
+      threadId: draft.message?.threadId ?? null,
     };
   },
   async createDraftEmail(input) {

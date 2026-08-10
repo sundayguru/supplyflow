@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "e268802f-aefd-4a8b-92db-e7b3eeb821c7",
-  "prevId": "abdb3d95-6f15-4eb7-bf40-0c483a157786",
+  "id": "57162b14-7f73-44ee-ab6a-b77492127c0f",
+  "prevId": "e268802f-aefd-4a8b-92db-e7b3eeb821c7",
   "tables": {
     "users": {
       "name": "users",
@@ -1768,6 +1768,20 @@
           "notNull": false,
           "autoincrement": false
         },
+        "generated_email_draft_thread_id": {
+          "name": "generated_email_draft_thread_id",
+          "type": "text(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "generated_email_draft_account_id": {
+          "name": "generated_email_draft_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "text",
@@ -1818,6 +1832,13 @@
           "name": "vendor_purchase_orders_status_idx",
           "columns": [
             "status"
+          ],
+          "isUnique": false
+        },
+        "vendor_purchase_orders_draft_account_idx": {
+          "name": "vendor_purchase_orders_draft_account_idx",
+          "columns": [
+            "generated_email_draft_account_id"
           ],
           "isUnique": false
         },
@@ -1888,6 +1909,19 @@
           "tableTo": "manufacturers",
           "columnsFrom": [
             "vendor_manufacturer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "vendor_purchase_orders_generated_email_draft_account_id_connected_email_accounts_id_fk": {
+          "name": "vendor_purchase_orders_generated_email_draft_account_id_connected_email_accounts_id_fk",
+          "tableFrom": "vendor_purchase_orders",
+          "tableTo": "connected_email_accounts",
+          "columnsFrom": [
+            "generated_email_draft_account_id"
           ],
           "columnsTo": [
             "id"
