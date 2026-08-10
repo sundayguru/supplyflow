@@ -28,8 +28,10 @@ import { listEmailSourcesForPurchaseOrders } from '~/db/emailIngestion';
 import { listManufacturers } from '~/db/manufacturers';
 import { getOrganizationForUser } from '~/db/organizations';
 import { getPurchaseOrders } from '~/db/purchaseOrders';
+import { listProductPrices } from '~/db/productPrices';
 import { listRfqPdfTemplates } from '~/db/rfqPdfTemplates';
 import { getRfqs } from '~/db/rfqs';
+import { RfqDetailDrawer } from '~/components/rfqs/RfqDetailDrawer';
 import type {
   PurchaseOrderRecord,
   PurchaseOrderStatus,
@@ -82,12 +84,14 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   }
 
   try {
-    const [purchaseOrders, rfqs, manufacturers, templates] = await Promise.all([
-      getPurchaseOrders(organization.id, organization.vat),
-      getRfqs(organization.id, organization.vat),
-      listManufacturers(organization.id),
-      listRfqPdfTemplates(organization.id),
-    ]);
+    const [purchaseOrders, rfqs, manufacturers, templates, productPrices] =
+      await Promise.all([
+        getPurchaseOrders(organization.id, organization.vat),
+        getRfqs(organization.id, organization.vat),
+        listManufacturers(organization.id),
+        listRfqPdfTemplates(organization.id),
+        listProductPrices(organization.id),
+      ]);
     const emailSources = await listEmailSourcesForPurchaseOrders(
       organization.id,
       purchaseOrders.map((purchaseOrder) => purchaseOrder.id),
@@ -97,11 +101,8 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
         ...purchaseOrder,
         sourceEmail: emailSources.get(purchaseOrder.id) ?? null,
       })),
-      rfqs: rfqs.map(({ id, reference, customerName }) => ({
-        id,
-        reference,
-        customerName,
-      })),
+      rfqs,
+      productPrices,
       manufacturers,
       templates: templates.map(({ id, name }) => ({ id, name })),
       vatRate: organization.vat,
@@ -112,6 +113,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     return data({
       purchaseOrders: [],
       rfqs: [],
+      productPrices: [],
       manufacturers: [],
       templates: [],
       vatRate: organization.vat,
@@ -135,11 +137,27 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
   const selectedPurchaseOrder = purchaseOrders.find(
     (purchaseOrder) => purchaseOrder.id === searchParams.get('po'),
   );
+  const selectedRfq = loaderData.rfqs.find(
+    (rfq) => rfq.id === searchParams.get('rfq'),
+  );
 
   const closeDetails = () => {
     const next = new URLSearchParams(searchParams);
     next.delete('po');
     setSearchParams(next, { replace: true });
+  };
+
+  const closeRfqDetails = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('rfq');
+    setSearchParams(next, { replace: true });
+  };
+
+  const openRfqDetails = (rfqId: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('po');
+    next.set('rfq', rfqId);
+    setSearchParams(next);
   };
 
   const editFromDetails = () => {
@@ -311,11 +329,12 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
           </div>
         ) : (
           <div className='overflow-x-auto'>
-            <table className='w-full min-w-[900px] text-left text-sm'>
+            <table className='w-full min-w-[1020px] text-left text-sm'>
               <thead className='bg-slate-50/70 text-[10px] font-bold tracking-wider text-slate-400 uppercase'>
                 <tr>
                   <th className='px-5 py-3'>Reference</th>
                   <th className='px-5 py-3'>Supplier</th>
+                  <th className='px-5 py-3'>Linked RFQ</th>
                   <th className='px-5 py-3'>Items</th>
                   <th className='px-5 py-3'>Expected</th>
                   <th className='px-5 py-3'>Value</th>
@@ -336,11 +355,6 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
                       >
                         {purchaseOrder.reference}
                       </Link>
-                      {purchaseOrder.linkedRfq && (
-                        <p className='mt-0.5 text-xs font-normal text-slate-400'>
-                          {purchaseOrder.linkedRfq.reference}
-                        </p>
-                      )}
                     </td>
                     <td className='px-5 py-4'>
                       <p className='font-medium text-slate-800'>
@@ -349,6 +363,21 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
                       <p className='mt-0.5 text-xs text-slate-400'>
                         {purchaseOrder.supplierEmail ?? 'No email'}
                       </p>
+                    </td>
+                    <td className='px-5 py-4'>
+                      {purchaseOrder.linkedRfq ? (
+                        <button
+                          type='button'
+                          onClick={() =>
+                            openRfqDetails(purchaseOrder.linkedRfq!.id)
+                          }
+                          className='font-semibold text-emerald-700 transition hover:text-emerald-500 hover:underline'
+                        >
+                          {purchaseOrder.linkedRfq.reference}
+                        </button>
+                      ) : (
+                        <span className='text-slate-400'>—</span>
+                      )}
                     </td>
                     <td className='max-w-[280px] px-5 py-4'>
                       <p className='truncate text-slate-600'>
@@ -426,6 +455,19 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
           templates={loaderData.templates}
           onClose={closeDetails}
           onEdit={editFromDetails}
+        />
+      )}
+
+      {selectedRfq && (
+        <RfqDetailDrawer
+          rfq={selectedRfq}
+          vatRate={loaderData.vatRate}
+          productPrices={loaderData.productPrices}
+          manufacturers={loaderData.manufacturers}
+          onClose={closeRfqDetails}
+          onEdit={() => {
+            window.location.href = `/rfqs?rfq=${encodeURIComponent(selectedRfq.id)}`;
+          }}
         />
       )}
 
