@@ -85,6 +85,7 @@ export const updateOrganization = async (
       | 'preferredModel'
       | 'vat'
       | 'priceMarkup'
+      | 'emailFolder'
     >
   >,
 ) => {

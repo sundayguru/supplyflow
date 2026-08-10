@@ -3,6 +3,7 @@ import {
   Bot,
   Building2,
   ExternalLink,
+  Inbox,
   MapPin,
   Pencil,
   Percent,
@@ -53,6 +54,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
   const preferredModel = formData.get('preferredModel');
   const vat = Number(formData.get('vat'));
   const priceMarkup = Number(formData.get('priceMarkup'));
+  const emailFolderRaw = formData.get('emailFolder');
+  const emailFolder =
+    typeof emailFolderRaw === 'string' && emailFolderRaw.trim()
+      ? emailFolderRaw.trim()
+      : 'INBOX';
   if (!name) {
     return data({ error: 'Organization name is required' }, { status: 400 });
   }
@@ -68,6 +74,12 @@ export const action = async ({ request }: Route.ActionArgs) => {
       { status: 400 },
     );
   }
+  if (emailFolder.length > 255) {
+    return data(
+      { error: 'Email folder must be 255 characters or fewer' },
+      { status: 400 },
+    );
+  }
   const values = {
     name,
     description: optionalField(formData, 'description'),
@@ -77,6 +89,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
     preferredModel,
     vat,
     priceMarkup,
+    emailFolder,
   };
 
   if (values.website) {
@@ -231,6 +244,14 @@ export default function OrganizationPage({ loaderData }: Route.ComponentProps) {
               </dt>
               <dd className='mt-2 text-sm text-slate-700'>
                 {organization.vat}% VAT · {organization.priceMarkup}% markup
+              </dd>
+            </div>
+            <div>
+              <dt className='flex items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase'>
+                <Inbox size={14} /> Email folder
+              </dt>
+              <dd className='mt-2 text-sm text-slate-700'>
+                {organization.emailFolder || 'INBOX'}
               </dd>
             </div>
           </dl>

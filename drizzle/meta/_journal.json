@@ -223,7 +223,21 @@
       "idx": 31,
       "version": "6",
       "when": 1785360984012,
-      "tag": "0031_gigantic_jazinda_1",
+      "tag": "0031_gigantic_jazinda",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1785877113032,
+      "tag": "0032_magical_nomad",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1785877540190,
+      "tag": "0033_plain_synch",
       "breakpoints": true
     }
   ]

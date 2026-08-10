@@ -224,9 +224,9 @@ export const VendorPurchaseOrderDetailDrawer = ({
               <FileText size={14} />
               PDF template: {templateName ?? 'Default vendor PO template'}
             </p>
-            {currentVendorPurchaseOrder.notes && (
+            {vendorPurchaseOrder.notes && (
               <p className='mt-4 border-t border-slate-100 pt-4 text-sm leading-6 whitespace-pre-wrap text-slate-600'>
-                {currentVendorPurchaseOrder.notes}
+                {vendorPurchaseOrder.notes}
               </p>
             )}
           </section>

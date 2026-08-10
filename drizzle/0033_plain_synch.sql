@@ -1,0 +1,1 @@
+ALTER TABLE `connected_email_accounts` ADD `email_folder` text(255);

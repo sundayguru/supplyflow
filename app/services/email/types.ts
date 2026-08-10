@@ -24,6 +24,7 @@ export type EmailAttachment = {
 export type ListMessagesOptions = {
   receivedAfter: Date;
   limit: number;
+  folder?: string;
 };
 
 export type CreateDraftReplyInput = {
