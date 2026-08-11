@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { data, redirect, useFetcher, useSearchParams } from 'react-router';
-import { Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Eye, Plus, Search } from 'lucide-react';
 import type { Route } from './+types/vendor-purchase-order-acknowledgements';
 import { ConfirmModal } from '~/components/ConfirmModal';
 import { VendorPurchaseOrderAcknowledgementDetailDrawer } from '~/components/vendorPurchaseOrderAcknowledgements/VendorPurchaseOrderAcknowledgementDetailDrawer';
@@ -8,11 +8,9 @@ import {
   VendorPurchaseOrderAcknowledgementFormModal,
   type VendorPurchaseOrderAcknowledgementFormValue,
 } from '~/components/vendorPurchaseOrderAcknowledgements/VendorPurchaseOrderAcknowledgementFormModal';
-import {
-  vendorPurchaseOrderAcknowledgementStatusLabels,
-  VendorPurchaseOrderAcknowledgementStatusBadge,
-} from '~/components/vendorPurchaseOrderAcknowledgements/VendorPurchaseOrderAcknowledgementStatusBadge';
+import { vendorPurchaseOrderAcknowledgementStatusLabels } from '~/components/vendorPurchaseOrderAcknowledgements/VendorPurchaseOrderAcknowledgementStatusBadge';
 import { VendorPurchaseOrderAcknowledgementPipeline } from '~/components/vendorPurchaseOrderAcknowledgements/VendorPurchaseOrderAcknowledgementPipeline';
+import { VendorPurchaseOrderAcknowledgementTable } from '~/components/vendorPurchaseOrderAcknowledgements/VendorPurchaseOrderAcknowledgementTable';
 import { PipelineViewToggle } from '~/components/pipeline/PipelineViewToggle';
 import { getOrganizationForUser } from '~/db/organizations';
 import { getVendorPurchaseOrderAcknowledgements } from '~/db/vendorPurchaseOrderAcknowledgements';
@@ -30,9 +28,6 @@ type ApiResponse =
       id?: string;
     }
   | { error: string };
-
-const formatOptionalDate = (value: string | null) =>
-  value ? new Date(`${value}T00:00:00`).toLocaleDateString() : 'Not set';
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
@@ -275,95 +270,12 @@ const VendorPurchaseOrderAcknowledgementsPage = ({
             onStatusChange={updateStatus}
           />
         ) : (
-          <div className='overflow-x-auto'>
-            <table className='w-full min-w-[900px] text-left text-sm'>
-              <thead className='bg-slate-50/70 text-[10px] font-bold tracking-wider text-slate-400 uppercase'>
-                <tr>
-                  <th className='px-5 py-3'>Reference</th>
-                  <th className='px-5 py-3'>Vendor</th>
-                  <th className='px-5 py-3'>Linked vendor PO</th>
-                  <th className='px-5 py-3'>Items</th>
-                  <th className='px-5 py-3'>Acknowledged</th>
-                  <th className='px-5 py-3'>Status</th>
-                  <th className='px-5 py-3 text-right'>Actions</th>
-                </tr>
-              </thead>
-              <tbody className='divide-y divide-slate-100'>
-                {filteredAcknowledgements.map((acknowledgement) => (
-                  <tr
-                    key={acknowledgement.id}
-                    className='transition hover:bg-slate-50/60'
-                  >
-                    <td className='px-5 py-4 font-semibold text-slate-900'>
-                      {acknowledgement.reference}
-                      {acknowledgement.acknowledgementReference && (
-                        <p className='mt-0.5 text-xs font-normal text-slate-400'>
-                          {acknowledgement.acknowledgementReference}
-                        </p>
-                      )}
-                    </td>
-                    <td className='px-5 py-4'>
-                      <p className='font-medium text-slate-800'>
-                        {acknowledgement.linkedVendorPurchaseOrder.vendorName}
-                      </p>
-                      <p className='mt-0.5 text-xs text-slate-400'>
-                        {acknowledgement.linkedVendorPurchaseOrder
-                          .vendorEmail ?? 'No email'}
-                      </p>
-                    </td>
-                    <td className='px-5 py-4 text-slate-600'>
-                      {acknowledgement.linkedVendorPurchaseOrder.reference}
-                    </td>
-                    <td className='max-w-[260px] px-5 py-4'>
-                      <p className='truncate text-slate-600'>
-                        {acknowledgement.items[0]?.description}
-                      </p>
-                      <p className='mt-0.5 text-xs text-slate-400'>
-                        {acknowledgement.items.length} item
-                        {acknowledgement.items.length === 1 ? '' : 's'}
-                      </p>
-                    </td>
-                    <td className='px-5 py-4 text-slate-600'>
-                      {formatOptionalDate(acknowledgement.acknowledgedAt)}
-                    </td>
-                    <td className='px-5 py-4'>
-                      <VendorPurchaseOrderAcknowledgementStatusBadge
-                        status={acknowledgement.status}
-                      />
-                    </td>
-                    <td className='px-5 py-4'>
-                      <div className='flex justify-end gap-1'>
-                        <button
-                          type='button'
-                          onClick={() => openDetails(acknowledgement)}
-                          className='rounded-lg p-2 text-slate-400 transition hover:bg-sky-50 hover:text-sky-700'
-                          aria-label={`View ${acknowledgement.reference}`}
-                        >
-                          <Eye size={16} />
-                        </button>
-                        <button
-                          type='button'
-                          onClick={() => setFormTarget(acknowledgement)}
-                          className='rounded-lg p-2 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-700'
-                          aria-label={`Edit ${acknowledgement.reference}`}
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          type='button'
-                          onClick={() => setDeleteTarget(acknowledgement)}
-                          className='rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-700'
-                          aria-label={`Delete ${acknowledgement.reference}`}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <VendorPurchaseOrderAcknowledgementTable
+            acknowledgements={filteredAcknowledgements}
+            onOpen={openDetails}
+            onEdit={setFormTarget}
+            onDelete={setDeleteTarget}
+          />
         )}
       </section>
 

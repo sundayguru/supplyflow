@@ -1,20 +1,6 @@
 import { useMemo, useState } from 'react';
-import {
-  data,
-  Link,
-  redirect,
-  useFetcher,
-  useSearchParams,
-} from 'react-router';
-import {
-  CalendarDays,
-  Eye,
-  FileText,
-  Pencil,
-  Plus,
-  Search,
-  Trash2,
-} from 'lucide-react';
+import { data, redirect, useFetcher, useSearchParams } from 'react-router';
+import { FileText, Plus, Search } from 'lucide-react';
 import type { Route } from './+types/purchase-orders';
 import { ConfirmModal } from '~/components/ConfirmModal';
 import { PurchaseOrderDetailDrawer } from '~/components/purchaseOrders/PurchaseOrderDetailDrawer';
@@ -23,8 +9,8 @@ import {
   type PurchaseOrderFormValue,
 } from '~/components/purchaseOrders/PurchaseOrderFormModal';
 import { purchaseOrderStatusLabels } from '~/components/purchaseOrders/PurchaseOrderStatusBadge';
-import { PurchaseOrderStatusMenu } from '~/components/purchaseOrders/PurchaseOrderStatusMenu';
 import { PurchaseOrderPipeline } from '~/components/purchaseOrders/PurchaseOrderPipeline';
+import { PurchaseOrderTable } from '~/components/purchaseOrders/PurchaseOrderTable';
 import { PipelineViewToggle } from '~/components/pipeline/PipelineViewToggle';
 import { listEmailSourcesForPurchaseOrders } from '~/db/emailIngestion';
 import { listManufacturers } from '~/db/manufacturers';
@@ -352,122 +338,12 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
             onStatusChange={updateStatus}
           />
         ) : (
-          <div className='overflow-x-auto'>
-            <table className='w-full min-w-[1020px] text-left text-sm'>
-              <thead className='bg-slate-50/70 text-[10px] font-bold tracking-wider text-slate-400 uppercase'>
-                <tr>
-                  <th className='px-5 py-3'>Reference</th>
-                  <th className='px-5 py-3'>Supplier</th>
-                  <th className='px-5 py-3'>Linked RFQ</th>
-                  <th className='px-5 py-3'>Items</th>
-                  <th className='px-5 py-3'>Expected</th>
-                  <th className='px-5 py-3'>Value</th>
-                  <th className='px-5 py-3'>Status</th>
-                  <th className='px-5 py-3 text-right'>Actions</th>
-                </tr>
-              </thead>
-              <tbody className='divide-y divide-slate-100'>
-                {filteredPurchaseOrders.map((purchaseOrder) => (
-                  <tr
-                    key={purchaseOrder.id}
-                    className='transition hover:bg-slate-50/60'
-                  >
-                    <td className='px-5 py-4 font-semibold'>
-                      <Link
-                        to={`?po=${encodeURIComponent(purchaseOrder.id)}`}
-                        className='text-slate-900 hover:text-emerald-700'
-                      >
-                        {purchaseOrder.reference}
-                      </Link>
-                    </td>
-                    <td className='px-5 py-4'>
-                      <p className='font-medium text-slate-800'>
-                        {purchaseOrder.supplierName}
-                      </p>
-                      <p className='mt-0.5 text-xs text-slate-400'>
-                        {purchaseOrder.supplierEmail ?? 'No email'}
-                      </p>
-                    </td>
-                    <td className='px-5 py-4'>
-                      {purchaseOrder.linkedRfq ? (
-                        <button
-                          type='button'
-                          onClick={() =>
-                            openRfqDetails(purchaseOrder.linkedRfq!.id)
-                          }
-                          className='font-semibold text-emerald-700 transition hover:text-emerald-500 hover:underline'
-                        >
-                          {purchaseOrder.linkedRfq.reference}
-                        </button>
-                      ) : (
-                        <span className='text-slate-400'>—</span>
-                      )}
-                    </td>
-                    <td className='max-w-[280px] px-5 py-4'>
-                      <p className='truncate text-slate-600'>
-                        {purchaseOrder.items[0]?.description}
-                      </p>
-                      <p className='mt-0.5 text-xs text-slate-400'>
-                        {purchaseOrder.items.length} item
-                        {purchaseOrder.items.length === 1 ? '' : 's'}
-                      </p>
-                    </td>
-                    <td className='px-5 py-4 text-slate-600'>
-                      {purchaseOrder.expectedDate ? (
-                        <span className='flex items-center gap-1.5'>
-                          <CalendarDays size={14} />
-                          {new Date(
-                            `${purchaseOrder.expectedDate}T00:00:00`,
-                          ).toLocaleDateString()}
-                        </span>
-                      ) : (
-                        '—'
-                      )}
-                    </td>
-                    <td className='px-5 py-4 font-medium'>
-                      {formatPurchaseOrderMoney(
-                        purchaseOrder.totalValue,
-                        purchaseOrder.currency,
-                      )}
-                    </td>
-                    <td className='px-5 py-4'>
-                      <PurchaseOrderStatusMenu
-                        purchaseOrderId={purchaseOrder.id}
-                        status={purchaseOrder.status}
-                      />
-                    </td>
-                    <td className='px-5 py-4'>
-                      <div className='flex justify-end gap-1'>
-                        <Link
-                          to={`?po=${encodeURIComponent(purchaseOrder.id)}`}
-                          className='rounded-lg p-2 text-slate-400 transition hover:bg-sky-50 hover:text-sky-700'
-                          aria-label={`View ${purchaseOrder.reference}`}
-                        >
-                          <Eye size={16} />
-                        </Link>
-                        <button
-                          type='button'
-                          onClick={() => setFormPurchaseOrder(purchaseOrder)}
-                          className='rounded-lg p-2 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-700'
-                          aria-label={`Edit ${purchaseOrder.reference}`}
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          type='button'
-                          onClick={() => setDeleteTarget(purchaseOrder)}
-                          className='rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-700'
-                          aria-label={`Delete ${purchaseOrder.reference}`}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <PurchaseOrderTable
+            purchaseOrders={filteredPurchaseOrders}
+            onOpenRfq={openRfqDetails}
+            onEdit={setFormPurchaseOrder}
+            onDelete={setDeleteTarget}
+          />
         )}
       </section>
 

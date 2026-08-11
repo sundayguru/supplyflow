@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { data, redirect, useFetcher, useSearchParams } from 'react-router';
-import { Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Eye, Plus, Search } from 'lucide-react';
 import type { Route } from './+types/vendor-purchase-orders';
 import { ConfirmModal } from '~/components/ConfirmModal';
 import { PurchaseOrderDetailDrawer } from '~/components/purchaseOrders/PurchaseOrderDetailDrawer';
@@ -9,11 +9,9 @@ import {
   type VendorPurchaseOrderFormValue,
 } from '~/components/vendorPurchaseOrders/VendorPurchaseOrderFormModal';
 import { VendorPurchaseOrderDetailDrawer } from '~/components/vendorPurchaseOrders/VendorPurchaseOrderDetailDrawer';
-import {
-  vendorPurchaseOrderStatusLabels,
-  VendorPurchaseOrderStatusBadge,
-} from '~/components/vendorPurchaseOrders/VendorPurchaseOrderStatusBadge';
+import { vendorPurchaseOrderStatusLabels } from '~/components/vendorPurchaseOrders/VendorPurchaseOrderStatusBadge';
 import { VendorPurchaseOrderPipeline } from '~/components/vendorPurchaseOrders/VendorPurchaseOrderPipeline';
+import { VendorPurchaseOrderTable } from '~/components/vendorPurchaseOrders/VendorPurchaseOrderTable';
 import { PipelineViewToggle } from '~/components/pipeline/PipelineViewToggle';
 import { listManufacturers } from '~/db/manufacturers';
 import { getOrganizationForUser } from '~/db/organizations';
@@ -25,7 +23,6 @@ import type {
   VendorPurchaseOrderStatus,
 } from '~/types/vendorPurchaseOrder';
 import { findManufacturerName } from '~/utils/manufacturers';
-import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
 import { getUserFromRequest } from '~/utils/session.server';
 
 type ApiResponse =
@@ -293,108 +290,13 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
             onStatusChange={updateStatus}
           />
         ) : (
-          <div className='overflow-x-auto'>
-            <table className='w-full min-w-[900px] text-left text-sm'>
-              <thead className='bg-slate-50/70 text-[10px] font-bold tracking-wider text-slate-400 uppercase'>
-                <tr>
-                  <th className='px-5 py-3'>Reference</th>
-                  <th className='px-5 py-3'>Vendor</th>
-                  <th className='px-5 py-3'>Linked PO</th>
-                  <th className='px-5 py-3'>Items</th>
-                  <th className='px-5 py-3'>Value</th>
-                  <th className='px-5 py-3'>Status</th>
-                  <th className='px-5 py-3 text-right'>Actions</th>
-                </tr>
-              </thead>
-              <tbody className='divide-y divide-slate-100'>
-                {filteredVendorPurchaseOrders.map((vendorPurchaseOrder) => (
-                  <tr
-                    key={vendorPurchaseOrder.id}
-                    className='transition hover:bg-slate-50/60'
-                  >
-                    <td className='px-5 py-4 font-semibold'>
-                      <button
-                        type='button'
-                        onClick={() => openDetails(vendorPurchaseOrder)}
-                        className='text-slate-900 transition hover:text-emerald-700'
-                      >
-                        {vendorPurchaseOrder.reference}
-                      </button>
-                    </td>
-                    <td className='px-5 py-4'>
-                      <p className='font-medium text-slate-800'>
-                        {vendorPurchaseOrder.vendorName}
-                      </p>
-                      <p className='mt-0.5 text-xs text-slate-400'>
-                        {vendorPurchaseOrder.vendorEmail ?? 'No email'}
-                      </p>
-                    </td>
-                    <td className='px-5 py-4'>
-                      <button
-                        type='button'
-                        onClick={() =>
-                          openPurchaseOrderDetails(
-                            vendorPurchaseOrder.linkedPurchaseOrder.id,
-                          )
-                        }
-                        className='font-semibold text-emerald-700 transition hover:text-emerald-500 hover:underline'
-                      >
-                        {vendorPurchaseOrder.linkedPurchaseOrder.reference}
-                      </button>
-                    </td>
-                    <td className='max-w-[260px] px-5 py-4'>
-                      <p className='truncate text-slate-600'>
-                        {vendorPurchaseOrder.items[0]?.description}
-                      </p>
-                      <p className='mt-0.5 text-xs text-slate-400'>
-                        {vendorPurchaseOrder.items.length} item
-                        {vendorPurchaseOrder.items.length === 1 ? '' : 's'}
-                      </p>
-                    </td>
-                    <td className='px-5 py-4 font-medium'>
-                      {formatPurchaseOrderMoney(
-                        vendorPurchaseOrder.totalValue,
-                        vendorPurchaseOrder.currency,
-                      )}
-                    </td>
-                    <td className='px-5 py-4'>
-                      <VendorPurchaseOrderStatusBadge
-                        status={vendorPurchaseOrder.status}
-                      />
-                    </td>
-                    <td className='px-5 py-4'>
-                      <div className='flex justify-end gap-1'>
-                        <button
-                          type='button'
-                          onClick={() => openDetails(vendorPurchaseOrder)}
-                          className='rounded-lg p-2 text-slate-400 transition hover:bg-sky-50 hover:text-sky-700'
-                          aria-label={`View ${vendorPurchaseOrder.reference}`}
-                        >
-                          <Eye size={16} />
-                        </button>
-                        <button
-                          type='button'
-                          onClick={() => setFormTarget(vendorPurchaseOrder)}
-                          className='rounded-lg p-2 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-700'
-                          aria-label={`Edit ${vendorPurchaseOrder.reference}`}
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          type='button'
-                          onClick={() => setDeleteTarget(vendorPurchaseOrder)}
-                          className='rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-700'
-                          aria-label={`Delete ${vendorPurchaseOrder.reference}`}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <VendorPurchaseOrderTable
+            vendorPurchaseOrders={filteredVendorPurchaseOrders}
+            onOpen={openDetails}
+            onOpenPurchaseOrder={openPurchaseOrderDetails}
+            onEdit={setFormTarget}
+            onDelete={setDeleteTarget}
+          />
         )}
       </section>
 
