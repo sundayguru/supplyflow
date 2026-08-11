@@ -11,6 +11,8 @@ import {
   Eye,
   FileText,
   LoaderCircle,
+  Columns3,
+  List,
   Pencil,
   Plus,
   Search,
@@ -26,6 +28,7 @@ import {
 } from '~/components/rfqs/RfqFormModal';
 import { rfqStatusLabels } from '~/components/rfqs/RfqStatusBadge';
 import { RfqStatusMenu } from '~/components/rfqs/RfqStatusMenu';
+import { RfqPipeline } from '~/components/rfqs/RfqPipeline';
 import { createRfq, getRfqs } from '~/db/rfqs';
 import { listProductPrices } from '~/db/productPrices';
 import { listManufacturers } from '~/db/manufacturers';
@@ -237,6 +240,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | RfqStatus>('all');
+  const [view, setView] = useState<'table' | 'pipeline'>('table');
   const [formRfq, setFormRfq] = useState<RfqRecord | 'new' | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<RfqRecord | null>(null);
   const selectedRfq = rfqs.find((rfq) => rfq.id === searchParams.get('rfq'));
@@ -308,6 +312,13 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
       { method: 'delete', action: '/api/rfqs', encType: 'application/json' },
     );
     setDeleteTarget(null);
+  };
+
+  const updateStatus = (rfqId: string, nextStatus: RfqStatus) => {
+    mutation.submit(
+      { id: rfqId, status: nextStatus, intent: 'updateStatus' },
+      { method: 'patch', action: '/api/rfqs', encType: 'application/json' },
+    );
   };
 
   const wonRfqs = rfqs.filter((rfq) => rfq.status === 'won');
@@ -407,7 +418,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
       )}
 
       <section className='mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm'>
-        <div className='flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5'>
+        <div className='flex flex-col gap-3 border-b border-slate-100 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between'>
           <label className='relative block w-full sm:max-w-sm'>
             <Search
               className='absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400'
@@ -420,21 +431,47 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
               placeholder='Search RFQs or customers'
             />
           </label>
-          <select
-            value={status}
-            onChange={(event) =>
-              setStatus(event.target.value as 'all' | RfqStatus)
-            }
-            className='rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-600 outline-none focus:border-emerald-500'
-            aria-label='Filter by status'
-          >
-            <option value='all'>All statuses</option>
-            {Object.entries(rfqStatusLabels).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+          <div className='flex gap-2'>
+            <select
+              value={status}
+              onChange={(event) =>
+                setStatus(event.target.value as 'all' | RfqStatus)
+              }
+              className='min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-600 outline-none focus:border-emerald-500 sm:flex-none'
+              aria-label='Filter by status'
+            >
+              <option value='all'>All statuses</option>
+              {Object.entries(rfqStatusLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <div
+              className='flex rounded-xl bg-slate-100 p-1'
+              role='group'
+              aria-label='RFQ view'
+            >
+              <button
+                type='button'
+                onClick={() => setView('table')}
+                aria-pressed={view === 'table'}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${view === 'table' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                <List size={16} />
+                <span className='hidden sm:inline'>Table</span>
+              </button>
+              <button
+                type='button'
+                onClick={() => setView('pipeline')}
+                aria-pressed={view === 'pipeline'}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${view === 'pipeline' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                <Columns3 size={16} />
+                <span className='hidden sm:inline'>Pipeline</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         {filteredRfqs.length === 0 ? (
@@ -449,97 +486,170 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
                 : 'Try a different search or status.'}
             </p>
           </div>
+        ) : view === 'pipeline' ? (
+          <RfqPipeline rfqs={filteredRfqs} onStatusChange={updateStatus} />
         ) : (
-          <div className='overflow-x-auto'>
-            <table className='w-full min-w-[860px] text-left text-sm'>
-              <thead className='bg-slate-50/70 text-[10px] font-bold tracking-wider text-slate-400 uppercase'>
-                <tr>
-                  <th className='px-5 py-3'>Reference</th>
-                  <th className='px-5 py-3'>Customer</th>
-                  <th className='px-5 py-3'>Request</th>
-                  <th className='px-5 py-3'>Due date</th>
-                  <th className='px-5 py-3'>Value</th>
-                  <th className='px-5 py-3'>Status</th>
-                  <th className='px-5 py-3 text-right'>Actions</th>
-                </tr>
-              </thead>
-              <tbody className='divide-y divide-slate-100'>
-                {filteredRfqs.map((rfq) => (
-                  <tr key={rfq.id} className='transition hover:bg-slate-50/60'>
-                    <td className='px-5 py-4 font-semibold'>
+          <div>
+            <div className='divide-y divide-slate-100 md:hidden'>
+              {filteredRfqs.map((rfq) => (
+                <article key={rfq.id} className='p-4'>
+                  <div className='flex items-start justify-between gap-3'>
+                    <Link
+                      to={`?rfq=${encodeURIComponent(rfq.id)}`}
+                      className='min-w-0 font-semibold text-slate-900 hover:text-emerald-700'
+                    >
+                      <span className='block'>{rfq.reference}</span>
+                      <span className='mt-1 block truncate text-sm font-medium text-slate-600'>
+                        {rfq.customerName}
+                      </span>
+                    </Link>
+                    <RfqStatusMenu rfqId={rfq.id} status={rfq.status} />
+                  </div>
+                  <p className='mt-3 line-clamp-2 text-sm text-slate-500'>
+                    {rfq.items[0]?.description || 'No item description'}
+                  </p>
+                  <div className='mt-3 flex items-end justify-between gap-3'>
+                    <div>
+                      <p className='font-semibold text-slate-900'>
+                        {formatRfqMoney(rfq.totalValue, rfq.currency)}
+                      </p>
+                      <p className='mt-1 flex items-center gap-1.5 text-xs text-slate-400'>
+                        {rfq.dueDate ? (
+                          <>
+                            <CalendarDays size={13} />
+                            Due{' '}
+                            {new Date(
+                              `${rfq.dueDate}T00:00:00`,
+                            ).toLocaleDateString()}
+                          </>
+                        ) : (
+                          `${rfq.items.length} ${rfq.items.length === 1 ? 'item' : 'items'}`
+                        )}
+                      </p>
+                    </div>
+                    <div className='flex gap-1'>
                       <Link
                         to={`?rfq=${encodeURIComponent(rfq.id)}`}
-                        className='text-slate-900 hover:text-emerald-700'
+                        className='rounded-lg p-2 text-slate-400 hover:bg-sky-50 hover:text-sky-700'
+                        aria-label={`View ${rfq.reference}`}
                       >
-                        {rfq.reference}
+                        <Eye size={17} />
                       </Link>
-                    </td>
-                    <td className='px-5 py-4'>
-                      <p className='font-medium text-slate-800'>
-                        {rfq.customerName}
-                      </p>
-                      <p className='mt-0.5 text-xs text-slate-400'>
-                        {rfq.customerEmail ?? 'No email'}
-                      </p>
-                    </td>
-                    <td className='max-w-[280px] px-5 py-4'>
-                      <p className='truncate text-slate-600'>
-                        {rfq.items[0]?.description}
-                      </p>
-                      <p className='mt-0.5 text-xs text-slate-400'>
-                        {rfq.items.length} item
-                        {rfq.items.length === 1 ? '' : 's'}
-                      </p>
-                    </td>
-                    <td className='px-5 py-4 text-slate-600'>
-                      {rfq.dueDate ? (
-                        <span className='flex items-center gap-1.5'>
-                          <CalendarDays size={14} />
-                          {new Date(
-                            `${rfq.dueDate}T00:00:00`,
-                          ).toLocaleDateString()}
-                        </span>
-                      ) : (
-                        '—'
-                      )}
-                    </td>
-                    <td className='px-5 py-4 font-medium'>
-                      {formatRfqMoney(rfq.totalValue, rfq.currency)}
-                    </td>
-                    <td className='px-5 py-4'>
-                      <RfqStatusMenu rfqId={rfq.id} status={rfq.status} />
-                    </td>
-                    <td className='px-5 py-4'>
-                      <div className='flex justify-end gap-1'>
+                      <button
+                        type='button'
+                        onClick={() => setFormRfq(rfq)}
+                        className='rounded-lg p-2 text-slate-400 hover:bg-emerald-50 hover:text-emerald-700'
+                        aria-label={`Edit ${rfq.reference}`}
+                      >
+                        <Pencil size={17} />
+                      </button>
+                      <button
+                        type='button'
+                        onClick={() => setDeleteTarget(rfq)}
+                        className='rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-700'
+                        aria-label={`Delete ${rfq.reference}`}
+                      >
+                        <Trash2 size={17} />
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <div className='hidden overflow-x-auto md:block'>
+              <table className='w-full min-w-[860px] text-left text-sm'>
+                <thead className='bg-slate-50/70 text-[10px] font-bold tracking-wider text-slate-400 uppercase'>
+                  <tr>
+                    <th className='px-5 py-3'>Reference</th>
+                    <th className='px-5 py-3'>Customer</th>
+                    <th className='px-5 py-3'>Request</th>
+                    <th className='px-5 py-3'>Due date</th>
+                    <th className='px-5 py-3'>Value</th>
+                    <th className='px-5 py-3'>Status</th>
+                    <th className='px-5 py-3 text-right'>Actions</th>
+                  </tr>
+                </thead>
+                <tbody className='divide-y divide-slate-100'>
+                  {filteredRfqs.map((rfq) => (
+                    <tr
+                      key={rfq.id}
+                      className='transition hover:bg-slate-50/60'
+                    >
+                      <td className='px-5 py-4 font-semibold'>
                         <Link
                           to={`?rfq=${encodeURIComponent(rfq.id)}`}
-                          className='rounded-lg p-2 text-slate-400 transition hover:bg-sky-50 hover:text-sky-700'
-                          aria-label={`View ${rfq.reference}`}
+                          className='text-slate-900 hover:text-emerald-700'
                         >
-                          <Eye size={16} />
+                          {rfq.reference}
                         </Link>
-                        <button
-                          type='button'
-                          onClick={() => setFormRfq(rfq)}
-                          className='rounded-lg p-2 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-700'
-                          aria-label={`Edit ${rfq.reference}`}
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          type='button'
-                          onClick={() => setDeleteTarget(rfq)}
-                          className='rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-700'
-                          aria-label={`Delete ${rfq.reference}`}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                      <td className='px-5 py-4'>
+                        <p className='font-medium text-slate-800'>
+                          {rfq.customerName}
+                        </p>
+                        <p className='mt-0.5 text-xs text-slate-400'>
+                          {rfq.customerEmail ?? 'No email'}
+                        </p>
+                      </td>
+                      <td className='max-w-[280px] px-5 py-4'>
+                        <p className='truncate text-slate-600'>
+                          {rfq.items[0]?.description}
+                        </p>
+                        <p className='mt-0.5 text-xs text-slate-400'>
+                          {rfq.items.length} item
+                          {rfq.items.length === 1 ? '' : 's'}
+                        </p>
+                      </td>
+                      <td className='px-5 py-4 text-slate-600'>
+                        {rfq.dueDate ? (
+                          <span className='flex items-center gap-1.5'>
+                            <CalendarDays size={14} />
+                            {new Date(
+                              `${rfq.dueDate}T00:00:00`,
+                            ).toLocaleDateString()}
+                          </span>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td className='px-5 py-4 font-medium'>
+                        {formatRfqMoney(rfq.totalValue, rfq.currency)}
+                      </td>
+                      <td className='px-5 py-4'>
+                        <RfqStatusMenu rfqId={rfq.id} status={rfq.status} />
+                      </td>
+                      <td className='px-5 py-4'>
+                        <div className='flex justify-end gap-1'>
+                          <Link
+                            to={`?rfq=${encodeURIComponent(rfq.id)}`}
+                            className='rounded-lg p-2 text-slate-400 transition hover:bg-sky-50 hover:text-sky-700'
+                            aria-label={`View ${rfq.reference}`}
+                          >
+                            <Eye size={16} />
+                          </Link>
+                          <button
+                            type='button'
+                            onClick={() => setFormRfq(rfq)}
+                            className='rounded-lg p-2 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-700'
+                            aria-label={`Edit ${rfq.reference}`}
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            type='button'
+                            onClick={() => setDeleteTarget(rfq)}
+                            className='rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-700'
+                            aria-label={`Delete ${rfq.reference}`}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </section>
