@@ -8,11 +8,19 @@ import {
   VendorPurchaseOrderAcknowledgementFormModal,
   type VendorPurchaseOrderAcknowledgementFormValue,
 } from '~/components/vendorPurchaseOrderAcknowledgements/VendorPurchaseOrderAcknowledgementFormModal';
-import { VendorPurchaseOrderAcknowledgementStatusBadge } from '~/components/vendorPurchaseOrderAcknowledgements/VendorPurchaseOrderAcknowledgementStatusBadge';
+import {
+  vendorPurchaseOrderAcknowledgementStatusLabels,
+  VendorPurchaseOrderAcknowledgementStatusBadge,
+} from '~/components/vendorPurchaseOrderAcknowledgements/VendorPurchaseOrderAcknowledgementStatusBadge';
+import { VendorPurchaseOrderAcknowledgementPipeline } from '~/components/vendorPurchaseOrderAcknowledgements/VendorPurchaseOrderAcknowledgementPipeline';
+import { PipelineViewToggle } from '~/components/pipeline/PipelineViewToggle';
 import { getOrganizationForUser } from '~/db/organizations';
 import { getVendorPurchaseOrderAcknowledgements } from '~/db/vendorPurchaseOrderAcknowledgements';
 import { getVendorPurchaseOrders } from '~/db/vendorPurchaseOrders';
-import type { VendorPurchaseOrderAcknowledgementRecord } from '~/types/vendorPurchaseOrderAcknowledgement';
+import type {
+  VendorPurchaseOrderAcknowledgementRecord,
+  VendorPurchaseOrderAcknowledgementStatus,
+} from '~/types/vendorPurchaseOrderAcknowledgement';
 import { getUserFromRequest } from '~/utils/session.server';
 
 type ApiResponse =
@@ -63,6 +71,10 @@ const VendorPurchaseOrderAcknowledgementsPage = ({
   const mutation = useFetcher<ApiResponse>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState('');
+  const [status, setStatus] = useState<
+    'all' | VendorPurchaseOrderAcknowledgementStatus
+  >('all');
+  const [view, setView] = useState<'table' | 'pipeline'>('table');
   const [formTarget, setFormTarget] = useState<
     VendorPurchaseOrderAcknowledgementRecord | 'new' | null
   >(null);
@@ -108,24 +120,25 @@ const VendorPurchaseOrderAcknowledgementsPage = ({
     const search = query.trim().toLowerCase();
     return loaderData.vendorPurchaseOrderAcknowledgements.filter(
       (acknowledgement) =>
-        !search ||
-        acknowledgement.reference.toLowerCase().includes(search) ||
-        acknowledgement.acknowledgementReference
-          ?.toLowerCase()
-          .includes(search) ||
-        acknowledgement.linkedVendorPurchaseOrder.reference
-          .toLowerCase()
-          .includes(search) ||
-        acknowledgement.linkedVendorPurchaseOrder.vendorName
-          .toLowerCase()
-          .includes(search) ||
-        acknowledgement.items.some(
-          (item) =>
-            item.description.toLowerCase().includes(search) ||
-            item.manufacturerPartNumber?.toLowerCase().includes(search),
-        ),
+        (status === 'all' || acknowledgement.status === status) &&
+        (!search ||
+          acknowledgement.reference.toLowerCase().includes(search) ||
+          acknowledgement.acknowledgementReference
+            ?.toLowerCase()
+            .includes(search) ||
+          acknowledgement.linkedVendorPurchaseOrder.reference
+            .toLowerCase()
+            .includes(search) ||
+          acknowledgement.linkedVendorPurchaseOrder.vendorName
+            .toLowerCase()
+            .includes(search) ||
+          acknowledgement.items.some(
+            (item) =>
+              item.description.toLowerCase().includes(search) ||
+              item.manufacturerPartNumber?.toLowerCase().includes(search),
+          )),
     );
-  }, [loaderData.vendorPurchaseOrderAcknowledgements, query]);
+  }, [loaderData.vendorPurchaseOrderAcknowledgements, query, status]);
 
   const submitAcknowledgement = (
     value: VendorPurchaseOrderAcknowledgementFormValue,
@@ -151,6 +164,20 @@ const VendorPurchaseOrderAcknowledgementsPage = ({
       },
     );
     setDeleteTarget(null);
+  };
+
+  const updateStatus = (
+    id: string,
+    nextStatus: VendorPurchaseOrderAcknowledgementStatus,
+  ) => {
+    mutation.submit(
+      { id, status: nextStatus, intent: 'updateStatus' },
+      {
+        method: 'patch',
+        action: '/api/vendor-purchase-order-acknowledgements',
+        encType: 'application/json',
+      },
+    );
   };
 
   return (
@@ -189,7 +216,7 @@ const VendorPurchaseOrderAcknowledgementsPage = ({
       )}
 
       <section className='mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm'>
-        <div className='border-b border-slate-100 p-4 sm:p-5'>
+        <div className='flex flex-col gap-3 border-b border-slate-100 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between'>
           <label className='relative block w-full sm:max-w-sm'>
             <Search
               className='absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400'
@@ -202,6 +229,30 @@ const VendorPurchaseOrderAcknowledgementsPage = ({
               placeholder='Search acknowledgements, vendors, or items'
             />
           </label>
+          <div className='flex gap-2'>
+            <select
+              value={status}
+              onChange={(event) =>
+                setStatus(
+                  event.target.value as
+                    | 'all'
+                    | VendorPurchaseOrderAcknowledgementStatus,
+                )
+              }
+              className='min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-600 sm:flex-none'
+              aria-label='Filter by status'
+            >
+              <option value='all'>All statuses</option>
+              {Object.entries(
+                vendorPurchaseOrderAcknowledgementStatusLabels,
+              ).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <PipelineViewToggle value={view} onChange={setView} />
+          </div>
         </div>
 
         {filteredAcknowledgements.length === 0 ? (
@@ -217,6 +268,12 @@ const VendorPurchaseOrderAcknowledgementsPage = ({
               confirmations.
             </p>
           </div>
+        ) : view === 'pipeline' ? (
+          <VendorPurchaseOrderAcknowledgementPipeline
+            acknowledgements={filteredAcknowledgements}
+            onOpen={openDetails}
+            onStatusChange={updateStatus}
+          />
         ) : (
           <div className='overflow-x-auto'>
             <table className='w-full min-w-[900px] text-left text-sm'>

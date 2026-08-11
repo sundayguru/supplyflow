@@ -3,6 +3,7 @@ import type {
   VendorPurchaseOrderAcknowledgementInput,
   VendorPurchaseOrderAcknowledgementItemInput,
   VendorPurchaseOrderAcknowledgementRecord,
+  VendorPurchaseOrderAcknowledgementStatus,
 } from '~/types/vendorPurchaseOrderAcknowledgement';
 import { getDb } from './connection';
 import {
@@ -206,6 +207,27 @@ export const deleteVendorPurchaseOrderAcknowledgement = async (
     )
     .returning({ id: vendorPurchaseOrderAcknowledgements.id });
   return record ?? null;
+};
+
+export const updateVendorPurchaseOrderAcknowledgementStatus = async (
+  id: string,
+  organizationId: string,
+  status: VendorPurchaseOrderAcknowledgementStatus,
+) => {
+  const db = getDb();
+  const [record] = await db
+    .update(vendorPurchaseOrderAcknowledgements)
+    .set({ status, updatedAt: new Date().toISOString() })
+    .where(
+      and(
+        eq(vendorPurchaseOrderAcknowledgements.id, id),
+        eq(vendorPurchaseOrderAcknowledgements.organizationId, organizationId),
+      ),
+    )
+    .returning({ id: vendorPurchaseOrderAcknowledgements.id });
+  return record
+    ? getVendorPurchaseOrderAcknowledgement(record.id, organizationId)
+    : null;
 };
 
 export const hasOrganizationVendorPurchaseOrder = async (

@@ -3,6 +3,7 @@ import type {
   VendorPurchaseOrderInput,
   VendorPurchaseOrderItemInput,
   VendorPurchaseOrderRecord,
+  VendorPurchaseOrderStatus,
 } from '~/types/vendorPurchaseOrder';
 import { calculatePurchaseOrderTotals } from '~/utils/purchaseOrder';
 import { getDb } from './connection';
@@ -177,6 +178,25 @@ export const deleteVendorPurchaseOrder = async (
     )
     .returning({ id: vendorPurchaseOrders.id });
   return record ?? null;
+};
+
+export const updateVendorPurchaseOrderStatus = async (
+  id: string,
+  organizationId: string,
+  status: VendorPurchaseOrderStatus,
+) => {
+  const db = getDb();
+  const [record] = await db
+    .update(vendorPurchaseOrders)
+    .set({ status, updatedAt: new Date().toISOString() })
+    .where(
+      and(
+        eq(vendorPurchaseOrders.id, id),
+        eq(vendorPurchaseOrders.organizationId, organizationId),
+      ),
+    )
+    .returning({ id: vendorPurchaseOrders.id });
+  return record ? getVendorPurchaseOrder(record.id, organizationId) : null;
 };
 
 export const updateVendorPurchaseOrderEmailDraft = async (

@@ -7,7 +7,12 @@ import {
   getVendorPurchaseOrderAcknowledgements,
   hasOrganizationVendorPurchaseOrder,
   updateVendorPurchaseOrderAcknowledgement,
+  updateVendorPurchaseOrderAcknowledgementStatus,
 } from '~/db/vendorPurchaseOrderAcknowledgements';
+import {
+  vendorPurchaseOrderAcknowledgementStatuses,
+  type VendorPurchaseOrderAcknowledgementStatus,
+} from '~/types/vendorPurchaseOrderAcknowledgement';
 import { parseVendorPurchaseOrderAcknowledgementInput } from '~/utils/vendorPurchaseOrderAcknowledgement.server';
 import { getUserFromRequest } from '~/utils/session.server';
 import type { Route } from './+types/vendor-purchase-order-acknowledgements';
@@ -92,6 +97,32 @@ export const action = async ({ request }: Route.ActionArgs) => {
           { error: 'Vendor PO acknowledgement id is required' },
           { status: 400 },
         );
+      }
+      if ('intent' in body && body.intent === 'updateStatus') {
+        if (
+          !('status' in body) ||
+          typeof body.status !== 'string' ||
+          !vendorPurchaseOrderAcknowledgementStatuses.includes(
+            body.status as VendorPurchaseOrderAcknowledgementStatus,
+          )
+        ) {
+          return data(
+            { error: 'Select a valid acknowledgement status' },
+            { status: 400 },
+          );
+        }
+        const vendorPurchaseOrderAcknowledgement =
+          await updateVendorPurchaseOrderAcknowledgementStatus(
+            body.id,
+            organization.id,
+            body.status as VendorPurchaseOrderAcknowledgementStatus,
+          );
+        return vendorPurchaseOrderAcknowledgement
+          ? data({ success: true, vendorPurchaseOrderAcknowledgement })
+          : data(
+              { error: 'Vendor PO acknowledgement not found' },
+              { status: 404 },
+            );
       }
       const parsed = parseVendorPurchaseOrderAcknowledgementInput(body);
       if (!parsed.success) {

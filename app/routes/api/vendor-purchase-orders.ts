@@ -13,8 +13,13 @@ import {
   getVendorPurchaseOrders,
   hasOrganizationPurchaseOrder,
   updateVendorPurchaseOrder,
+  updateVendorPurchaseOrderStatus,
 } from '~/db/vendorPurchaseOrders';
-import type { VendorPurchaseOrderInput } from '~/types/vendorPurchaseOrder';
+import {
+  vendorPurchaseOrderStatuses,
+  type VendorPurchaseOrderInput,
+  type VendorPurchaseOrderStatus,
+} from '~/types/vendorPurchaseOrder';
 import { resolveItemManufacturers } from '~/utils/itemManufacturers.server';
 import { parseVendorPurchaseOrderInput } from '~/utils/vendorPurchaseOrder.server';
 import { getUserFromRequest } from '~/utils/session.server';
@@ -168,6 +173,28 @@ export const action = async ({ request }: Route.ActionArgs) => {
         typeof body.id !== 'string'
       ) {
         return data({ error: 'Vendor PO id is required' }, { status: 400 });
+      }
+      if ('intent' in body && body.intent === 'updateStatus') {
+        if (
+          !('status' in body) ||
+          typeof body.status !== 'string' ||
+          !vendorPurchaseOrderStatuses.includes(
+            body.status as VendorPurchaseOrderStatus,
+          )
+        ) {
+          return data(
+            { error: 'Select a valid vendor PO status' },
+            { status: 400 },
+          );
+        }
+        const vendorPurchaseOrder = await updateVendorPurchaseOrderStatus(
+          body.id,
+          organization.id,
+          body.status as VendorPurchaseOrderStatus,
+        );
+        return vendorPurchaseOrder
+          ? data({ success: true, vendorPurchaseOrder })
+          : data({ error: 'Vendor PO not found' }, { status: 404 });
       }
       const parsed = parseVendorPurchaseOrderInput(body);
       if (!parsed.success) {

@@ -11,8 +11,6 @@ import {
   Eye,
   FileText,
   LoaderCircle,
-  Columns3,
-  List,
   Pencil,
   Plus,
   Search,
@@ -29,6 +27,7 @@ import {
 import { rfqStatusLabels } from '~/components/rfqs/RfqStatusBadge';
 import { RfqStatusMenu } from '~/components/rfqs/RfqStatusMenu';
 import { RfqPipeline } from '~/components/rfqs/RfqPipeline';
+import { PipelineViewToggle } from '~/components/pipeline/PipelineViewToggle';
 import { createRfq, getRfqs } from '~/db/rfqs';
 import { listProductPrices } from '~/db/productPrices';
 import { listManufacturers } from '~/db/manufacturers';
@@ -447,30 +446,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
                 </option>
               ))}
             </select>
-            <div
-              className='flex rounded-xl bg-slate-100 p-1'
-              role='group'
-              aria-label='RFQ view'
-            >
-              <button
-                type='button'
-                onClick={() => setView('table')}
-                aria-pressed={view === 'table'}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${view === 'table' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-              >
-                <List size={16} />
-                <span className='hidden sm:inline'>Table</span>
-              </button>
-              <button
-                type='button'
-                onClick={() => setView('pipeline')}
-                aria-pressed={view === 'pipeline'}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${view === 'pipeline' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-              >
-                <Columns3 size={16} />
-                <span className='hidden sm:inline'>Pipeline</span>
-              </button>
-            </div>
+            <PipelineViewToggle value={view} onChange={setView} />
           </div>
         </div>
 

@@ -24,6 +24,8 @@ import {
 } from '~/components/purchaseOrders/PurchaseOrderFormModal';
 import { purchaseOrderStatusLabels } from '~/components/purchaseOrders/PurchaseOrderStatusBadge';
 import { PurchaseOrderStatusMenu } from '~/components/purchaseOrders/PurchaseOrderStatusMenu';
+import { PurchaseOrderPipeline } from '~/components/purchaseOrders/PurchaseOrderPipeline';
+import { PipelineViewToggle } from '~/components/pipeline/PipelineViewToggle';
 import { listEmailSourcesForPurchaseOrders } from '~/db/emailIngestion';
 import { listManufacturers } from '~/db/manufacturers';
 import { getOrganizationForUser } from '~/db/organizations';
@@ -128,6 +130,7 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | PurchaseOrderStatus>('all');
+  const [view, setView] = useState<'table' | 'pipeline'>('table');
   const [formPurchaseOrder, setFormPurchaseOrder] = useState<
     PurchaseOrderRecord | 'new' | null
   >(null);
@@ -216,6 +219,17 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
     setDeleteTarget(null);
   };
 
+  const updateStatus = (id: string, nextStatus: PurchaseOrderStatus) => {
+    mutation.submit(
+      { id, status: nextStatus, intent: 'updateStatus' },
+      {
+        method: 'patch',
+        action: '/api/purchase-orders',
+        encType: 'application/json',
+      },
+    );
+  };
+
   const activePurchaseOrders = purchaseOrders.filter((purchaseOrder) =>
     activeStatuses.includes(purchaseOrder.status),
   );
@@ -285,7 +299,7 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
       )}
 
       <section className='mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm'>
-        <div className='flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5'>
+        <div className='flex flex-col gap-3 border-b border-slate-100 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between'>
           <label className='relative block w-full sm:max-w-sm'>
             <Search
               className='absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400'
@@ -298,21 +312,26 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
               placeholder='Search POs, suppliers, or RFQs'
             />
           </label>
-          <select
-            value={status}
-            onChange={(event) =>
-              setStatus(event.target.value as 'all' | PurchaseOrderStatus)
-            }
-            className='rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-600 outline-none focus:border-emerald-500'
-            aria-label='Filter by status'
-          >
-            <option value='all'>All statuses</option>
-            {Object.entries(purchaseOrderStatusLabels).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+          <div className='flex gap-2'>
+            <select
+              value={status}
+              onChange={(event) =>
+                setStatus(event.target.value as 'all' | PurchaseOrderStatus)
+              }
+              className='min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-600 outline-none focus:border-emerald-500 sm:flex-none'
+              aria-label='Filter by status'
+            >
+              <option value='all'>All statuses</option>
+              {Object.entries(purchaseOrderStatusLabels).map(
+                ([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ),
+              )}
+            </select>
+            <PipelineViewToggle value={view} onChange={setView} />
+          </div>
         </div>
 
         {filteredPurchaseOrders.length === 0 ? (
@@ -327,6 +346,11 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
                 : 'Try a different search or status.'}
             </p>
           </div>
+        ) : view === 'pipeline' ? (
+          <PurchaseOrderPipeline
+            purchaseOrders={filteredPurchaseOrders}
+            onStatusChange={updateStatus}
+          />
         ) : (
           <div className='overflow-x-auto'>
             <table className='w-full min-w-[1020px] text-left text-sm'>
