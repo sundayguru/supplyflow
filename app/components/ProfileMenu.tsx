@@ -32,7 +32,7 @@ export const ProfileMenu = ({
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className={`absolute right-0 z-50 w-56 rounded-xl border border-black/5 bg-white py-2 shadow-lg ${
+        className={`absolute right-0 z-50 max-h-[calc(100dvh-5rem)] w-56 overflow-y-auto rounded-xl border border-black/5 bg-white py-2 shadow-lg ${
           placement === 'above' ? 'bottom-full mb-2' : 'mt-2'
         }`}
       >

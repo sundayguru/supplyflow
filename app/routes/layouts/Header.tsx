@@ -108,11 +108,11 @@ export const Header = () => {
       )}
 
       <aside
-        className={`fixed top-16 bottom-0 left-0 z-40 flex w-72 flex-col border-r border-slate-200 bg-white px-4 py-5 shadow-xl shadow-slate-950/5 transition-transform duration-300 lg:translate-x-0 lg:shadow-none ${
+        className={`fixed top-16 left-0 z-40 flex h-[calc(100dvh-4rem)] min-h-0 w-72 flex-col overflow-hidden border-r border-slate-200 bg-white px-4 shadow-xl shadow-slate-950/5 transition-transform duration-300 lg:translate-x-0 lg:shadow-none ${
           showSidebar ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className='px-3 pb-4'>
+        <div className='shrink-0 px-3 pt-5 pb-4'>
           <p className='text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase'>
             Workspace
           </p>
@@ -121,7 +121,10 @@ export const Header = () => {
           </p>
         </div>
 
-        <nav className='space-y-1' aria-label='Workspace navigation'>
+        <nav
+          className='min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1 pb-4 [scrollbar-color:rgb(203_213_225)_transparent] [scrollbar-width:thin]'
+          aria-label='Workspace navigation'
+        >
           {navItems.map(({ to, label, icon: Icon, badge }) => {
             const active = isActive(to);
 
@@ -156,7 +159,7 @@ export const Header = () => {
           })}
         </nav>
 
-        <div className='relative mt-auto border-t border-slate-100 pt-4'>
+        <div className='relative shrink-0 border-t border-slate-100 bg-white py-4'>
           <button
             type='button'
             onClick={() => setShowProfileMenu((open) => !open)}
