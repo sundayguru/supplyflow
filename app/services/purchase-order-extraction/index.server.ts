@@ -1,5 +1,7 @@
+import type { OrganizationAiProvider } from '~/types/organization';
 import { createGeminiPurchaseOrderExtractor } from './gemini.server';
 import { createGroqPurchaseOrderExtractor } from './groq.server';
+import { createOllamaPurchaseOrderExtractor } from './ollama.server';
 import type { PurchaseOrderExtractor } from './types';
 
 type SharedPurchaseOrderExtractorConfig = {
@@ -9,7 +11,7 @@ type SharedPurchaseOrderExtractorConfig = {
 
 export type PurchaseOrderExtractorConfig =
   SharedPurchaseOrderExtractorConfig & {
-    provider: 'groq' | 'gemini';
+    provider: OrganizationAiProvider;
   };
 
 export const createPurchaseOrderExtractor = (
@@ -18,7 +20,9 @@ export const createPurchaseOrderExtractor = (
   switch (config.provider) {
     case 'groq':
       return createGroqPurchaseOrderExtractor(config);
-    case 'gemini':
+    case 'google':
       return createGeminiPurchaseOrderExtractor(config);
+    case 'ollama':
+      return createOllamaPurchaseOrderExtractor(config);
   }
 };

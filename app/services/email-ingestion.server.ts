@@ -36,6 +36,7 @@ import type {
   VendorPurchaseOrderAcknowledgementExtractionResult,
   VendorPurchaseOrderAcknowledgementExtractor,
 } from '~/services/vendor-purchase-order-acknowledgement-extraction/types';
+import { getProviderApiKey } from '~/utils/organization-ai.server';
 import { decryptToken } from '~/utils/tokenEncryption.server';
 import type { SelectConnectedEmailAccount } from '~/db/schemas';
 import { getOrganizationById } from '~/db/organizations';
@@ -518,12 +519,10 @@ const processAccount = async (
   if (!model) {
     throw new Error('Organization AI model is not supported');
   }
+  const providerApiKey = getProviderApiKey(model.provider, env);
   const extractorConfig = {
     provider: model.provider,
-    apiKey: requireSetting(
-      model.provider === 'gemini' ? 'GEMINI_API_KEY' : 'GROQ_API_KEY',
-      model.provider === 'gemini' ? env.GEMINI_API_KEY : env.GROQ_API_KEY,
-    ),
+    apiKey: requireSetting(providerApiKey.name, providerApiKey.value),
     model: model.value,
   };
   const extractor: RfqExtractor = createRfqExtractor({

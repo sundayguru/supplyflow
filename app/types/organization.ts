@@ -9,17 +9,55 @@ export const organizationAiModels = [
   {
     value: 'gemini-3.5-flash-lite',
     label: 'Gemini 3.5 Flash Lite',
-    provider: 'gemini',
+    provider: 'google',
   },
   {
     value: 'gemini-3.6-flash',
     label: 'Gemini 3.6 Flash',
-    provider: 'gemini',
+    provider: 'google',
+  },
+  {
+    value: 'gpt-oss:20b',
+    label: 'GPT-OSS 20B (Ollama)',
+    provider: 'ollama',
+  },
+  {
+    value: 'gpt-oss:120b',
+    label: 'GPT-OSS 120B (Ollama)',
+    provider: 'ollama',
+  },
+  {
+    value: 'gemma4:31b',
+    label: 'Gemma 4 31B (Ollama)',
+    provider: 'ollama',
+  },
+  {
+    value: 'glm-5.2',
+    label: 'GLM 5.2 (Ollama)',
+    provider: 'ollama',
+  },
+  {
+    value: 'kimi-k3',
+    label: 'Kimi K3 (Ollama)',
+    provider: 'ollama',
+  },
+  {
+    value: 'minimax-m3',
+    label: 'MiniMax M3 (Ollama)',
+    provider: 'ollama',
+  },
+  {
+    value: 'qwen3.5:397b',
+    label: 'Qwen 3.5 397B (Ollama)',
+    provider: 'ollama',
   },
 ] as const;
 
 export type OrganizationAiModel =
   (typeof organizationAiModels)[number]['value'];
+
+export type OrganizationAiProvider =
+  (typeof organizationAiModels)[number]['provider'];
 
 export const isOrganizationAiModel = (
   value: unknown,

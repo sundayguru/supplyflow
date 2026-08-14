@@ -7,6 +7,7 @@ import { getRfq, updateRfqGeneratedReply } from '~/db/rfqs';
 import { createEmailClient } from '~/services/email/index.server';
 import { generateRfqReplyDraft } from '~/services/rfq-reply-draft.server';
 import { organizationAiModels } from '~/types/organization';
+import { getProviderApiKey } from '~/utils/organization-ai.server';
 import { generateRfqPdf } from '~/utils/rfqPdf.server';
 import { getUserFromRequest } from '~/utils/session.server';
 import { decryptToken } from '~/utils/tokenEncryption.server';
@@ -91,7 +92,8 @@ export const action = async ({
       !('GOOGLE_CLIENT_SECRET' in env) ||
       !('TOKEN_ENCRYPTION_KEY' in env) ||
       !('GEMINI_API_KEY' in env) ||
-      !('GROQ_API_KEY' in env)
+      !('GROQ_API_KEY' in env) ||
+      !('OLLAMA_API_KEY' in env)
     ) {
       return data(
         { error: 'Connected email or AI settings are not configured.' },
@@ -143,16 +145,13 @@ export const action = async ({
               throw new Error('Organization AI model is not supported.');
             }
             const originalMessage = await getOriginalMessage(source.externalId);
+            const providerApiKey = getProviderApiKey(model.provider, env);
             return await generateRfqReplyDraft({
               config: {
                 provider: model.provider,
                 apiKey: requireSetting(
-                  model.provider === 'gemini'
-                    ? 'GEMINI_API_KEY'
-                    : 'GROQ_API_KEY',
-                  model.provider === 'gemini'
-                    ? env.GEMINI_API_KEY
-                    : env.GROQ_API_KEY,
+                  providerApiKey.name,
+                  providerApiKey.value,
                 ),
                 model: model.value,
               },

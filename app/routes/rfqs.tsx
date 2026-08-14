@@ -41,6 +41,7 @@ import { listRfqPdfTemplates } from '~/db/rfqPdfTemplates';
 import { cloudflareContext } from '~/contexts.server/cloudflareContext.server';
 import { organizationAiModels } from '~/types/organization';
 import { createRfqExtractor } from '~/services/rfq-extraction/index.server';
+import { getProviderApiKey } from '~/utils/organization-ai.server';
 import { extractRfqPdfText } from '~/utils/rfqPdfExtraction.server';
 import { uploadRfqSourcePdf } from '~/utils/rfqSourcePdf.server';
 import type { EmailMessage } from '~/services/email/types';
@@ -163,14 +164,10 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
     const bytes = await pdf.arrayBuffer();
     const text = await extractRfqPdfText(pdf, bytes);
+    const providerApiKey = getProviderApiKey(model.provider, env as Env);
     const extractor = createRfqExtractor({
       provider: model.provider,
-      apiKey: requireSetting(
-        model.provider === 'gemini' ? 'GEMINI_API_KEY' : 'GROQ_API_KEY',
-        model.provider === 'gemini'
-          ? (env as Env).GEMINI_API_KEY
-          : (env as Env).GROQ_API_KEY,
-      ),
+      apiKey: requireSetting(providerApiKey.name, providerApiKey.value),
       model: model.value,
       defaultPriceMarkup: organization.priceMarkup,
     });

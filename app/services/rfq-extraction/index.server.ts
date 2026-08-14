@@ -1,5 +1,7 @@
+import type { OrganizationAiProvider } from '~/types/organization';
 import { createGroqRfqExtractor } from './groq.server';
 import { createGeminiRfqExtractor } from './gemini.server';
+import { createOllamaRfqExtractor } from './ollama.server';
 import type { RfqExtractor } from './types';
 
 type SharedRfqExtractorConfig = {
@@ -9,7 +11,7 @@ type SharedRfqExtractorConfig = {
 };
 
 export type RfqExtractorConfig = SharedRfqExtractorConfig & {
-  provider: 'groq' | 'gemini';
+  provider: OrganizationAiProvider;
 };
 
 export const createRfqExtractor = (
@@ -18,7 +20,9 @@ export const createRfqExtractor = (
   switch (config.provider) {
     case 'groq':
       return createGroqRfqExtractor(config);
-    case 'gemini':
+    case 'google':
       return createGeminiRfqExtractor(config);
+    case 'ollama':
+      return createOllamaRfqExtractor(config);
   }
 };

@@ -69,7 +69,7 @@ This template comes with [Tailwind CSS](https://tailwindcss.com/) already config
 ## Gmail RFQ ingestion
 
 The Worker checks Gmail every minute, classifies new messages with the
-organization's preferred Groq or Gemini model, and
+organization's preferred Groq, Gemini, or Ollama Cloud model, and
 creates RFQs for messages that contain quotation requests. The ingestion layer
 uses provider-neutral email and extraction interfaces so either provider can be
 replaced without changing the scheduling or database workflow.
@@ -81,6 +81,7 @@ npx wrangler secret put GOOGLE_CLIENT_ID --env production
 npx wrangler secret put GOOGLE_CLIENT_SECRET --env production
 npx wrangler secret put GROQ_API_KEY --env production
 npx wrangler secret put GEMINI_API_KEY --env production
+npx wrangler secret put OLLAMA_API_KEY --env production
 npx wrangler secret put TOKEN_ENCRYPTION_KEY --env production
 ```
 

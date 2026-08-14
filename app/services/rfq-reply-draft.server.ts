@@ -1,9 +1,11 @@
+import type { OrganizationAiProvider } from '~/types/organization';
 import type { RfqRecord } from '~/types/rfq';
 import { GeminiService } from '~/utils/gemini.server';
 import { GroqService, type LlmGenerationResponse } from '~/utils/groq.server';
+import { OllamaService } from '~/utils/ollama.server';
 
 type RfqReplyDraftConfig = {
-  provider: 'groq' | 'gemini';
+  provider: OrganizationAiProvider;
   apiKey: string;
   model: string;
 };
@@ -88,9 +90,14 @@ const generate = async (
     temperature: 0.3,
     maxTokens: 1200,
   };
-  return config.provider === 'gemini'
-    ? await GeminiService.generate(request)
-    : await GroqService.generate(request);
+  switch (config.provider) {
+    case 'google':
+      return await GeminiService.generate(request);
+    case 'ollama':
+      return await OllamaService.generate(request);
+    case 'groq':
+      return await GroqService.generate(request);
+  }
 };
 
 export const generateRfqReplyDraft = async ({
