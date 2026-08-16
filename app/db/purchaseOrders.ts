@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import type {
   PurchaseOrderInput,
   PurchaseOrderItemInput,
@@ -10,10 +10,13 @@ import type { RfqItemRecord } from '~/types/rfq';
 import { calculatePurchaseOrderTotals } from '~/utils/purchaseOrder';
 import { getDb } from './connection';
 import {
+  emailIngestions,
   purchaseOrderItems,
   purchaseOrderPaymentConfirmations,
   purchaseOrders,
   rfqItems,
+  vendorPurchaseOrderAcknowledgements,
+  vendorPurchaseOrders,
 } from './schemas';
 
 const createReference = () =>
@@ -377,6 +380,47 @@ export const deletePurchaseOrder = async (
   organizationId: string,
 ) => {
   const db = getDb();
+  const [existing] = await db
+    .select({ id: purchaseOrders.id })
+    .from(purchaseOrders)
+    .where(
+      and(
+        eq(purchaseOrders.id, id),
+        eq(purchaseOrders.organizationId, organizationId),
+      ),
+    )
+    .limit(1);
+  if (!existing) {
+    return null;
+  }
+
+  const linkedVendorPurchaseOrders = await db
+    .select({ id: vendorPurchaseOrders.id })
+    .from(vendorPurchaseOrders)
+    .where(eq(vendorPurchaseOrders.purchaseOrderId, id));
+  const vendorPurchaseOrderIds = linkedVendorPurchaseOrders.map(
+    (record) => record.id,
+  );
+
+  if (vendorPurchaseOrderIds.length) {
+    await db
+      .delete(vendorPurchaseOrderAcknowledgements)
+      .where(
+        inArray(
+          vendorPurchaseOrderAcknowledgements.vendorPurchaseOrderId,
+          vendorPurchaseOrderIds,
+        ),
+      );
+    await db
+      .delete(vendorPurchaseOrders)
+      .where(inArray(vendorPurchaseOrders.id, vendorPurchaseOrderIds));
+  }
+
+  await db
+    .update(emailIngestions)
+    .set({ purchaseOrderId: null })
+    .where(eq(emailIngestions.purchaseOrderId, id));
+
   const [purchaseOrder] = await db
     .delete(purchaseOrders)
     .where(
