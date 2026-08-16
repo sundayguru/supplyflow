@@ -484,6 +484,7 @@ export const createGmailClient = (config: GmailClientConfig): EmailClient => ({
     receivedAfter,
     limit,
     folder = 'INBOX',
+    unread = false,
   }: ListMessagesOptions) {
     const accessToken = await getAccessToken(config);
     const messageIds: string[] = [];
@@ -493,7 +494,7 @@ export const createGmailClient = (config: GmailClientConfig): EmailClient => ({
     do {
       const search = new URLSearchParams({
         maxResults: String(Math.min(limit - messageIds.length, 100)),
-        q: `${folderQuery} after:${Math.floor(receivedAfter.getTime() / 1000)}`,
+        q: `${folderQuery}${unread ? ' is:unread' : ''} after:${Math.floor(receivedAfter.getTime() / 1000)}`,
       });
       if (pageToken) {
         search.set('pageToken', pageToken);

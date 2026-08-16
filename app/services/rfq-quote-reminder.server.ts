@@ -3,9 +3,11 @@ import {
   listDueRfqQuoteReminders,
   markRfqQuoteReminderSent,
 } from '~/db/rfqQuoteReminders';
-import { createEmailClient } from '~/services/email/index.server';
 import { isGmailAuthenticationError } from '~/services/email/gmail.server';
-import { decryptToken } from '~/utils/tokenEncryption.server';
+import {
+  indexMailboxesByAccountId,
+  type ScheduledMailbox,
+} from '~/services/email-schedule.server';
 
 type RfqQuoteReminderResult = {
   checked: number;
@@ -15,13 +17,6 @@ type RfqQuoteReminderResult = {
 };
 
 const REMINDER_DELAY_MS = 5 * 24 * 60 * 60 * 1000;
-
-const requireSetting = (name: string, value: string | undefined) => {
-  if (!value) {
-    throw new Error(`Missing required quote reminder setting: ${name}`);
-  }
-  return value;
-};
 
 const buildReminderBody = (input: {
   reference: string;
@@ -38,10 +33,11 @@ const buildReminderBody = (input: {
   ].join('\n');
 
 export const runRfqQuoteReminderSync = async (
-  env: Env,
+  mailboxes: ScheduledMailbox[],
 ): Promise<RfqQuoteReminderResult> => {
   const cutoff = new Date(Date.now() - REMINDER_DELAY_MS);
   const reminders = await listDueRfqQuoteReminders(cutoff);
+  const mailboxesByAccountId = indexMailboxesByAccountId(mailboxes);
   let sent = 0;
   let skipped = 0;
   let failed = 0;
@@ -53,26 +49,15 @@ export const runRfqQuoteReminderSync = async (
       continue;
     }
 
+    const emailClient = mailboxesByAccountId.get(
+      reminder.accountId,
+    )?.emailClient;
+    if (!emailClient?.sendReply) {
+      skipped += 1;
+      continue;
+    }
+
     try {
-      const refreshToken = await decryptToken(
-        reminder.encryptedRefreshToken,
-        requireSetting('TOKEN_ENCRYPTION_KEY', env.TOKEN_ENCRYPTION_KEY),
-      );
-      const emailClient = createEmailClient({
-        provider: reminder.accountProvider,
-        clientId: requireSetting('GOOGLE_CLIENT_ID', env.GOOGLE_CLIENT_ID),
-        clientSecret: requireSetting(
-          'GOOGLE_CLIENT_SECRET',
-          env.GOOGLE_CLIENT_SECRET,
-        ),
-        refreshToken,
-      });
-
-      if (!emailClient.sendReply) {
-        skipped += 1;
-        continue;
-      }
-
       await emailClient.sendReply({
         originalMessageId: reminder.externalId,
         threadId: reminder.threadId,

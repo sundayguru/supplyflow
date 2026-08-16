@@ -3,6 +3,10 @@ import { cloudflareContext } from '~/contexts.server/cloudflareContext.server';
 import { userDataContext } from '~/contexts.server/userDataContext.server';
 import { getUserFromRequest } from '~/utils/session.server';
 import { runEmailIngestion } from '~/services/email-ingestion.server';
+import {
+  classifyScheduledMailboxes,
+  loadScheduledMailboxes,
+} from '~/services/email-schedule.server';
 import { runPurchaseOrderDraftSentStatusSync } from '~/services/purchase-order-draft-status.server';
 import { runRfqDraftSentStatusSync } from '~/services/rfq-draft-status.server';
 import { runRfqQuoteReminderSync } from '~/services/rfq-quote-reminder.server';
@@ -17,8 +21,34 @@ const requestHandler = createRequestHandler(
 export const executeScheduleMethods = async (env: Env) => {
   const errors: unknown[] = [];
   let summary = {};
+  let mailboxes: Awaited<ReturnType<typeof loadScheduledMailboxes>> = [];
+
   try {
-    summary = await runEmailIngestion(env);
+    mailboxes = await loadScheduledMailboxes(env);
+  } catch (error) {
+    errors.push(error);
+    console.error(
+      JSON.stringify({
+        event: 'scheduled_mailbox_load_failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }),
+    );
+  }
+
+  try {
+    mailboxes = await classifyScheduledMailboxes(env, mailboxes);
+  } catch (error) {
+    errors.push(error);
+    console.error(
+      JSON.stringify({
+        event: 'email_classification_failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }),
+    );
+  }
+
+  try {
+    summary = await runEmailIngestion(mailboxes);
   } catch (error) {
     errors.push(error);
     console.error(
@@ -30,7 +60,7 @@ export const executeScheduleMethods = async (env: Env) => {
   }
 
   try {
-    await runRfqDraftSentStatusSync(env);
+    await runRfqDraftSentStatusSync(mailboxes);
   } catch (error) {
     errors.push(error);
     console.error(
@@ -42,7 +72,7 @@ export const executeScheduleMethods = async (env: Env) => {
   }
 
   try {
-    await runPurchaseOrderDraftSentStatusSync(env);
+    await runPurchaseOrderDraftSentStatusSync(mailboxes);
   } catch (error) {
     errors.push(error);
     console.error(
@@ -54,7 +84,7 @@ export const executeScheduleMethods = async (env: Env) => {
   }
 
   try {
-    await runVendorPurchaseOrderDraftSentStatusSync(env);
+    await runVendorPurchaseOrderDraftSentStatusSync(mailboxes);
   } catch (error) {
     errors.push(error);
     console.error(
@@ -66,7 +96,7 @@ export const executeScheduleMethods = async (env: Env) => {
   }
 
   try {
-    await runVendorPurchaseOrderAcknowledgementSync(env);
+    await runVendorPurchaseOrderAcknowledgementSync(mailboxes);
   } catch (error) {
     errors.push(error);
     console.error(
@@ -78,7 +108,7 @@ export const executeScheduleMethods = async (env: Env) => {
   }
 
   try {
-    await runRfqQuoteReminderSync(env);
+    await runRfqQuoteReminderSync(mailboxes);
   } catch (error) {
     errors.push(error);
     console.error(

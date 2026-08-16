@@ -3,9 +3,11 @@ import {
   listPurchaseOrdersWithDraftedProformaInvoices,
   markPurchaseOrderProformaInvoiceSent,
 } from '~/db/purchaseOrderDraftStatus';
-import { createEmailClient } from '~/services/email/index.server';
 import { isGmailAuthenticationError } from '~/services/email/gmail.server';
-import { decryptToken } from '~/utils/tokenEncryption.server';
+import {
+  indexMailboxesByAccountId,
+  type ScheduledMailbox,
+} from '~/services/email-schedule.server';
 
 type DraftStatusResult = {
   checked: number;
@@ -15,26 +17,19 @@ type DraftStatusResult = {
 
 const SENT_CHECK_LOOKBACK_MS = 60 * 1000;
 
-const requireSetting = (name: string, value: string | undefined) => {
-  if (!value) {
-    throw new Error(`Missing required draft status setting: ${name}`);
-  }
-  return value;
-};
-
 const sentAfterDate = (value: string | null, fallback: string) =>
   new Date(
     Math.max(0, new Date(value ?? fallback).getTime() - SENT_CHECK_LOOKBACK_MS),
   );
 
 export const runPurchaseOrderDraftSentStatusSync = async (
-  env: Env,
+  mailboxes: ScheduledMailbox[],
 ): Promise<DraftStatusResult> => {
   const draftedPurchaseOrders =
     await listPurchaseOrdersWithDraftedProformaInvoices();
+  const mailboxesByAccountId = indexMailboxesByAccountId(mailboxes);
   let sent = 0;
   let failed = 0;
-  console.log('draftedPurchaseOrders', draftedPurchaseOrders);
   for (const draftedPurchaseOrder of draftedPurchaseOrders) {
     if (
       !draftedPurchaseOrder.draftId ||
@@ -43,25 +38,14 @@ export const runPurchaseOrderDraftSentStatusSync = async (
       continue;
     }
 
+    const emailClient = mailboxesByAccountId.get(
+      draftedPurchaseOrder.accountId,
+    )?.emailClient;
+    if (!emailClient?.isDraftSent) {
+      continue;
+    }
+
     try {
-      const refreshToken = await decryptToken(
-        draftedPurchaseOrder.encryptedRefreshToken,
-        requireSetting('TOKEN_ENCRYPTION_KEY', env.TOKEN_ENCRYPTION_KEY),
-      );
-      const emailClient = createEmailClient({
-        provider: draftedPurchaseOrder.accountProvider,
-        clientId: requireSetting('GOOGLE_CLIENT_ID', env.GOOGLE_CLIENT_ID),
-        clientSecret: requireSetting(
-          'GOOGLE_CLIENT_SECRET',
-          env.GOOGLE_CLIENT_SECRET,
-        ),
-        refreshToken,
-      });
-
-      if (!emailClient.isDraftSent) {
-        continue;
-      }
-
       const isSent = await emailClient.isDraftSent({
         draftId: draftedPurchaseOrder.draftId,
         threadId: draftedPurchaseOrder.threadId,

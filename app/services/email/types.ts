@@ -25,6 +25,7 @@ export type ListMessagesOptions = {
   receivedAfter: Date;
   limit: number;
   folder?: string;
+  unread?: boolean;
 };
 
 export type CreateDraftReplyInput = {

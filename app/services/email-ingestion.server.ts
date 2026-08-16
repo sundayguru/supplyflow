@@ -1,58 +1,28 @@
-import {
-  listActiveConnectedEmailAccounts,
-  markConnectedEmailAccountNeedsReconnect,
-} from '~/db/connectedEmailAccounts';
+import { markConnectedEmailAccountNeedsReconnect } from '~/db/connectedEmailAccounts';
 import {
   claimEmail,
   completeEmailIngestion,
   failEmailIngestion,
   getEmailIngestionAttempt,
-  getEmailSyncTime,
   saveEmailSyncTime,
 } from '~/db/emailIngestion';
 import { createPurchaseOrder } from '~/db/purchaseOrders';
 import { createRfq, getRfqs, updateRfqStatus } from '~/db/rfqs';
-import { createEmailClient } from '~/services/email/index.server';
+import {
+  shouldSkipStoredEmail,
+  type ExtractedMessagePurchaseOrder,
+} from '~/services/email-classification.server';
 import { isGmailAuthenticationError } from '~/services/email/gmail.server';
-import { createPurchaseOrderExtractor } from '~/services/purchase-order-extraction/index.server';
+import type { ScheduledMailbox } from '~/services/email-schedule.server';
 import { validatePurchaseOrderAgainstRfq } from '~/services/purchase-order-validation.server';
-import type {
-  PurchaseOrderExtractionResult,
-  PurchaseOrderExtractor,
-} from '~/services/purchase-order-extraction/types';
-import { createRfqExtractor } from '~/services/rfq-extraction/index.server';
-import type {
-  RfqExtractionResult,
-  RfqExtractor,
-} from '~/services/rfq-extraction/types';
-import { getProviderApiKey } from '~/utils/organization-ai.server';
-import { decryptToken } from '~/utils/tokenEncryption.server';
-import type { SelectConnectedEmailAccount } from '~/db/schemas';
-import { getOrganizationById } from '~/db/organizations';
-import { organizationAiModels } from '~/types/organization';
-import type {
-  EmailAttachment,
-  EmailClient,
-  EmailMessage,
-} from '~/services/email/types';
+import type { EmailClient, EmailMessage } from '~/services/email/types';
 import type { RfqRecord } from '~/types/rfq';
 import type {
   PurchaseOrderItemInput,
   PurchaseOrderRecord,
 } from '~/types/purchaseOrder';
 import { calculateRfqItemAmounts } from '~/utils/rfq';
-import { extractRfqPdfText } from '~/utils/rfqPdfExtraction.server';
 import { uploadRfqSourcePdf } from '~/utils/rfqSourcePdf.server';
-
-const OVERLAP_MS = 5 * 60 * 1000;
-const MAX_MESSAGES_PER_RUN = 25;
-const STALE_PROCESSING_MS = 10 * 60 * 1000;
-
-const getStartOfUtcDay = (date: Date) => {
-  const start = new Date(date);
-  start.setUTCHours(0, 0, 0, 0);
-  return start;
-};
 
 type AccountResult = {
   accountId: string;
@@ -73,47 +43,9 @@ export type EmailIngestionResult = {
   results: AccountResult[];
 };
 
-const requireSetting = (name: string, value: string | undefined) => {
-  if (!value) {
-    throw new Error(`Missing required email ingestion setting: ${name}`);
-  }
-  return value;
-};
-
-type ExtractedMessageRfq = {
-  result: Extract<RfqExtractionResult, { isRfq: true }>;
-  sourcePdf: EmailAttachment | null;
-};
-
-type ExtractedMessagePurchaseOrder = {
-  result: Extract<PurchaseOrderExtractionResult, { isPurchaseOrder: true }>;
-  searchText: string;
-};
-
 type LinkedRfqCandidate = {
   id: string;
   reference: string;
-};
-
-type EmailIngestionAttempt = Awaited<
-  ReturnType<typeof getEmailIngestionAttempt>
->;
-
-const isPdfAttachment = (attachment: EmailAttachment) =>
-  attachment.contentType === 'application/pdf' ||
-  attachment.filename.toLowerCase().endsWith('.pdf');
-
-const shouldSkipStoredEmail = (attempt: EmailIngestionAttempt) => {
-  if (!attempt) {
-    return false;
-  }
-  if (attempt.status === 'processed' || attempt.status === 'ignored') {
-    return true;
-  }
-  return (
-    attempt.status === 'processing' &&
-    new Date(attempt.updatedAt).getTime() > Date.now() - STALE_PROCESSING_MS
-  );
 };
 
 const toPurchaseOrderItemFromRfqItem = (
@@ -148,26 +80,6 @@ const resolvePurchaseOrderItems = (
   return linkedRfq.items.map(toPurchaseOrderItemFromRfqItem);
 };
 
-const buildPdfContextMessage = (
-  message: EmailMessage,
-  attachment: EmailAttachment,
-  text: string,
-): EmailMessage => ({
-  ...message,
-  id: `${message.id}:${attachment.id}`,
-  subject: `PDF attachment: ${attachment.filename}`,
-  text: [
-    `Email subject: ${message.subject}`,
-    `Email body:`,
-    message.text,
-    '',
-    `PDF filename: ${attachment.filename}`,
-    `PDF text:`,
-    text,
-  ].join('\n'),
-  attachments: [],
-});
-
 const resolveLinkedRfqId = (
   extractedReference: string | null,
   searchText: string,
@@ -189,93 +101,6 @@ const resolveLinkedRfqId = (
       normalizedSearchText.includes(rfq.reference.toLowerCase()),
     )?.id ?? null
   );
-};
-
-const extractPdfAttachmentRfq = async (
-  message: EmailMessage,
-  extractor: RfqExtractor,
-): Promise<ExtractedMessageRfq | null> => {
-  for (const attachment of message.attachments) {
-    if (!isPdfAttachment(attachment)) {
-      continue;
-    }
-    const file = new File([attachment.bytes], attachment.filename, {
-      type: 'application/pdf',
-    });
-    const text = await extractRfqPdfText(file, attachment.bytes);
-    const result = await extractor.extract(
-      buildPdfContextMessage(message, attachment, text),
-    );
-    if (result.isRfq) {
-      return { result, sourcePdf: attachment };
-    }
-  }
-  return null;
-};
-
-const extractMessageRfq = async (
-  message: EmailMessage,
-  extractor: RfqExtractor,
-): Promise<ExtractedMessageRfq | null> => {
-  try {
-    const result = await extractor.extract(message);
-    if (result.isRfq) {
-      return { result, sourcePdf: null };
-    }
-    return await extractPdfAttachmentRfq(message, extractor);
-  } catch (error) {
-    const pdfResult = await extractPdfAttachmentRfq(message, extractor);
-    if (pdfResult) {
-      return pdfResult;
-    }
-    throw error;
-  }
-};
-
-const extractPdfAttachmentPurchaseOrder = async (
-  message: EmailMessage,
-  extractor: PurchaseOrderExtractor,
-): Promise<ExtractedMessagePurchaseOrder | null> => {
-  for (const attachment of message.attachments) {
-    if (!isPdfAttachment(attachment)) {
-      continue;
-    }
-    const file = new File([attachment.bytes], attachment.filename, {
-      type: 'application/pdf',
-    });
-    const text = await extractRfqPdfText(file, attachment.bytes);
-    const pdfMessage = buildPdfContextMessage(message, attachment, text);
-    const result = await extractor.extract(pdfMessage);
-    if (result.isPurchaseOrder) {
-      return { result, searchText: pdfMessage.text };
-    }
-  }
-  return null;
-};
-
-const extractMessagePurchaseOrder = async (
-  message: EmailMessage,
-  extractor: PurchaseOrderExtractor,
-): Promise<ExtractedMessagePurchaseOrder | null> => {
-  try {
-    const result = await extractor.extract(message);
-    if (result.isPurchaseOrder) {
-      return {
-        result,
-        searchText: `${message.subject}\n${message.text}`,
-      };
-    }
-    return await extractPdfAttachmentPurchaseOrder(message, extractor);
-  } catch (error) {
-    const pdfResult = await extractPdfAttachmentPurchaseOrder(
-      message,
-      extractor,
-    );
-    if (pdfResult) {
-      return pdfResult;
-    }
-    throw error;
-  }
 };
 
 const buildRfqAcknowledgementBody = (
@@ -358,203 +183,152 @@ const sendPurchaseOrderAcknowledgement = async ({
 };
 
 const processAccount = async (
-  account: SelectConnectedEmailAccount,
-  env: Env,
+  mailbox: ScheduledMailbox,
 ): Promise<AccountResult> => {
-  if (!account.organizationId) {
-    throw new Error('Connected account is not linked to an organization');
+  const { account, startedAt, classification } = mailbox;
+  if (mailbox.loadError || !mailbox.emailClient || !mailbox.organization) {
+    return {
+      accountId: account.id,
+      email: account.email,
+      discovered: 0,
+      processed: 0,
+      ignored: 0,
+      failed: 1,
+      error: mailbox.loadError ?? 'Mailbox is not ready',
+    };
   }
-  const organization = await getOrganizationById(account.organizationId);
-  if (!organization) {
-    throw new Error('Connected account organization was not found');
-  }
-  const model = organizationAiModels.find(
-    (candidate) => candidate.value === organization.preferredModel,
-  );
-  if (!model) {
-    throw new Error('Organization AI model is not supported');
-  }
-  const providerApiKey = getProviderApiKey(model.provider, env);
-  const extractorConfig = {
-    provider: model.provider,
-    apiKey: requireSetting(providerApiKey.name, providerApiKey.value),
-    model: model.value,
-  };
-  const extractor: RfqExtractor = createRfqExtractor({
-    ...extractorConfig,
-    defaultPriceMarkup: organization.priceMarkup,
-  });
-  const purchaseOrderExtractor: PurchaseOrderExtractor =
-    createPurchaseOrderExtractor(extractorConfig);
-  const linkedRfqCandidates = await getRfqs(
-    account.organizationId,
-    organization.vat,
-  );
+
+  const organization = mailbox.organization;
+  const emailClient = mailbox.emailClient;
+  const linkedRfqCandidates = await getRfqs(organization.id, organization.vat);
   const rfqCandidates = linkedRfqCandidates.map(({ id, reference }) => ({
     id,
     reference,
   }));
-  const startedAt = new Date();
-  const refreshToken = await decryptToken(
-    account.encryptedRefreshToken,
-    requireSetting('TOKEN_ENCRYPTION_KEY', env.TOKEN_ENCRYPTION_KEY),
-  );
-  const emailClient = createEmailClient({
-    provider: account.provider,
-    clientId: requireSetting('GOOGLE_CLIENT_ID', env.GOOGLE_CLIENT_ID),
-    clientSecret: requireSetting(
-      'GOOGLE_CLIENT_SECRET',
-      env.GOOGLE_CLIENT_SECRET,
-    ),
-    refreshToken,
-  });
-  const lastSync = await getEmailSyncTime(account.id);
-  const startOfToday = getStartOfUtcDay(startedAt);
-  const receivedAfter = lastSync
-    ? new Date(
-        Math.max(startOfToday.getTime(), lastSync.getTime() - OVERLAP_MS),
-      )
-    : startOfToday;
-  const messages = (
-    await emailClient.listMessages({
-      receivedAfter,
-      limit: MAX_MESSAGES_PER_RUN,
-      folder: account.emailFolder || organization.emailFolder || 'INBOX',
-    })
-  ).filter((message) => message.receivedAt.getTime() >= startOfToday.getTime());
   let processed = 0;
-  let ignored = 0;
   let failed = 0;
 
-  for (const message of messages) {
+  for (const { message, extraction } of classification.purchaseOrders) {
     const attempt = await getEmailIngestionAttempt(account.id, message.id);
     if (shouldSkipStoredEmail(attempt)) {
       continue;
     }
     let ingestionId: string | null = null;
     try {
-      const extraction = await extractMessageRfq(message, extractor);
-      if (!extraction) {
-        const purchaseOrderExtraction = await extractMessagePurchaseOrder(
-          message,
-          purchaseOrderExtractor,
-        );
-        if (!purchaseOrderExtraction) {
-          ignored += 1;
-          continue;
-        }
-        ingestionId = await claimEmail(
-          account.id,
-          emailClient.provider,
-          message,
-        );
-        if (!ingestionId) {
-          continue;
-        }
-        const rfqId = resolveLinkedRfqId(
-          purchaseOrderExtraction.result.rfqReference,
-          purchaseOrderExtraction.searchText,
-          rfqCandidates,
-        );
-        const linkedRfq =
-          linkedRfqCandidates.find((rfq) => rfq.id === rfqId) ?? null;
-        const purchaseOrderItems = resolvePurchaseOrderItems(
-          purchaseOrderExtraction,
-          linkedRfq,
-        );
-        const shouldUseLinkedRfqTerms =
-          purchaseOrderExtraction.result.purchaseOrder.items.length === 0
-            ? linkedRfq
-            : null;
-        const purchaseOrderInput = {
-          ...purchaseOrderExtraction.result.purchaseOrder,
-          currency: shouldUseLinkedRfqTerms
-            ? shouldUseLinkedRfqTerms.currency
-            : purchaseOrderExtraction.result.purchaseOrder.currency,
-          applyVat: shouldUseLinkedRfqTerms
-            ? shouldUseLinkedRfqTerms.applyVat
-            : purchaseOrderExtraction.result.purchaseOrder.applyVat,
-          incoterms: shouldUseLinkedRfqTerms
-            ? shouldUseLinkedRfqTerms.incoterms
-            : purchaseOrderExtraction.result.purchaseOrder.incoterms,
-          deliveryTerms: shouldUseLinkedRfqTerms
-            ? shouldUseLinkedRfqTerms.deliveryTerms
-            : purchaseOrderExtraction.result.purchaseOrder.deliveryTerms,
-          items: purchaseOrderItems,
-          rfqId,
-        };
-        const validation = validatePurchaseOrderAgainstRfq(
-          purchaseOrderInput,
-          linkedRfq,
-        );
-        const purchaseOrder = await createPurchaseOrder(
-          account.organizationId,
-          account.userId,
-          {
-            ...purchaseOrderInput,
-            status: validation.status,
-          },
-          organization.vat,
-          { validationSummary: validation.summary },
-        );
-        if (!purchaseOrder) {
-          throw new Error('Purchase order could not be created');
-        }
-        if (rfqId) {
-          await updateRfqStatus(
-            rfqId,
-            account.organizationId,
-            'won',
-            organization.vat,
-          );
-        }
-        try {
-          await sendPurchaseOrderAcknowledgement({
-            emailClient,
-            message,
-            organizationName: organization.name,
-            purchaseOrder,
-          });
-        } catch (acknowledgementError) {
-          if (isGmailAuthenticationError(acknowledgementError)) {
-            await markConnectedEmailAccountNeedsReconnect(
-              account.id,
-              'Gmail access expired. Reconnect this account to resume inbox checks.',
-            );
-          }
-          console.warn(
-            JSON.stringify({
-              event: 'purchase_order_acknowledgement_failed',
-              accountId: account.id,
-              purchaseOrderId: purchaseOrder.id,
-              messageId: message.id,
-              error:
-                acknowledgementError instanceof Error
-                  ? acknowledgementError.message
-                  : 'Unknown acknowledgement error',
-            }),
-          );
-        }
-        await completeEmailIngestion(ingestionId, {
-          status: 'processed',
-          purchaseOrderId: purchaseOrder.id,
-        });
-        processed += 1;
+      ingestionId = await claimEmail(account.id, emailClient.provider, message);
+      if (!ingestionId) {
         continue;
       }
+      const rfqId = resolveLinkedRfqId(
+        extraction.result.rfqReference,
+        extraction.searchText,
+        rfqCandidates,
+      );
+      const linkedRfq =
+        linkedRfqCandidates.find((rfq) => rfq.id === rfqId) ?? null;
+      const purchaseOrderItems = resolvePurchaseOrderItems(
+        extraction,
+        linkedRfq,
+      );
+      const shouldUseLinkedRfqTerms =
+        extraction.result.purchaseOrder.items.length === 0 ? linkedRfq : null;
+      const purchaseOrderInput = {
+        ...extraction.result.purchaseOrder,
+        currency: shouldUseLinkedRfqTerms
+          ? shouldUseLinkedRfqTerms.currency
+          : extraction.result.purchaseOrder.currency,
+        applyVat: shouldUseLinkedRfqTerms
+          ? shouldUseLinkedRfqTerms.applyVat
+          : extraction.result.purchaseOrder.applyVat,
+        incoterms: shouldUseLinkedRfqTerms
+          ? shouldUseLinkedRfqTerms.incoterms
+          : extraction.result.purchaseOrder.incoterms,
+        deliveryTerms: shouldUseLinkedRfqTerms
+          ? shouldUseLinkedRfqTerms.deliveryTerms
+          : extraction.result.purchaseOrder.deliveryTerms,
+        items: purchaseOrderItems,
+        rfqId,
+      };
+      const validation = validatePurchaseOrderAgainstRfq(
+        purchaseOrderInput,
+        linkedRfq,
+      );
+      const purchaseOrder = await createPurchaseOrder(
+        organization.id,
+        account.userId,
+        {
+          ...purchaseOrderInput,
+          status: validation.status,
+        },
+        organization.vat,
+        { validationSummary: validation.summary },
+      );
+      if (!purchaseOrder) {
+        throw new Error('Purchase order could not be created');
+      }
+      if (rfqId) {
+        await updateRfqStatus(rfqId, organization.id, 'won', organization.vat);
+      }
+      try {
+        await sendPurchaseOrderAcknowledgement({
+          emailClient,
+          message,
+          organizationName: organization.name,
+          purchaseOrder,
+        });
+      } catch (acknowledgementError) {
+        if (isGmailAuthenticationError(acknowledgementError)) {
+          await markConnectedEmailAccountNeedsReconnect(
+            account.id,
+            'Gmail access expired. Reconnect this account to resume inbox checks.',
+          );
+        }
+        console.warn(
+          JSON.stringify({
+            event: 'purchase_order_acknowledgement_failed',
+            accountId: account.id,
+            purchaseOrderId: purchaseOrder.id,
+            messageId: message.id,
+            error:
+              acknowledgementError instanceof Error
+                ? acknowledgementError.message
+                : 'Unknown acknowledgement error',
+          }),
+        );
+      }
+      await completeEmailIngestion(ingestionId, {
+        status: 'processed',
+        purchaseOrderId: purchaseOrder.id,
+      });
+      processed += 1;
+    } catch (error) {
+      if (ingestionId) {
+        await failEmailIngestion(ingestionId, error);
+      }
+      failed += 1;
+    }
+  }
+
+  for (const { message, extraction } of classification.rfqs) {
+    const attempt = await getEmailIngestionAttempt(account.id, message.id);
+    if (shouldSkipStoredEmail(attempt)) {
+      continue;
+    }
+    let ingestionId: string | null = null;
+    try {
       ingestionId = await claimEmail(account.id, emailClient.provider, message);
       if (!ingestionId) {
         continue;
       }
       const sourcePdfKey = extraction.sourcePdf
         ? await uploadRfqSourcePdf(
-            account.organizationId,
+            organization.id,
             extraction.sourcePdf.bytes,
             extraction.sourcePdf.filename,
           )
         : null;
       const rfq = await createRfq(
-        account.organizationId,
+        organization.id,
         account.userId,
         { ...extraction.result.rfq, sourcePdfKey },
         organization.vat,
@@ -609,30 +383,30 @@ const processAccount = async (
   return {
     accountId: account.id,
     email: account.email,
-    discovered: messages.length,
+    discovered:
+      classification.rfqs.length + classification.purchaseOrders.length,
     processed,
-    ignored,
+    ignored: 0,
     failed,
   };
 };
 
-export const runEmailIngestion = async (env: Env, organizationId?: string) => {
-  const accounts = await listActiveConnectedEmailAccounts(organizationId);
+export const runEmailIngestion = async (mailboxes: ScheduledMailbox[]) => {
   const results: AccountResult[] = [];
 
-  for (const account of accounts) {
+  for (const mailbox of mailboxes) {
     try {
-      results.push(await processAccount(account, env));
+      results.push(await processAccount(mailbox));
     } catch (error) {
       if (isGmailAuthenticationError(error)) {
         await markConnectedEmailAccountNeedsReconnect(
-          account.id,
+          mailbox.account.id,
           'Gmail access expired. Reconnect this account to resume inbox checks.',
         );
       }
       results.push({
-        accountId: account.id,
-        email: account.email,
+        accountId: mailbox.account.id,
+        email: mailbox.account.email,
         discovered: 0,
         processed: 0,
         ignored: 0,
@@ -643,7 +417,7 @@ export const runEmailIngestion = async (env: Env, organizationId?: string) => {
   }
 
   const summary: EmailIngestionResult = {
-    accounts: accounts.length,
+    accounts: mailboxes.length,
     discovered: results.reduce((total, result) => total + result.discovered, 0),
     processed: results.reduce((total, result) => total + result.processed, 0),
     ignored: results.reduce((total, result) => total + result.ignored, 0),
