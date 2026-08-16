@@ -21,7 +21,7 @@ type RfqPipelineProps = {
 const statusStyles: Record<RfqStatus, PipelineStatusStyle> = {
   new: { column: 'border-sky-200 bg-sky-50/60', dot: 'bg-sky-500' },
   pricing: { column: 'border-amber-200 bg-amber-50/60', dot: 'bg-amber-500' },
-  review: {
+  review_email: {
     column: 'border-indigo-200 bg-indigo-50/60',
     dot: 'bg-indigo-500',
   },

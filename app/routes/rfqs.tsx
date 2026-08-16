@@ -55,7 +55,7 @@ type ApiResponse =
 const pendingStatuses: RfqStatus[] = [
   'new',
   'pricing',
-  'review',
+  'review_email',
   'quoted',
   'sent',
 ];

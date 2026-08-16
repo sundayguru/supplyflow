@@ -1,7 +1,7 @@
 export const rfqStatuses = [
   'new',
   'pricing',
-  'review',
+  'review_email',
   'quoted',
   'sent',
   'won',

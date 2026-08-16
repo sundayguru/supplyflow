@@ -7,7 +7,7 @@ type RfqStatusBadgeProps = {
 export const rfqStatusLabels: Record<RfqStatus, string> = {
   new: 'New',
   pricing: 'Pricing',
-  review: 'Review',
+  review_email: 'Review email',
   quoted: 'Quoted',
   sent: 'Sent',
   won: 'Won',
@@ -17,7 +17,7 @@ export const rfqStatusLabels: Record<RfqStatus, string> = {
 const statusStyles: Record<RfqStatus, string> = {
   new: 'bg-sky-50 text-sky-700 ring-sky-200',
   pricing: 'bg-amber-50 text-amber-700 ring-amber-200',
-  review: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
+  review_email: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
   quoted: 'bg-violet-50 text-violet-700 ring-violet-200',
   sent: 'bg-sky-50 text-sky-700 ring-sky-200',
   won: 'bg-emerald-50 text-emerald-700 ring-emerald-200',

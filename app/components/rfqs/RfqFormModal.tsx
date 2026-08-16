@@ -5,6 +5,7 @@ import type { ManufacturerRecord } from '~/types/manufacturer';
 import type { ProductPriceRecord } from '~/types/productPrice';
 import { currencyOptionLabel, supportedCurrencies } from '~/utils/currencies';
 import { RfqItemFields, type RfqItemFormValue } from './RfqItemFields';
+import { rfqStatusLabels } from './RfqStatusBadge';
 import type { RfqPdfTemplateOption } from '~/types';
 
 export type RfqFormValue = Omit<RfqInput, 'items'> & {
@@ -20,16 +21,6 @@ type RfqFormModalProps = {
   templates: RfqPdfTemplateOption[];
   productPrices: ProductPriceRecord[];
   manufacturers: ManufacturerRecord[];
-};
-
-const statusLabels: Record<RfqStatus, string> = {
-  new: 'New',
-  pricing: 'Pricing',
-  quoted: 'Quoted',
-  review: 'Review',
-  sent: 'Sent',
-  won: 'Won',
-  lost: 'Lost',
 };
 
 const emptyItem = (priceMarkup: number): RfqItemFormValue => ({
@@ -246,7 +237,7 @@ export const RfqFormModal = ({
               >
                 {rfqStatuses.map((value) => (
                   <option key={value} value={value}>
-                    {statusLabels[value]}
+                    {rfqStatusLabels[value]}
                   </option>
                 ))}
               </select>

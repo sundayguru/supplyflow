@@ -178,7 +178,7 @@ export const updateRfqGeneratedReply = async (
       generatedReply,
       generatedReplyDraftId,
       generatedReplyDraftUpdatedAt: updatedAt,
-      status: 'review',
+      status: 'review_email',
       updatedAt,
     })
     .where(and(eq(rfqs.id, id), eq(rfqs.organizationId, organizationId)))

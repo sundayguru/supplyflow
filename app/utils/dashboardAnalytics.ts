@@ -77,7 +77,7 @@ const PIPELINE_STAGES: Array<{
   {
     key: 'pricing',
     label: 'In pricing',
-    statuses: ['pricing', 'review'],
+    statuses: ['pricing', 'review_email'],
     color: 'bg-amber-500',
   },
   {
