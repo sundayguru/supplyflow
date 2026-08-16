@@ -1,4 +1,5 @@
 import type { EmailMessage } from '~/services/email/types';
+import { parseLlmJson } from '~/utils/llmJson';
 import { parsePurchaseOrderInput } from '~/utils/purchaseOrder.server';
 import type { PurchaseOrderExtractionResult } from './types';
 
@@ -88,11 +89,7 @@ export const parsePurchaseOrderExtractionResponse = (
   text: string,
   message: EmailMessage,
 ): PurchaseOrderExtractionResult => {
-  const cleaned = text
-    .trim()
-    .replace(/^```json\s*/i, '')
-    .replace(/\s*```$/, '');
-  const value: unknown = JSON.parse(cleaned);
+  const value: unknown = parseLlmJson(text);
   if (typeof value !== 'object' || value === null) {
     throw new Error('Purchase order extractor returned a non-object response');
   }

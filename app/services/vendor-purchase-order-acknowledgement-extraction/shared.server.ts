@@ -1,4 +1,5 @@
 import type { EmailMessage } from '~/services/email/types';
+import { parseLlmJson } from '~/utils/llmJson';
 import { parseVendorPurchaseOrderAcknowledgementInput } from '~/utils/vendorPurchaseOrderAcknowledgement.server';
 import type { VendorPurchaseOrderAcknowledgementExtractionResult } from './types';
 
@@ -65,11 +66,7 @@ ${message.text}`;
 export const parseVendorPurchaseOrderAcknowledgementExtractionResponse = (
   text: string,
 ): VendorPurchaseOrderAcknowledgementExtractionResult => {
-  const cleaned = text
-    .trim()
-    .replace(/^```json\s*/i, '')
-    .replace(/\s*```$/, '');
-  const value: unknown = JSON.parse(cleaned);
+  const value: unknown = parseLlmJson(text);
   if (typeof value !== 'object' || value === null) {
     throw new Error(
       'Vendor PO acknowledgement extractor returned a non-object response',

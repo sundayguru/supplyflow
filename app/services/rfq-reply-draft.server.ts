@@ -2,6 +2,7 @@ import type { OrganizationAiProvider } from '~/types/organization';
 import type { RfqRecord } from '~/types/rfq';
 import { GeminiService } from '~/utils/gemini.server';
 import { GroqService, type LlmGenerationResponse } from '~/utils/groq.server';
+import { parseLlmJson } from '~/utils/llmJson';
 import { OllamaService } from '~/utils/ollama.server';
 
 type RfqReplyDraftConfig = {
@@ -105,7 +106,7 @@ export const generateRfqReplyDraft = async ({
   ...input
 }: GenerateRfqReplyDraftInput) => {
   const response = await generate(config, buildPrompt(input));
-  const parsed = JSON.parse(response.text) as ReplyDraftEnvelope;
+  const parsed = parseLlmJson(response.text) as ReplyDraftEnvelope;
   if (typeof parsed.bodyText !== 'string' || !parsed.bodyText.trim()) {
     throw new Error('AI reply draft did not include an email body');
   }

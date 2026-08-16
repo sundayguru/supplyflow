@@ -1,4 +1,5 @@
 import type { EmailMessage } from '~/services/email/types';
+import { parseLlmJson } from '~/utils/llmJson';
 import { parseRfqInput } from '~/utils/rfq.server';
 import type { RfqExtractionResult } from './types';
 
@@ -73,11 +74,7 @@ export const parseRfqExtractionResponse = (
   message: EmailMessage,
   defaultPriceMarkup: number,
 ): RfqExtractionResult => {
-  const cleaned = text
-    .trim()
-    .replace(/^```json\s*/i, '')
-    .replace(/\s*```$/, '');
-  const value: unknown = JSON.parse(cleaned);
+  const value: unknown = parseLlmJson(text);
   if (typeof value !== 'object' || value === null) {
     throw new Error('RFQ extractor returned a non-object response');
   }
