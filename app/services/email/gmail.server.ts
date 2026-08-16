@@ -514,6 +514,20 @@ export const createGmailClient = (config: GmailClientConfig): EmailClient => ({
       (left, right) => left.receivedAt.getTime() - right.receivedAt.getTime(),
     );
   },
+  async listThreadMessages(threadId) {
+    const accessToken = await getAccessToken(config);
+    const thread = await gmailRequest<GmailThreadResponse>(
+      `/threads/${encodeURIComponent(threadId)}?format=metadata`,
+      accessToken,
+    );
+    const messages: EmailMessage[] = [];
+    for (const message of thread.messages ?? []) {
+      messages.push(await getMessage(message.id, accessToken));
+    }
+    return messages.sort(
+      (left, right) => left.receivedAt.getTime() - right.receivedAt.getTime(),
+    );
+  },
   async createDraftReply(input) {
     const accessToken = await getAccessToken(config);
     const draft = await gmailRequest<{

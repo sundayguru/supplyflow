@@ -70,9 +70,11 @@ This template comes with [Tailwind CSS](https://tailwindcss.com/) already config
 
 The Worker checks Gmail every minute, classifies new messages with the
 organization's preferred Groq, Gemini, or Ollama Cloud model, and
-creates RFQs for messages that contain quotation requests. The ingestion layer
-uses provider-neutral email and extraction interfaces so either provider can be
-replaced without changing the scheduling or database workflow.
+creates RFQs for customer quotation requests and purchase orders for
+customer orders. A separate scheduled process watches sent vendor PO
+email threads for vendor replies and creates vendor PO acknowledgement
+records. Customer PO acknowledgements (outbound thank-you replies) are
+not treated as vendor PO acknowledgements.
 
 Required Worker secrets:
 

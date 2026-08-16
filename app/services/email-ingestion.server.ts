@@ -12,12 +12,6 @@ import {
 } from '~/db/emailIngestion';
 import { createPurchaseOrder } from '~/db/purchaseOrders';
 import { createRfq, getRfqs, updateRfqStatus } from '~/db/rfqs';
-import {
-  createVendorPurchaseOrderAcknowledgement,
-  getVendorPurchaseOrderAcknowledgementBySourceEmail,
-  getVendorPurchaseOrderByReference,
-  markVendorPurchaseOrderAcknowledged,
-} from '~/db/vendorPurchaseOrderAcknowledgements';
 import { createEmailClient } from '~/services/email/index.server';
 import { isGmailAuthenticationError } from '~/services/email/gmail.server';
 import { createPurchaseOrderExtractor } from '~/services/purchase-order-extraction/index.server';
@@ -31,11 +25,6 @@ import type {
   RfqExtractionResult,
   RfqExtractor,
 } from '~/services/rfq-extraction/types';
-import { createVendorPurchaseOrderAcknowledgementExtractor } from '~/services/vendor-purchase-order-acknowledgement-extraction/index.server';
-import type {
-  VendorPurchaseOrderAcknowledgementExtractionResult,
-  VendorPurchaseOrderAcknowledgementExtractor,
-} from '~/services/vendor-purchase-order-acknowledgement-extraction/types';
 import { getProviderApiKey } from '~/utils/organization-ai.server';
 import { decryptToken } from '~/utils/tokenEncryption.server';
 import type { SelectConnectedEmailAccount } from '~/db/schemas';
@@ -51,7 +40,6 @@ import type {
   PurchaseOrderItemInput,
   PurchaseOrderRecord,
 } from '~/types/purchaseOrder';
-import type { VendorPurchaseOrderAcknowledgementItemInput } from '~/types/vendorPurchaseOrderAcknowledgement';
 import { calculateRfqItemAmounts } from '~/utils/rfq';
 import { extractRfqPdfText } from '~/utils/rfqPdfExtraction.server';
 import { uploadRfqSourcePdf } from '~/utils/rfqSourcePdf.server';
@@ -102,14 +90,6 @@ type ExtractedMessagePurchaseOrder = {
   searchText: string;
 };
 
-type ExtractedMessageVendorPurchaseOrderAcknowledgement = {
-  result: Extract<
-    VendorPurchaseOrderAcknowledgementExtractionResult,
-    { isAcknowledgement: true }
-  >;
-  searchText: string;
-};
-
 type LinkedRfqCandidate = {
   id: string;
   reference: string;
@@ -127,7 +107,7 @@ const shouldSkipStoredEmail = (attempt: EmailIngestionAttempt) => {
   if (!attempt) {
     return false;
   }
-  if (attempt.status === 'processed') {
+  if (attempt.status === 'processed' || attempt.status === 'ignored') {
     return true;
   }
   return (
@@ -167,9 +147,6 @@ const resolvePurchaseOrderItems = (
   }
   return linkedRfq.items.map(toPurchaseOrderItemFromRfqItem);
 };
-
-const findVendorPurchaseOrderReference = (searchText: string) =>
-  searchText.match(/\bVPO-\d{4}-[A-Z0-9]{6}\b/i)?.[0]?.toUpperCase() ?? null;
 
 const buildPdfContextMessage = (
   message: EmailMessage,
@@ -301,128 +278,6 @@ const extractMessagePurchaseOrder = async (
   }
 };
 
-const extractPdfAttachmentVendorPurchaseOrderAcknowledgement = async (
-  message: EmailMessage,
-  extractor: VendorPurchaseOrderAcknowledgementExtractor,
-): Promise<ExtractedMessageVendorPurchaseOrderAcknowledgement | null> => {
-  for (const attachment of message.attachments) {
-    if (!isPdfAttachment(attachment)) {
-      continue;
-    }
-    const file = new File([attachment.bytes], attachment.filename, {
-      type: 'application/pdf',
-    });
-    const text = await extractRfqPdfText(file, attachment.bytes);
-    const pdfMessage = buildPdfContextMessage(message, attachment, text);
-    const result = await extractor.extract(pdfMessage);
-    if (result.isAcknowledgement) {
-      return { result, searchText: pdfMessage.text };
-    }
-  }
-  return null;
-};
-
-const extractMessageVendorPurchaseOrderAcknowledgement = async (
-  message: EmailMessage,
-  extractor: VendorPurchaseOrderAcknowledgementExtractor,
-): Promise<ExtractedMessageVendorPurchaseOrderAcknowledgement | null> => {
-  try {
-    const result = await extractor.extract(message);
-    if (result.isAcknowledgement) {
-      return {
-        result,
-        searchText: `${message.subject}\n${message.text}`,
-      };
-    }
-    return await extractPdfAttachmentVendorPurchaseOrderAcknowledgement(
-      message,
-      extractor,
-    );
-  } catch (error) {
-    const pdfResult =
-      await extractPdfAttachmentVendorPurchaseOrderAcknowledgement(
-        message,
-        extractor,
-      );
-    if (pdfResult) {
-      return pdfResult;
-    }
-    throw error;
-  }
-};
-
-const matchVendorPurchaseOrderItemId = (
-  extractedItem: VendorPurchaseOrderAcknowledgementItemInput,
-  vendorPurchaseOrderItems: Array<{
-    id: string;
-    description: string;
-    manufacturerPartNumber: string | null;
-  }>,
-) => {
-  const normalizedPartNumber = extractedItem.manufacturerPartNumber
-    ?.trim()
-    .toLowerCase();
-  if (normalizedPartNumber) {
-    const partMatch = vendorPurchaseOrderItems.find(
-      (item) =>
-        item.manufacturerPartNumber?.trim().toLowerCase() ===
-        normalizedPartNumber,
-    );
-    if (partMatch) {
-      return partMatch.id;
-    }
-  }
-
-  const normalizedDescription = extractedItem.description.trim().toLowerCase();
-  return (
-    vendorPurchaseOrderItems.find(
-      (item) => item.description.trim().toLowerCase() === normalizedDescription,
-    )?.id ?? null
-  );
-};
-
-const createAcknowledgementItemFromVendorPoItem = (item: {
-  id: string;
-  quantity: number;
-  unit: string;
-  description: string;
-  manufacturerPartNumber: string | null;
-}): VendorPurchaseOrderAcknowledgementItemInput => ({
-  vendorPurchaseOrderItemId: item.id,
-  quantity: item.quantity,
-  unit: item.unit,
-  description: item.description,
-  manufacturerPartNumber: item.manufacturerPartNumber,
-  deliveryDate: null,
-  status: 'acknowledged',
-  notes: null,
-});
-
-const resolveVendorPurchaseOrderAcknowledgementItems = (
-  acknowledgementExtraction: ExtractedMessageVendorPurchaseOrderAcknowledgement,
-  vendorPurchaseOrderItems: Array<{
-    id: string;
-    quantity: number;
-    unit: string;
-    description: string;
-    manufacturerPartNumber: string | null;
-  }>,
-) => {
-  const { items } = acknowledgementExtraction.result.acknowledgement;
-  if (!items.length) {
-    return vendorPurchaseOrderItems.map(
-      createAcknowledgementItemFromVendorPoItem,
-    );
-  }
-
-  return items.map((item) => ({
-    ...item,
-    vendorPurchaseOrderItemId:
-      item.vendorPurchaseOrderItemId ??
-      matchVendorPurchaseOrderItemId(item, vendorPurchaseOrderItems),
-  }));
-};
-
 const buildRfqAcknowledgementBody = (
   rfq: RfqRecord,
   organizationName: string,
@@ -531,8 +386,6 @@ const processAccount = async (
   });
   const purchaseOrderExtractor: PurchaseOrderExtractor =
     createPurchaseOrderExtractor(extractorConfig);
-  const vendorPurchaseOrderAcknowledgementExtractor: VendorPurchaseOrderAcknowledgementExtractor =
-    createVendorPurchaseOrderAcknowledgementExtractor(extractorConfig);
   const linkedRfqCandidates = await getRfqs(
     account.organizationId,
     organization.vat,
@@ -587,77 +440,7 @@ const processAccount = async (
           purchaseOrderExtractor,
         );
         if (!purchaseOrderExtraction) {
-          const vendorPurchaseOrderAcknowledgementExtraction =
-            await extractMessageVendorPurchaseOrderAcknowledgement(
-              message,
-              vendorPurchaseOrderAcknowledgementExtractor,
-            );
-          if (!vendorPurchaseOrderAcknowledgementExtraction) {
-            ignored += 1;
-            continue;
-          }
-          const vendorPurchaseOrderReference =
-            vendorPurchaseOrderAcknowledgementExtraction.result
-              .vendorPurchaseOrderReference ??
-            findVendorPurchaseOrderReference(
-              vendorPurchaseOrderAcknowledgementExtraction.searchText,
-            );
-          if (!vendorPurchaseOrderReference) {
-            ignored += 1;
-            continue;
-          }
-          const vendorPurchaseOrder = await getVendorPurchaseOrderByReference(
-            vendorPurchaseOrderReference,
-            account.organizationId,
-          );
-          if (!vendorPurchaseOrder) {
-            ignored += 1;
-            continue;
-          }
-          ingestionId = await claimEmail(
-            account.id,
-            emailClient.provider,
-            message,
-          );
-          if (!ingestionId) {
-            continue;
-          }
-          const existingAcknowledgement =
-            await getVendorPurchaseOrderAcknowledgementBySourceEmail(
-              ingestionId,
-              account.organizationId,
-            );
-          if (existingAcknowledgement) {
-            await completeEmailIngestion(ingestionId, { status: 'processed' });
-            processed += 1;
-            continue;
-          }
-          const acknowledgementItems =
-            resolveVendorPurchaseOrderAcknowledgementItems(
-              vendorPurchaseOrderAcknowledgementExtraction,
-              vendorPurchaseOrder.items,
-            );
-          const acknowledgement =
-            await createVendorPurchaseOrderAcknowledgement(
-              account.organizationId,
-              account.userId,
-              {
-                ...vendorPurchaseOrderAcknowledgementExtraction.result
-                  .acknowledgement,
-                vendorPurchaseOrderId: vendorPurchaseOrder.id,
-                items: acknowledgementItems,
-              },
-              { sourceEmailIngestionId: ingestionId },
-            );
-          if (!acknowledgement) {
-            throw new Error('Vendor PO acknowledgement could not be created');
-          }
-          await markVendorPurchaseOrderAcknowledged(
-            vendorPurchaseOrder.id,
-            account.organizationId,
-          );
-          await completeEmailIngestion(ingestionId, { status: 'processed' });
-          processed += 1;
+          ignored += 1;
           continue;
         }
         ingestionId = await claimEmail(

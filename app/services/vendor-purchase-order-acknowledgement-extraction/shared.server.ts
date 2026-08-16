@@ -38,7 +38,7 @@ Return exactly one JSON object with this shape:
   }
 }
 
-A vendor purchase order acknowledgement is a vendor order confirmation, PO acknowledgement, delivery confirmation, promise date, backorder notice, or rejection in response to a vendor PO. If the source mentions a vendor PO reference such as VPO-2026-ABC123, put the exact reference in vendorPurchaseOrderReference. Do not classify customer POs, RFQs, invoices, shipping notices, newsletters, or casual sales messages as acknowledgements. Extract item delivery dates and statuses when present. If the acknowledgement confirms the order generally but does not list items, return an empty items array.`;
+A vendor purchase order acknowledgement is a vendor order confirmation, delivery confirmation, promise date, backorder notice, or rejection in response to our outbound vendor PO (VPO-YYYY-XXXXXX). It is not a customer purchase order. Customer POs are inbound orders from buyers and often mention RFQ-YYYY-XXXXXX. An outbound "thank you for your purchase order" reply we send to a customer is also not a vendor PO acknowledgement. If the source mentions a vendor PO reference such as VPO-2026-ABC123, put the exact reference in vendorPurchaseOrderReference. Do not classify customer POs, RFQs, invoices, shipping notices, newsletters, or casual sales messages as acknowledgements. Extract item delivery dates and statuses when present. If the acknowledgement confirms the order generally but does not list items, return an empty items array.`;
 
 export const buildVendorPurchaseOrderAcknowledgementExtractionPrompt = (
   message: EmailMessage,
