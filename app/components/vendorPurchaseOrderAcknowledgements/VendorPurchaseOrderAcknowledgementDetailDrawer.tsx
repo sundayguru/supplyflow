@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import type { VendorPurchaseOrderAcknowledgementRecord } from '~/types/vendorPurchaseOrderAcknowledgement';
+import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
 import {
   VendorPurchaseOrderAcknowledgementItemStatusBadge,
   VendorPurchaseOrderAcknowledgementStatusBadge,
@@ -34,6 +35,16 @@ export const VendorPurchaseOrderAcknowledgementDetailDrawer = ({
   onEdit,
   onDelete,
 }: VendorPurchaseOrderAcknowledgementDetailDrawerProps) => {
+  const totalQuantity = acknowledgement.items.reduce(
+    (total, item) => total + item.quantity,
+    0,
+  );
+  const subtotal = acknowledgement.items.reduce(
+    (total, item) => total + Math.round(item.price * item.quantity),
+    0,
+  );
+  const currency = acknowledgement.linkedVendorPurchaseOrder.currency;
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -174,14 +185,43 @@ export const VendorPurchaseOrderAcknowledgementDetailDrawer = ({
                       {index + 1}
                     </span>
                     <div className='min-w-0 flex-1'>
-                      <div className='flex flex-wrap items-start justify-between gap-2'>
+                      <div className='flex flex-wrap items-start justify-between gap-3'>
                         <p className='font-semibold text-slate-900'>
                           {item.quantity} {item.unit}
                         </p>
+                        <div className='text-right'>
+                          <p className='text-xs font-bold tracking-wide text-slate-400 uppercase'>
+                            Line total
+                          </p>
+                          <p className='text-sm font-semibold text-emerald-700'>
+                            {formatPurchaseOrderMoney(
+                              Math.round(item.price * item.quantity),
+                              currency,
+                            )}
+                          </p>
+                        </div>
                         <VendorPurchaseOrderAcknowledgementItemStatusBadge
                           status={item.status}
                         />
                       </div>
+                      <dl className='mt-3 grid gap-2 text-sm sm:grid-cols-2'>
+                        <div className='rounded-xl bg-slate-50 px-3 py-2'>
+                          <dt className='text-xs font-bold tracking-wide text-slate-400 uppercase'>
+                            Unit price
+                          </dt>
+                          <dd className='mt-1 font-semibold text-slate-800'>
+                            {formatPurchaseOrderMoney(item.price, currency)}
+                          </dd>
+                        </div>
+                        <div className='rounded-xl bg-slate-50 px-3 py-2'>
+                          <dt className='text-xs font-bold tracking-wide text-slate-400 uppercase'>
+                            Quantity
+                          </dt>
+                          <dd className='mt-1 font-semibold text-slate-800'>
+                            {item.quantity} {item.unit}
+                          </dd>
+                        </div>
+                      </dl>
                       {item.manufacturerPartNumber && (
                         <span className='mt-3 inline-flex rounded-lg bg-slate-100 px-2.5 py-1 font-mono text-xs text-slate-600'>
                           {item.manufacturerPartNumber}
@@ -206,6 +246,30 @@ export const VendorPurchaseOrderAcknowledgementDetailDrawer = ({
                 </article>
               ))}
             </div>
+          </section>
+
+          <section className='mt-7 rounded-2xl border border-slate-200 bg-slate-50 p-5'>
+            <h3 className='flex items-center gap-2 font-semibold text-slate-900'>
+              <Truck size={17} /> Acknowledgement summary
+            </h3>
+            <dl className='mt-4 space-y-3 text-sm'>
+              <div className='flex items-center justify-between text-slate-600'>
+                <dt>Line items</dt>
+                <dd>{acknowledgement.items.length}</dd>
+              </div>
+              <div className='flex items-center justify-between text-slate-600'>
+                <dt>Total quantity</dt>
+                <dd>{totalQuantity}</dd>
+              </div>
+              <div className='flex items-center justify-between text-slate-600'>
+                <dt>Items subtotal</dt>
+                <dd>{formatPurchaseOrderMoney(subtotal, currency)}</dd>
+              </div>
+              <div className='flex items-center justify-between border-t border-slate-200 pt-3 text-base font-bold text-slate-950'>
+                <dt>Total</dt>
+                <dd>{formatPurchaseOrderMoney(subtotal, currency)}</dd>
+              </div>
+            </dl>
           </section>
         </div>
 

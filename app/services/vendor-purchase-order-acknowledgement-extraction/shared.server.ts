@@ -28,6 +28,7 @@ Return exactly one JSON object with this shape:
     "items": [{
       "vendorPurchaseOrderItemId": null,
       "quantity": positive number,
+      "price": non-negative integer in the smallest currency unit, default 0,
       "unit": string such as "unit" or "piece",
       "description": string,
       "manufacturerPartNumber": string or null,

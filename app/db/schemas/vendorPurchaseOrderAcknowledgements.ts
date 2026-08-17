@@ -70,6 +70,7 @@ export const vendorPurchaseOrderAcknowledgementItems = sqliteTable(
     ),
     position: integer('position').notNull().default(0),
     quantity: real('quantity').notNull(),
+    price: integer('price').notNull().default(0),
     unit: text('unit', { length: 32 }).notNull(),
     description: text('description').notNull(),
     manufacturerPartNumber: text('manufacturer_part_number', { length: 255 }),

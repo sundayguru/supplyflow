@@ -20,6 +20,7 @@ export type VendorPurchaseOrderAcknowledgementItemStatus =
 export type VendorPurchaseOrderAcknowledgementItemInput = {
   vendorPurchaseOrderItemId: string | null;
   quantity: number;
+  price: number;
   unit: string;
   description: string;
   manufacturerPartNumber: string | null;

@@ -253,6 +253,13 @@
       "when": 1786875366453,
       "tag": "0035_rfq_review_email",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "6",
+      "when": 1786996800000,
+      "tag": "0036_vendor_po_ack_item_price",
+      "breakpoints": true
     }
   ]
 }

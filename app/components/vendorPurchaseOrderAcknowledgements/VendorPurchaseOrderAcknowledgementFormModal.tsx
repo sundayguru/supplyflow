@@ -29,6 +29,7 @@ type VendorPurchaseOrderAcknowledgementFormModalProps = {
 const emptyItem = (): VendorPurchaseOrderAcknowledgementItemInput => ({
   vendorPurchaseOrderItemId: null,
   quantity: 1,
+  price: 0,
   unit: 'unit',
   description: '',
   manufacturerPartNumber: null,
@@ -42,6 +43,7 @@ const itemFromVendorPoItem = (
 ): VendorPurchaseOrderAcknowledgementItemInput => ({
   vendorPurchaseOrderItemId: item.id,
   quantity: item.quantity,
+  price: item.price,
   unit: item.unit,
   description: item.description,
   manufacturerPartNumber: item.manufacturerPartNumber,
@@ -334,7 +336,24 @@ export const VendorPurchaseOrderAcknowledgementFormModal = ({
                     </label>
                   </div>
 
-                  <div className='mt-4 grid gap-4 sm:grid-cols-3'>
+                  <div className='mt-4 grid gap-4 sm:grid-cols-4'>
+                    <label className='text-sm font-semibold text-slate-700'>
+                      Unit price
+                      <input
+                        type='number'
+                        min='0'
+                        step='0.01'
+                        value={item.price ? item.price / 100 : ''}
+                        onChange={(event) =>
+                          updateItem(index, {
+                            price: Math.round(
+                              Number(event.target.value || 0) * 100,
+                            ),
+                          })
+                        }
+                        className={inputClass}
+                      />
+                    </label>
                     <label className='text-sm font-semibold text-slate-700'>
                       Part number
                       <input

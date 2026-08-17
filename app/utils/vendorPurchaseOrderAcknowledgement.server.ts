@@ -27,6 +27,7 @@ const parseItem = (value: unknown): ParseItemResult => {
   }
 
   const quantity = Number(value.quantity);
+  const price = value.price === undefined ? 0 : Number(value.price);
   const unit = typeof value.unit === 'string' ? value.unit.trim() : '';
   const description =
     typeof value.description === 'string' ? value.description.trim() : '';
@@ -37,6 +38,9 @@ const parseItem = (value: unknown): ParseItemResult => {
       success: false,
       error: 'Each item requires a positive quantity, unit, and description',
     };
+  }
+  if (!Number.isInteger(price) || price < 0) {
+    return { success: false, error: 'Item price must be zero or more' };
   }
   if (
     typeof status !== 'string' ||
@@ -54,6 +58,7 @@ const parseItem = (value: unknown): ParseItemResult => {
         value.vendorPurchaseOrderItemId,
       ),
       quantity,
+      price,
       unit,
       description,
       manufacturerPartNumber: parseOptionalString(value.manufacturerPartNumber),

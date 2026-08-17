@@ -146,12 +146,14 @@ const resolveVendorPurchaseOrderItemId = (
 const createAcknowledgementItemFromVendorPoItem = (item: {
   id: string;
   quantity: number;
+  price: number;
   unit: string;
   description: string;
   manufacturerPartNumber: string | null;
 }): VendorPurchaseOrderAcknowledgementItemInput => ({
   vendorPurchaseOrderItemId: item.id,
   quantity: item.quantity,
+  price: item.price,
   unit: item.unit,
   description: item.description,
   manufacturerPartNumber: item.manufacturerPartNumber,
@@ -165,6 +167,7 @@ const resolveVendorPurchaseOrderAcknowledgementItems = (
   vendorPurchaseOrderItems: Array<{
     id: string;
     quantity: number;
+    price: number;
     unit: string;
     description: string;
     manufacturerPartNumber: string | null;
