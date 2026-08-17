@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, isNull } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { getDb } from './connection';
 import {
   connectedEmailAccounts,
@@ -47,7 +47,6 @@ export const listSentVendorPurchaseOrdersAwaitingAcknowledgement = (
     .where(
       and(
         eq(vendorPurchaseOrders.status, 'sent'),
-        isNotNull(vendorPurchaseOrders.generatedEmailDraftThreadId),
         isNull(vendorPurchaseOrderAcknowledgements.id),
         eq(connectedEmailAccounts.isActive, true),
         eq(connectedEmailAccounts.needsReconnect, false),

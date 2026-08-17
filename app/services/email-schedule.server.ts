@@ -8,6 +8,7 @@ import type { SelectConnectedEmailAccount } from '~/db/schemas';
 import {
   classifyMailboxMessages,
   emptyMailboxClassification,
+  type AwaitingVendorPurchaseOrderAcknowledgement,
   type MailboxClassification,
 } from '~/services/email-classification.server';
 import { createEmailClient } from '~/services/email/index.server';
@@ -143,27 +144,67 @@ export const loadScheduledMailboxes = async (
   return mailboxes;
 };
 
-const vendorAckThreadIdsByAccount = (
+const vendorAckAwaitingByAccount = (
   awaitingAcknowledgements: Awaited<
     ReturnType<typeof listSentVendorPurchaseOrdersAwaitingAcknowledgement>
   >,
 ) => {
-  const threadIdsByAccount = new Map<string, Set<string>>();
+  const awaitingByAccount = new Map<
+    string,
+    AwaitingVendorPurchaseOrderAcknowledgement[]
+  >();
   for (const vendorPurchaseOrder of awaitingAcknowledgements) {
-    if (!vendorPurchaseOrder.threadId) {
+    const entry = {
+      reference: vendorPurchaseOrder.reference,
+      threadId: vendorPurchaseOrder.threadId,
+    };
+    const existing = awaitingByAccount.get(vendorPurchaseOrder.accountId);
+    if (existing) {
+      existing.push(entry);
       continue;
     }
-    const threadIds = threadIdsByAccount.get(vendorPurchaseOrder.accountId);
-    if (threadIds) {
-      threadIds.add(vendorPurchaseOrder.threadId);
-      continue;
-    }
-    threadIdsByAccount.set(
-      vendorPurchaseOrder.accountId,
-      new Set([vendorPurchaseOrder.threadId]),
-    );
+    awaitingByAccount.set(vendorPurchaseOrder.accountId, [entry]);
   }
-  return threadIdsByAccount;
+  return awaitingByAccount;
+};
+
+const enrichMailboxMessagesWithVendorAckThreads = async (
+  mailbox: ScheduledMailbox,
+  threadIds: Set<string>,
+): Promise<EmailMessage[]> => {
+  if (!mailbox.emailClient?.listThreadMessages || threadIds.size === 0) {
+    return mailbox.messages;
+  }
+
+  const messagesById = new Map(
+    mailbox.messages.map((message) => [message.id, message]),
+  );
+
+  for (const threadId of threadIds) {
+    try {
+      const threadMessages =
+        await mailbox.emailClient.listThreadMessages(threadId);
+      for (const message of threadMessages) {
+        if (!messagesById.has(message.id)) {
+          messagesById.set(message.id, message);
+        }
+      }
+    } catch (error) {
+      console.warn(
+        JSON.stringify({
+          event: 'vendor_po_ack_thread_load_failed',
+          accountId: mailbox.account.id,
+          accountEmail: mailbox.account.email,
+          threadId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }),
+      );
+    }
+  }
+
+  return Array.from(messagesById.values()).sort(
+    (left, right) => left.receivedAt.getTime() - right.receivedAt.getTime(),
+  );
 };
 
 export const classifyScheduledMailboxes = async (
@@ -172,7 +213,7 @@ export const classifyScheduledMailboxes = async (
 ): Promise<ScheduledMailbox[]> => {
   const awaitingAcknowledgements =
     await listSentVendorPurchaseOrdersAwaitingAcknowledgement();
-  const threadIdsByAccount = vendorAckThreadIdsByAccount(
+  const awaitingByAccount = vendorAckAwaitingByAccount(
     awaitingAcknowledgements,
   );
   const classifiedMailboxes: ScheduledMailbox[] = [];
@@ -184,15 +225,25 @@ export const classifyScheduledMailboxes = async (
     }
 
     try {
+      const awaitingVendorAcknowledgements =
+        awaitingByAccount.get(mailbox.account.id) ?? [];
+      const vendorAckThreadIds = new Set(
+        awaitingVendorAcknowledgements.flatMap((entry) =>
+          entry.threadId ? [entry.threadId] : [],
+        ),
+      );
+      const messages = await enrichMailboxMessagesWithVendorAckThreads(
+        mailbox,
+        vendorAckThreadIds,
+      );
       const classification = await classifyMailboxMessages({
         account: mailbox.account,
         organization: mailbox.organization,
-        messages: mailbox.messages,
+        messages,
         env,
-        vendorAckThreadIds:
-          threadIdsByAccount.get(mailbox.account.id) ?? new Set(),
+        awaitingVendorAcknowledgements,
       });
-      classifiedMailboxes.push({ ...mailbox, classification });
+      classifiedMailboxes.push({ ...mailbox, messages, classification });
     } catch (error) {
       if (isGmailAuthenticationError(error)) {
         await markConnectedEmailAccountNeedsReconnect(

@@ -22,6 +22,48 @@ import { extractRfqPdfText } from '~/utils/rfqPdfExtraction.server';
 
 const STALE_PROCESSING_MS = 10 * 60 * 1000;
 
+const VPO_REFERENCE_PATTERN = /VPO-\d{4}-[A-Z0-9]{6}/gi;
+
+export type AwaitingVendorPurchaseOrderAcknowledgement = {
+  reference: string;
+  threadId: string | null;
+};
+
+export const normalizeVendorPurchaseOrderReference = (reference: string) =>
+  reference.trim().toUpperCase();
+
+export const extractVendorPurchaseOrderReferences = (message: EmailMessage) => {
+  const haystack = `${message.subject}\n${message.text}`;
+  const references = new Set<string>();
+  for (const match of haystack.matchAll(VPO_REFERENCE_PATTERN)) {
+    references.add(normalizeVendorPurchaseOrderReference(match[0]));
+  }
+  return [...references];
+};
+
+export const isAwaitingVendorAcknowledgementCandidate = (
+  message: EmailMessage,
+  awaitingVendorAcknowledgements: AwaitingVendorPurchaseOrderAcknowledgement[],
+) => {
+  if (
+    message.threadId &&
+    awaitingVendorAcknowledgements.some(
+      (entry) => entry.threadId === message.threadId,
+    )
+  ) {
+    return true;
+  }
+
+  const awaitingReferences = new Set(
+    awaitingVendorAcknowledgements.map((entry) =>
+      normalizeVendorPurchaseOrderReference(entry.reference),
+    ),
+  );
+  return extractVendorPurchaseOrderReferences(message).some((reference) =>
+    awaitingReferences.has(reference),
+  );
+};
+
 export type ExtractedMessageRfq = {
   result: Extract<RfqExtractionResult, { isRfq: true }>;
   sourcePdf: EmailAttachment | null;
@@ -273,13 +315,13 @@ export const classifyMailboxMessages = async ({
   organization,
   messages,
   env,
-  vendorAckThreadIds,
+  awaitingVendorAcknowledgements,
 }: {
   account: SelectConnectedEmailAccount;
   organization: ClassificationOrganization;
   messages: EmailMessage[];
   env: Env;
-  vendorAckThreadIds: Set<string>;
+  awaitingVendorAcknowledgements: AwaitingVendorPurchaseOrderAcknowledgement[];
 }): Promise<MailboxClassification> => {
   const model = organizationAiModels.find(
     (candidate) => candidate.value === organization.preferredModel,
@@ -313,7 +355,12 @@ export const classifyMailboxMessages = async ({
         continue;
       }
 
-      if (message.threadId && vendorAckThreadIds.has(message.threadId)) {
+      if (
+        isAwaitingVendorAcknowledgementCandidate(
+          message,
+          awaitingVendorAcknowledgements,
+        )
+      ) {
         const extraction =
           await extractMessageVendorPurchaseOrderAcknowledgement(
             message,

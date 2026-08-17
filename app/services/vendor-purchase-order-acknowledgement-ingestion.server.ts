@@ -13,6 +13,8 @@ import {
   markVendorPurchaseOrderAcknowledged,
 } from '~/db/vendorPurchaseOrderAcknowledgements';
 import {
+  extractVendorPurchaseOrderReferences,
+  normalizeVendorPurchaseOrderReference,
   shouldSkipStoredEmail,
   type ExtractedMessageVendorPurchaseOrderAcknowledgement,
 } from '~/services/email-classification.server';
@@ -30,6 +32,64 @@ type VendorPurchaseOrderAcknowledgementSyncResult = {
 
 const awaitingAcknowledgementKey = (accountId: string, threadId: string) =>
   `${accountId}:${threadId}`;
+
+const awaitingAcknowledgementReferenceKey = (
+  accountId: string,
+  reference: string,
+) => `${accountId}:${normalizeVendorPurchaseOrderReference(reference)}`;
+
+const resolveAwaitingVendorPurchaseOrder = ({
+  accountId,
+  classified,
+  awaitingByThread,
+  awaitingByReference,
+}: {
+  accountId: string;
+  classified: {
+    message: EmailMessage;
+    extraction: ExtractedMessageVendorPurchaseOrderAcknowledgement;
+  };
+  awaitingByThread: Map<
+    string,
+    Awaited<
+      ReturnType<typeof listSentVendorPurchaseOrdersAwaitingAcknowledgement>
+    >[number]
+  >;
+  awaitingByReference: Map<
+    string,
+    Awaited<
+      ReturnType<typeof listSentVendorPurchaseOrdersAwaitingAcknowledgement>
+    >[number]
+  >;
+}) => {
+  const threadId = classified.message.threadId;
+  if (threadId) {
+    const byThread = awaitingByThread.get(
+      awaitingAcknowledgementKey(accountId, threadId),
+    );
+    if (byThread) {
+      return byThread;
+    }
+  }
+
+  const candidateReferences = [
+    classified.extraction.result.vendorPurchaseOrderReference,
+    ...extractVendorPurchaseOrderReferences(classified.message),
+  ]
+    .filter((reference): reference is string => Boolean(reference?.trim()))
+    .map(normalizeVendorPurchaseOrderReference);
+
+  for (const reference of candidateReferences) {
+    const byReference = awaitingByReference.get(
+      awaitingAcknowledgementReferenceKey(accountId, reference),
+    );
+    if (byReference) {
+      return byReference;
+    }
+  }
+
+  return null;
+};
 
 const matchVendorPurchaseOrderItemId = (
   extractedItem: VendorPurchaseOrderAcknowledgementItemInput,
@@ -58,6 +118,28 @@ const matchVendorPurchaseOrderItemId = (
     vendorPurchaseOrderItems.find(
       (item) => item.description.trim().toLowerCase() === normalizedDescription,
     )?.id ?? null
+  );
+};
+
+const resolveVendorPurchaseOrderItemId = (
+  extractedItem: VendorPurchaseOrderAcknowledgementItemInput,
+  vendorPurchaseOrderItems: Array<{
+    id: string;
+    description: string;
+    manufacturerPartNumber: string | null;
+  }>,
+) => {
+  const extractedId = extractedItem.vendorPurchaseOrderItemId?.trim();
+  if (
+    extractedId &&
+    vendorPurchaseOrderItems.some((item) => item.id === extractedId)
+  ) {
+    return extractedId;
+  }
+
+  return matchVendorPurchaseOrderItemId(
+    extractedItem,
+    vendorPurchaseOrderItems,
   );
 };
 
@@ -97,9 +179,10 @@ const resolveVendorPurchaseOrderAcknowledgementItems = (
 
   return items.map((item) => ({
     ...item,
-    vendorPurchaseOrderItemId:
-      item.vendorPurchaseOrderItemId ??
-      matchVendorPurchaseOrderItemId(item, vendorPurchaseOrderItems),
+    vendorPurchaseOrderItemId: resolveVendorPurchaseOrderItemId(
+      item,
+      vendorPurchaseOrderItems,
+    ),
   }));
 };
 
@@ -200,6 +283,18 @@ export const runVendorPurchaseOrderAcknowledgementSync = async (
         : [],
     ),
   );
+  const awaitingByReference = new Map(
+    awaitingAcknowledgements.map(
+      (vendorPurchaseOrder) =>
+        [
+          awaitingAcknowledgementReferenceKey(
+            vendorPurchaseOrder.accountId,
+            vendorPurchaseOrder.reference,
+          ),
+          vendorPurchaseOrder,
+        ] as const,
+    ),
+  );
   const acknowledgedVendorPurchaseOrderIds = new Set<string>();
   let created = 0;
   let skipped = 0;
@@ -215,15 +310,13 @@ export const runVendorPurchaseOrderAcknowledgementSync = async (
 
     for (const classified of mailbox.classification.vendorAcknowledgements) {
       checked += 1;
-      const threadId = classified.message.threadId;
-      if (!threadId) {
-        skipped += 1;
-        continue;
-      }
 
-      const awaiting = awaitingByThread.get(
-        awaitingAcknowledgementKey(mailbox.account.id, threadId),
-      );
+      const awaiting = resolveAwaitingVendorPurchaseOrder({
+        accountId: mailbox.account.id,
+        classified,
+        awaitingByThread,
+        awaitingByReference,
+      });
       if (
         !awaiting?.organizationId ||
         acknowledgedVendorPurchaseOrderIds.has(awaiting.vendorPurchaseOrderId)

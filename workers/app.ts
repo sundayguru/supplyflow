@@ -36,30 +36,6 @@ export const executeScheduleMethods = async (env: Env) => {
   }
 
   try {
-    mailboxes = await classifyScheduledMailboxes(env, mailboxes);
-  } catch (error) {
-    errors.push(error);
-    console.error(
-      JSON.stringify({
-        event: 'email_classification_failed',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }),
-    );
-  }
-
-  try {
-    summary = await runEmailIngestion(mailboxes);
-  } catch (error) {
-    errors.push(error);
-    console.error(
-      JSON.stringify({
-        event: 'email_ingestion_failed',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }),
-    );
-  }
-
-  try {
     await runRfqDraftSentStatusSync(mailboxes);
   } catch (error) {
     errors.push(error);
@@ -95,6 +71,29 @@ export const executeScheduleMethods = async (env: Env) => {
     );
   }
 
+  try {
+    mailboxes = await classifyScheduledMailboxes(env, mailboxes);
+  } catch (error) {
+    errors.push(error);
+    console.error(
+      JSON.stringify({
+        event: 'email_classification_failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }),
+    );
+  }
+
+  try {
+    summary = await runEmailIngestion(mailboxes);
+  } catch (error) {
+    errors.push(error);
+    console.error(
+      JSON.stringify({
+        event: 'email_ingestion_failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }),
+    );
+  }
   try {
     await runVendorPurchaseOrderAcknowledgementSync(mailboxes);
   } catch (error) {
