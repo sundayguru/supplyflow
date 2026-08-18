@@ -44,6 +44,12 @@ export type LinkedPurchaseOrderSummary = {
   supplierName: string;
 };
 
+export type LinkedVendorPurchaseOrderAcknowledgementSummary = {
+  id: string;
+  reference: string;
+  acknowledgementReference: string | null;
+};
+
 export type VendorPurchaseOrderRecord = Omit<
   VendorPurchaseOrderInput,
   'items'
@@ -60,6 +66,7 @@ export type VendorPurchaseOrderRecord = Omit<
   updatedAt: string;
   items: VendorPurchaseOrderItemRecord[];
   linkedPurchaseOrder: LinkedPurchaseOrderSummary;
+  linkedAcknowledgements: LinkedVendorPurchaseOrderAcknowledgementSummary[];
   subtotal: number;
   totalValue: number;
 };

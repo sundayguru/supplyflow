@@ -54,6 +54,12 @@ export type RfqEmailSource = {
   provider: string;
 };
 
+export type LinkedRfqPurchaseOrderSummary = {
+  id: string;
+  reference: string;
+  supplierName: string;
+};
+
 export type RfqRecord = Omit<RfqInput, 'items'> & {
   id: string;
   userId: string;
@@ -73,5 +79,6 @@ export type RfqRecord = Omit<RfqInput, 'items'> & {
   shippingValue: number;
   vatValue: number;
   totalValue: number;
+  linkedPurchaseOrders: LinkedRfqPurchaseOrderSummary[];
   sourceEmail?: RfqEmailSource | null;
 };

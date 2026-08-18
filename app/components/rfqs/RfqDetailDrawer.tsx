@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useFetcher } from 'react-router';
+import { Link, useFetcher } from 'react-router';
 import {
   CalendarDays,
   Check,
   ChevronDown,
   CircleDollarSign,
   Clipboard,
+  ClipboardList,
   ExternalLink,
   FileText,
   LoaderCircle,
@@ -319,6 +320,28 @@ export const RfqDetailDrawer = ({
               </p>
             </div>
           </section>
+
+          {rfq.linkedPurchaseOrders.length > 0 && (
+            <section className='mt-7 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'>
+              <p className='flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-emerald-700 uppercase'>
+                <ClipboardList size={14} /> Linked PO
+              </p>
+              <div className='mt-3 space-y-2'>
+                {rfq.linkedPurchaseOrders.map((purchaseOrder) => (
+                  <Link
+                    key={purchaseOrder.id}
+                    to={`/purchase-orders?po=${encodeURIComponent(purchaseOrder.id)}`}
+                    className='flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 font-semibold text-slate-900 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700'
+                  >
+                    <span>
+                      {purchaseOrder.reference} · {purchaseOrder.supplierName}
+                    </span>
+                    <ExternalLink size={15} className='shrink-0' />
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
 
           {sourcePdfUrl && (
             <section className='mt-7 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm'>

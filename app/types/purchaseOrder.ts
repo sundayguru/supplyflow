@@ -72,6 +72,12 @@ export type LinkedPurchaseOrderRfq = LinkedRfqSummary & {
   items: RfqItemRecord[];
 };
 
+export type LinkedPurchaseOrderVendorPurchaseOrderSummary = {
+  id: string;
+  reference: string;
+  vendorName: string;
+};
+
 export type PurchaseOrderEmailSource = {
   ingestionId: string;
   accountEmail: string;
@@ -104,6 +110,7 @@ export type PurchaseOrderRecord = Omit<PurchaseOrderInput, 'items'> & {
   updatedAt: string;
   items: PurchaseOrderItemRecord[];
   linkedRfq: LinkedPurchaseOrderRfq | null;
+  linkedVendorPurchaseOrders: LinkedPurchaseOrderVendorPurchaseOrderSummary[];
   validationSummary: string | null;
   proformaInvoiceDraftId: string | null;
   proformaInvoiceDraftUpdatedAt: string | null;

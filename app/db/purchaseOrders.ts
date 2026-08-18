@@ -103,6 +103,40 @@ const withTotals = <
   };
 };
 
+const getLinkedVendorPurchaseOrdersByPurchaseOrderIds = async (
+  purchaseOrderIds: string[],
+) => {
+  if (!purchaseOrderIds.length) {
+    return new Map<string, PurchaseOrderRecord['linkedVendorPurchaseOrders']>();
+  }
+
+  const db = getDb();
+  const records = await db
+    .select({
+      id: vendorPurchaseOrders.id,
+      purchaseOrderId: vendorPurchaseOrders.purchaseOrderId,
+      reference: vendorPurchaseOrders.reference,
+      vendorName: vendorPurchaseOrders.vendorName,
+    })
+    .from(vendorPurchaseOrders)
+    .where(inArray(vendorPurchaseOrders.purchaseOrderId, purchaseOrderIds))
+    .orderBy(desc(vendorPurchaseOrders.createdAt));
+
+  return records.reduce((linkedVendorPurchaseOrders, record) => {
+    const existing =
+      linkedVendorPurchaseOrders.get(record.purchaseOrderId) ?? [];
+    linkedVendorPurchaseOrders.set(record.purchaseOrderId, [
+      ...existing,
+      {
+        id: record.id,
+        reference: record.reference,
+        vendorName: record.vendorName,
+      },
+    ]);
+    return linkedVendorPurchaseOrders;
+  }, new Map<string, PurchaseOrderRecord['linkedVendorPurchaseOrders']>());
+};
+
 export const getPurchaseOrders = async (
   organizationId: string,
   vatRate: number,
@@ -138,7 +172,20 @@ export const getPurchaseOrders = async (
       },
     },
   });
-  return records.map((purchaseOrder) => withTotals(purchaseOrder, vatRate));
+  const linkedVendorPurchaseOrders =
+    await getLinkedVendorPurchaseOrdersByPurchaseOrderIds(
+      records.map((purchaseOrder) => purchaseOrder.id),
+    );
+  return records.map((purchaseOrder) =>
+    withTotals(
+      {
+        ...purchaseOrder,
+        linkedVendorPurchaseOrders:
+          linkedVendorPurchaseOrders.get(purchaseOrder.id) ?? [],
+      },
+      vatRate,
+    ),
+  );
 };
 
 export const getPurchaseOrder = async (
@@ -179,7 +226,19 @@ export const getPurchaseOrder = async (
       },
     },
   });
-  return purchaseOrder ? withTotals(purchaseOrder, vatRate) : null;
+  if (!purchaseOrder) {
+    return null;
+  }
+  const linkedVendorPurchaseOrders =
+    await getLinkedVendorPurchaseOrdersByPurchaseOrderIds([purchaseOrder.id]);
+  return withTotals(
+    {
+      ...purchaseOrder,
+      linkedVendorPurchaseOrders:
+        linkedVendorPurchaseOrders.get(purchaseOrder.id) ?? [],
+    },
+    vatRate,
+  );
 };
 
 export const createPurchaseOrder = async (

@@ -1,7 +1,7 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { RfqInput, RfqItemInput, RfqRecord, RfqStatus } from '~/types/rfq';
 import { getDb } from './connection';
-import { rfqItems, rfqs } from './schemas';
+import { purchaseOrders, rfqItems, rfqs } from './schemas';
 import { calculateRfqTotals } from '~/utils/rfq';
 
 const createReference = () =>
@@ -28,6 +28,40 @@ const withTotals = <Rfq extends { items: RfqItemInput[]; applyVat: boolean }>(
   ...calculateRfqTotals(rfq.items, vatRate, rfq.applyVat),
 });
 
+const getLinkedPurchaseOrdersByRfqIds = async (rfqIds: string[]) => {
+  if (!rfqIds.length) {
+    return new Map<string, RfqRecord['linkedPurchaseOrders']>();
+  }
+
+  const db = getDb();
+  const records = await db
+    .select({
+      id: purchaseOrders.id,
+      rfqId: purchaseOrders.rfqId,
+      reference: purchaseOrders.reference,
+      supplierName: purchaseOrders.supplierName,
+    })
+    .from(purchaseOrders)
+    .where(inArray(purchaseOrders.rfqId, rfqIds))
+    .orderBy(desc(purchaseOrders.createdAt));
+
+  return records.reduce((linkedPurchaseOrders, record) => {
+    if (!record.rfqId) {
+      return linkedPurchaseOrders;
+    }
+    const existing = linkedPurchaseOrders.get(record.rfqId) ?? [];
+    linkedPurchaseOrders.set(record.rfqId, [
+      ...existing,
+      {
+        id: record.id,
+        reference: record.reference,
+        supplierName: record.supplierName,
+      },
+    ]);
+    return linkedPurchaseOrders;
+  }, new Map<string, RfqRecord['linkedPurchaseOrders']>());
+};
+
 export const getRfqs = async (
   organizationId: string,
   vatRate: number,
@@ -38,7 +72,18 @@ export const getRfqs = async (
     orderBy: [desc(rfqs.createdAt)],
     with: { items: { orderBy: [asc(rfqItems.position)] } },
   });
-  return records.map((rfq) => withTotals(rfq, vatRate));
+  const linkedPurchaseOrders = await getLinkedPurchaseOrdersByRfqIds(
+    records.map((rfq) => rfq.id),
+  );
+  return records.map((rfq) =>
+    withTotals(
+      {
+        ...rfq,
+        linkedPurchaseOrders: linkedPurchaseOrders.get(rfq.id) ?? [],
+      },
+      vatRate,
+    ),
+  );
 };
 
 export const getRfq = async (
@@ -51,7 +96,17 @@ export const getRfq = async (
     where: and(eq(rfqs.id, id), eq(rfqs.organizationId, organizationId)),
     with: { items: { orderBy: [asc(rfqItems.position)] } },
   });
-  return rfq ? withTotals(rfq, vatRate) : null;
+  if (!rfq) {
+    return null;
+  }
+  const linkedPurchaseOrders = await getLinkedPurchaseOrdersByRfqIds([rfq.id]);
+  return withTotals(
+    {
+      ...rfq,
+      linkedPurchaseOrders: linkedPurchaseOrders.get(rfq.id) ?? [],
+    },
+    vatRate,
+  );
 };
 
 export const getRfqByReference = async (
@@ -67,7 +122,17 @@ export const getRfqByReference = async (
     ),
     with: { items: { orderBy: [asc(rfqItems.position)] } },
   });
-  return rfq ? withTotals(rfq, vatRate) : null;
+  if (!rfq) {
+    return null;
+  }
+  const linkedPurchaseOrders = await getLinkedPurchaseOrdersByRfqIds([rfq.id]);
+  return withTotals(
+    {
+      ...rfq,
+      linkedPurchaseOrders: linkedPurchaseOrders.get(rfq.id) ?? [],
+    },
+    vatRate,
+  );
 };
 
 export const createRfq = async (

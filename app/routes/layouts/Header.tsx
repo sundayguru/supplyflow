@@ -106,8 +106,9 @@ export const Header = () => {
       )}
 
       <aside
-        className={`fixed top-16 left-0 z-40 flex h-[calc(100dvh-4rem)] min-h-0 w-72 flex-col overflow-hidden border-r border-slate-200 bg-white px-4 shadow-xl shadow-slate-950/5 transition-transform duration-300 lg:translate-x-0 lg:shadow-none ${showSidebar ? 'translate-x-0' : '-translate-x-full'
-          }`}
+        className={`fixed top-16 left-0 z-40 flex h-[calc(100dvh-4rem)] min-h-0 w-72 flex-col overflow-hidden border-r border-slate-200 bg-white px-4 shadow-xl shadow-slate-950/5 transition-transform duration-300 lg:translate-x-0 lg:shadow-none ${
+          showSidebar ? 'translate-x-0' : '-translate-x-full'
+        }`}
       >
         <div className='shrink-0 px-3 pt-5 pb-4'>
           <p className='text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase'>
@@ -130,16 +131,18 @@ export const Header = () => {
                 key={to}
                 to={to}
                 onClick={() => setShowSidebar(false)}
-                className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${active
-                  ? 'bg-emerald-50 text-emerald-800'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'
-                  }`}
+                className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${
+                  active
+                    ? 'bg-emerald-50 text-emerald-800'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'
+                }`}
               >
                 <span
-                  className={`flex h-9 w-9 items-center justify-center rounded-lg ${active
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-slate-100 text-slate-500'
-                    }`}
+                  className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+                    active
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-slate-100 text-slate-500'
+                  }`}
                 >
                   <Icon size={17} aria-hidden='true' />
                 </span>

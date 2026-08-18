@@ -579,25 +579,57 @@ export const PurchaseOrderDetailDrawer = ({
             </section>
           )}
 
-          {(purchaseOrder.linkedRfq || purchaseOrder.notes) && (
+          {(currentPurchaseOrder.linkedRfq ||
+            currentPurchaseOrder.linkedVendorPurchaseOrders.length > 0 ||
+            currentPurchaseOrder.notes) && (
             <section className='mt-7 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'>
-              {purchaseOrder.linkedRfq && (
+              {currentPurchaseOrder.linkedRfq && (
                 <div>
                   <p className='flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-emerald-700 uppercase'>
                     <ClipboardList size={14} /> Linked RFQ
                   </p>
                   <Link
-                    to={`/rfqs?rfq=${encodeURIComponent(purchaseOrder.linkedRfq.id)}`}
+                    to={`/rfqs?rfq=${encodeURIComponent(currentPurchaseOrder.linkedRfq.id)}`}
                     className='mt-2 inline-flex font-semibold text-slate-900 hover:text-emerald-700'
                   >
-                    {purchaseOrder.linkedRfq.reference} ·{' '}
-                    {purchaseOrder.linkedRfq.customerName}
+                    {currentPurchaseOrder.linkedRfq.reference} ·{' '}
+                    {currentPurchaseOrder.linkedRfq.customerName}
                   </Link>
                 </div>
               )}
-              {purchaseOrder.notes && (
+              {currentPurchaseOrder.linkedVendorPurchaseOrders.length > 0 && (
+                <div
+                  className={
+                    currentPurchaseOrder.linkedRfq
+                      ? 'mt-4 border-t border-slate-100 pt-4'
+                      : ''
+                  }
+                >
+                  <p className='flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-emerald-700 uppercase'>
+                    <ShoppingCart size={14} /> Linked Vendor PO
+                  </p>
+                  <div className='mt-3 space-y-2'>
+                    {currentPurchaseOrder.linkedVendorPurchaseOrders.map(
+                      (vendorPurchaseOrder) => (
+                        <Link
+                          key={vendorPurchaseOrder.id}
+                          to={`/vendor-purchase-orders?vendorPo=${encodeURIComponent(vendorPurchaseOrder.id)}`}
+                          className='flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 font-semibold text-slate-900 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700'
+                        >
+                          <span>
+                            {vendorPurchaseOrder.reference} ·{' '}
+                            {vendorPurchaseOrder.vendorName}
+                          </span>
+                          <ExternalLink size={15} className='shrink-0' />
+                        </Link>
+                      ),
+                    )}
+                  </div>
+                </div>
+              )}
+              {currentPurchaseOrder.notes && (
                 <p className='mt-4 border-t border-slate-100 pt-4 text-sm leading-6 whitespace-pre-wrap text-slate-600'>
-                  {purchaseOrder.notes}
+                  {currentPurchaseOrder.notes}
                 </p>
               )}
             </section>

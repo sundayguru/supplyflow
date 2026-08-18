@@ -220,6 +220,32 @@ export const VendorPurchaseOrderDetailDrawer = ({
               {currentVendorPurchaseOrder.linkedPurchaseOrder.reference} ·{' '}
               {currentVendorPurchaseOrder.linkedPurchaseOrder.supplierName}
             </Link>
+            {currentVendorPurchaseOrder.linkedAcknowledgements.length > 0 && (
+              <div className='mt-4 border-t border-slate-100 pt-4'>
+                <p className='flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-emerald-700 uppercase'>
+                  <FileText size={14} /> Linked Vendor PO ack
+                </p>
+                <div className='mt-3 space-y-2'>
+                  {currentVendorPurchaseOrder.linkedAcknowledgements.map(
+                    (acknowledgement) => (
+                      <Link
+                        key={acknowledgement.id}
+                        to={`/vendor-purchase-order-acknowledgements?vendorPoAck=${encodeURIComponent(acknowledgement.id)}`}
+                        className='flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 font-semibold text-slate-900 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700'
+                      >
+                        <span>
+                          {acknowledgement.reference}
+                          {acknowledgement.acknowledgementReference
+                            ? ` · ${acknowledgement.acknowledgementReference}`
+                            : ''}
+                        </span>
+                        <ExternalLink size={15} className='shrink-0' />
+                      </Link>
+                    ),
+                  )}
+                </div>
+              </div>
+            )}
             <p className='mt-4 flex items-center gap-2 border-t border-slate-100 pt-4 text-sm text-slate-500'>
               <FileText size={14} />
               PDF template: {templateName ?? 'Default vendor PO template'}

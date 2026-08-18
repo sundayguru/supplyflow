@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import type {
   VendorPurchaseOrderInput,
   VendorPurchaseOrderItemInput,
@@ -9,6 +9,7 @@ import { calculatePurchaseOrderTotals } from '~/utils/purchaseOrder';
 import { getDb } from './connection';
 import {
   purchaseOrders,
+  vendorPurchaseOrderAcknowledgements,
   vendorPurchaseOrderItems,
   vendorPurchaseOrders,
 } from './schemas';
@@ -57,6 +58,50 @@ const withTotals = <
   };
 };
 
+const getLinkedAcknowledgementsByVendorPurchaseOrderIds = async (
+  vendorPurchaseOrderIds: string[],
+) => {
+  if (!vendorPurchaseOrderIds.length) {
+    return new Map<
+      string,
+      VendorPurchaseOrderRecord['linkedAcknowledgements']
+    >();
+  }
+
+  const db = getDb();
+  const records = await db
+    .select({
+      id: vendorPurchaseOrderAcknowledgements.id,
+      vendorPurchaseOrderId:
+        vendorPurchaseOrderAcknowledgements.vendorPurchaseOrderId,
+      reference: vendorPurchaseOrderAcknowledgements.reference,
+      acknowledgementReference:
+        vendorPurchaseOrderAcknowledgements.acknowledgementReference,
+    })
+    .from(vendorPurchaseOrderAcknowledgements)
+    .where(
+      inArray(
+        vendorPurchaseOrderAcknowledgements.vendorPurchaseOrderId,
+        vendorPurchaseOrderIds,
+      ),
+    )
+    .orderBy(desc(vendorPurchaseOrderAcknowledgements.createdAt));
+
+  return records.reduce((linkedAcknowledgements, record) => {
+    const existing =
+      linkedAcknowledgements.get(record.vendorPurchaseOrderId) ?? [];
+    linkedAcknowledgements.set(record.vendorPurchaseOrderId, [
+      ...existing,
+      {
+        id: record.id,
+        reference: record.reference,
+        acknowledgementReference: record.acknowledgementReference,
+      },
+    ]);
+    return linkedAcknowledgements;
+  }, new Map<string, VendorPurchaseOrderRecord['linkedAcknowledgements']>());
+};
+
 export const getVendorPurchaseOrders = async (
   organizationId: string,
 ): Promise<VendorPurchaseOrderRecord[]> => {
@@ -75,7 +120,16 @@ export const getVendorPurchaseOrders = async (
       },
     },
   });
-  return records.map((record) => withTotals(record));
+  const linkedAcknowledgements =
+    await getLinkedAcknowledgementsByVendorPurchaseOrderIds(
+      records.map((record) => record.id),
+    );
+  return records.map((record) =>
+    withTotals({
+      ...record,
+      linkedAcknowledgements: linkedAcknowledgements.get(record.id) ?? [],
+    }),
+  );
 };
 
 export const getVendorPurchaseOrder = async (
@@ -99,7 +153,15 @@ export const getVendorPurchaseOrder = async (
       },
     },
   });
-  return record ? withTotals(record) : null;
+  if (!record) {
+    return null;
+  }
+  const linkedAcknowledgements =
+    await getLinkedAcknowledgementsByVendorPurchaseOrderIds([record.id]);
+  return withTotals({
+    ...record,
+    linkedAcknowledgements: linkedAcknowledgements.get(record.id) ?? [],
+  });
 };
 
 export const createVendorPurchaseOrder = async (
