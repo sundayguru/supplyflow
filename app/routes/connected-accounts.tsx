@@ -15,6 +15,10 @@ import {
 } from '~/db/connectedEmailAccounts';
 import { getUserFromRequest } from '~/utils/session.server';
 import { getOrganizationForUser } from '~/db/organizations';
+import {
+  emailProviders,
+  getEmailProviderMetadata,
+} from '~/services/email/providers';
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
@@ -100,9 +104,16 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
       ? 'Token encryption is not configured. Add TOKEN_ENCRYPTION_KEY and restart the app.'
       : error === 'oauth_not_configured'
         ? 'Google OAuth credentials are not configured.'
-        : error
-          ? 'Gmail could not be connected. Please try again.'
-          : null;
+        : error === 'yahoo_oauth_not_configured'
+          ? 'Yahoo OAuth credentials are not configured.'
+          : error === 'yahoo_connection_failed'
+            ? 'Yahoo Mail could not be connected. Please try again.'
+            : error
+              ? 'Gmail could not be connected. Please try again.'
+              : null;
+  const connectedProvider =
+    searchParams.get('connected') === 'yahoo' ? 'yahoo' : 'gmail';
+  const connectedProviderMetadata = getEmailProviderMetadata(connectedProvider);
   const actionError =
     fetcher.data &&
     typeof fetcher.data === 'object' &&
@@ -130,12 +141,20 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
           </p>
         </div>
         {loaderData.isOwner && (
-          <Link
-            to='/api/email-accounts/google/start'
-            className='inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 hover:bg-emerald-500'
-          >
-            <Plus size={18} /> Connect Gmail
-          </Link>
+          <div className='flex flex-wrap gap-3'>
+            {emailProviders.map((provider) => {
+              const metadata = getEmailProviderMetadata(provider);
+              return (
+                <Link
+                  key={provider}
+                  to={metadata.startPath}
+                  className='inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 hover:bg-emerald-500'
+                >
+                  <Plus size={18} /> Connect {metadata.label}
+                </Link>
+              );
+            })}
+          </div>
         )}
       </div>
 
@@ -149,9 +168,9 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
           {actionError}
         </p>
       )}
-      {searchParams.get('connected') === '1' && (
+      {searchParams.has('connected') && (
         <p className='mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700'>
-          Gmail account connected successfully.
+          {connectedProviderMetadata.label} account connected successfully.
         </p>
       )}
 
@@ -163,128 +182,133 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
             </span>
             <h2 className='mt-4 text-lg font-bold'>No inboxes connected</h2>
             <p className='mt-1 text-sm text-slate-500'>
-              Connect Gmail to begin detecting RFQ requests automatically.
+              Connect Gmail or Yahoo Mail to begin detecting RFQ requests
+              automatically.
             </p>
           </div>
         ) : (
-          loaderData.accounts.map((account) => (
-            <article
-              key={account.id}
-              className='rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'
-            >
-              <div className='flex flex-col gap-4 sm:flex-row sm:items-center'>
-                <span className='flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600'>
-                  <Mail size={21} />
-                </span>
-                <div className='min-w-0 flex-1'>
-                  <p className='truncate font-semibold'>{account.email}</p>
-                  <p className='mt-1 text-xs text-slate-400'>
-                    Gmail · Connected{' '}
-                    {new Date(account.createdAt).toLocaleDateString()}
-                    {' · '}
-                    Folder:{' '}
-                    {account.emailFolder ??
-                      `${loaderData.organizationEmailFolder} (org default)`}
-                  </p>
-                  {account.needsReconnect && (
-                    <p className='mt-2 flex items-start gap-1.5 text-xs font-medium text-amber-700'>
-                      <AlertTriangle size={14} className='mt-0.5 shrink-0' />
-                      {account.reconnectReason ??
-                        'Gmail access expired. Reconnect this account to resume inbox checks.'}
+          loaderData.accounts.map((account) => {
+            const metadata = getEmailProviderMetadata(account.provider);
+            return (
+              <article
+                key={account.id}
+                className='rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'
+              >
+                <div className='flex flex-col gap-4 sm:flex-row sm:items-center'>
+                  <span
+                    className={`flex h-12 w-12 items-center justify-center rounded-2xl ${metadata.brandClassName}`}
+                  >
+                    <Mail size={21} />
+                  </span>
+                  <div className='min-w-0 flex-1'>
+                    <p className='truncate font-semibold'>{account.email}</p>
+                    <p className='mt-1 text-xs text-slate-400'>
+                      {metadata.label} · Connected{' '}
+                      {new Date(account.createdAt).toLocaleDateString()}
+                      {' · '}
+                      Folder:{' '}
+                      {account.emailFolder ??
+                        `${loaderData.organizationEmailFolder} (org default)`}
                     </p>
+                    {account.needsReconnect && (
+                      <p className='mt-2 flex items-start gap-1.5 text-xs font-medium text-amber-700'>
+                        <AlertTriangle size={14} className='mt-0.5 shrink-0' />
+                        {account.reconnectReason ?? metadata.reconnectMessage}
+                      </p>
+                    )}
+                  </div>
+                  {loaderData.isOwner ? (
+                    <>
+                      {account.needsReconnect && (
+                        <Link
+                          to={metadata.startPath}
+                          className='inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-400'
+                        >
+                          <RefreshCw size={16} /> Reconnect
+                        </Link>
+                      )}
+                      <fetcher.Form method='post'>
+                        <input type='hidden' name='id' value={account.id} />
+                        <input type='hidden' name='intent' value='toggle' />
+                        <input
+                          type='hidden'
+                          name='isActive'
+                          value={String(!account.isActive)}
+                        />
+                        <button
+                          type='submit'
+                          className={`rounded-full px-3 py-1.5 text-xs font-semibold ${account.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}
+                        >
+                          {account.needsReconnect
+                            ? 'Needs reconnect'
+                            : account.isActive
+                              ? 'Active'
+                              : 'Inactive'}
+                        </button>
+                      </fetcher.Form>
+                      <fetcher.Form method='post'>
+                        <input type='hidden' name='id' value={account.id} />
+                        <input type='hidden' name='intent' value='delete' />
+                        <button
+                          type='submit'
+                          aria-label={`Remove ${account.email}`}
+                          className='rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-700'
+                        >
+                          <Trash2 size={17} />
+                        </button>
+                      </fetcher.Form>
+                    </>
+                  ) : (
+                    <span
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold ${account.needsReconnect ? 'bg-amber-50 text-amber-700' : account.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}
+                    >
+                      {account.needsReconnect
+                        ? 'Needs reconnect'
+                        : account.isActive
+                          ? 'Active'
+                          : 'Inactive'}
+                    </span>
                   )}
                 </div>
-                {loaderData.isOwner ? (
-                  <>
-                    {account.needsReconnect && (
-                      <Link
-                        to='/api/email-accounts/google/start'
-                        className='inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-400'
+                {loaderData.isOwner && (
+                  <fetcher.Form
+                    key={`${account.id}-folder-${account.emailFolder ?? ''}`}
+                    method='post'
+                    className='mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-end'
+                  >
+                    <input type='hidden' name='id' value={account.id} />
+                    <input type='hidden' name='intent' value='update-folder' />
+                    <div className='min-w-0 flex-1'>
+                      <label
+                        htmlFor={`email-folder-${account.id}`}
+                        className='mb-2 block text-xs font-bold tracking-widest text-slate-400 uppercase'
                       >
-                        <RefreshCw size={16} /> Reconnect
-                      </Link>
-                    )}
-                    <fetcher.Form method='post'>
-                      <input type='hidden' name='id' value={account.id} />
-                      <input type='hidden' name='intent' value='toggle' />
+                        Email folder override
+                      </label>
                       <input
-                        type='hidden'
-                        name='isActive'
-                        value={String(!account.isActive)}
+                        id={`email-folder-${account.id}`}
+                        name='emailFolder'
+                        defaultValue={account.emailFolder ?? ''}
+                        placeholder={loaderData.organizationEmailFolder}
+                        maxLength={255}
+                        className='w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-emerald-600'
                       />
-                      <button
-                        type='submit'
-                        className={`rounded-full px-3 py-1.5 text-xs font-semibold ${account.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}
-                      >
-                        {account.needsReconnect
-                          ? 'Needs reconnect'
-                          : account.isActive
-                            ? 'Active'
-                            : 'Inactive'}
-                      </button>
-                    </fetcher.Form>
-                    <fetcher.Form method='post'>
-                      <input type='hidden' name='id' value={account.id} />
-                      <input type='hidden' name='intent' value='delete' />
-                      <button
-                        type='submit'
-                        aria-label={`Remove ${account.email}`}
-                        className='rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-700'
-                      >
-                        <Trash2 size={17} />
-                      </button>
-                    </fetcher.Form>
-                  </>
-                ) : (
-                  <span
-                    className={`rounded-full px-3 py-1.5 text-xs font-semibold ${account.needsReconnect ? 'bg-amber-50 text-amber-700' : account.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}
-                  >
-                    {account.needsReconnect
-                      ? 'Needs reconnect'
-                      : account.isActive
-                        ? 'Active'
-                        : 'Inactive'}
-                  </span>
-                )}
-              </div>
-              {loaderData.isOwner && (
-                <fetcher.Form
-                  key={`${account.id}-folder-${account.emailFolder ?? ''}`}
-                  method='post'
-                  className='mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-end'
-                >
-                  <input type='hidden' name='id' value={account.id} />
-                  <input type='hidden' name='intent' value='update-folder' />
-                  <div className='min-w-0 flex-1'>
-                    <label
-                      htmlFor={`email-folder-${account.id}`}
-                      className='mb-2 block text-xs font-bold tracking-widest text-slate-400 uppercase'
+                      <p className='mt-1.5 text-xs text-slate-400'>
+                        Leave blank to use the organization default (
+                        {loaderData.organizationEmailFolder}).
+                      </p>
+                    </div>
+                    <button
+                      type='submit'
+                      className='rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800'
                     >
-                      Email folder override
-                    </label>
-                    <input
-                      id={`email-folder-${account.id}`}
-                      name='emailFolder'
-                      defaultValue={account.emailFolder ?? ''}
-                      placeholder={loaderData.organizationEmailFolder}
-                      maxLength={255}
-                      className='w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-emerald-600'
-                    />
-                    <p className='mt-1.5 text-xs text-slate-400'>
-                      Leave blank to use the organization default (
-                      {loaderData.organizationEmailFolder}).
-                    </p>
-                  </div>
-                  <button
-                    type='submit'
-                    className='rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800'
-                  >
-                    Save folder
-                  </button>
-                </fetcher.Form>
-              )}
-            </article>
-          ))
+                      Save folder
+                    </button>
+                  </fetcher.Form>
+                )}
+              </article>
+            );
+          })
         )}
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { and, desc, eq, gt } from 'drizzle-orm';
 import { getDb } from './connection';
 import { connectedEmailAccounts, emailAccountOauthStates } from './schemas';
+import type { EmailProvider } from '~/services/email/providers';
 
 export const listConnectedEmailAccounts = (organizationId: string) => {
   const db = getDb();
@@ -45,7 +46,7 @@ export const listActiveConnectedEmailAccounts = (organizationId?: string) => {
 export const upsertConnectedEmailAccount = async (input: {
   userId: string;
   organizationId: string;
-  provider: 'gmail';
+  provider: EmailProvider;
   providerAccountId: string;
   email: string;
   displayName: string | null;

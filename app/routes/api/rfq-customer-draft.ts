@@ -106,7 +106,7 @@ export const action = async ({
       requireSetting('TOKEN_ENCRYPTION_KEY', env.TOKEN_ENCRYPTION_KEY),
     );
     const emailClient = createEmailClient({
-      provider: source.accountProvider,
+      provider: 'gmail',
       clientId: requireSetting('GOOGLE_CLIENT_ID', env.GOOGLE_CLIENT_ID),
       clientSecret: requireSetting(
         'GOOGLE_CLIENT_SECRET',

@@ -97,5 +97,13 @@ export default [
       'api/email-accounts/google/callback',
       'routes/api/email-accounts.google.callback.ts',
     ),
+    route(
+      'api/email-accounts/yahoo/start',
+      'routes/api/email-accounts.yahoo.start.ts',
+    ),
+    route(
+      'api/email-accounts/yahoo/callback',
+      'routes/api/email-accounts.yahoo.callback.ts',
+    ),
   ]),
 ] satisfies RouteConfig;

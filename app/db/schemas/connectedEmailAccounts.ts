@@ -19,7 +19,7 @@ export const connectedEmailAccounts = sqliteTable(
     organizationId: text('organization_id').references(() => organizations.id, {
       onDelete: 'cascade',
     }),
-    provider: text('provider', { enum: ['gmail'] }).notNull(),
+    provider: text('provider', { enum: ['gmail', 'yahoo'] }).notNull(),
     providerAccountId: text('provider_account_id', { length: 255 }).notNull(),
     email: text('email', { length: 255 }).notNull(),
     displayName: text('display_name', { length: 255 }),

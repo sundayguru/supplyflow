@@ -13,7 +13,12 @@ import {
 } from '~/services/email-classification.server';
 import { createEmailClient } from '~/services/email/index.server';
 import { isGmailAuthenticationError } from '~/services/email/gmail.server';
+import {
+  getEmailProviderMetadata,
+  type EmailProvider,
+} from '~/services/email/providers';
 import type { EmailClient, EmailMessage } from '~/services/email/types';
+import { isYahooAuthenticationError } from '~/services/email/yahoo.server';
 import { decryptToken } from '~/utils/tokenEncryption.server';
 
 export const SCHEDULED_UNREAD_MESSAGE_LIMIT = 25;
@@ -43,6 +48,59 @@ export const requireEmailSetting = (
   }
   return value;
 };
+
+const getEmailProviderEnv = (env: Env, name: string) =>
+  (env as Env & Record<string, string | undefined>)[name];
+
+const getClientConfig = (
+  account: SelectConnectedEmailAccount,
+  env: Env,
+  refreshToken: string,
+) => {
+  switch (account.provider) {
+    case 'gmail':
+      return {
+        provider: account.provider,
+        clientId: requireEmailSetting(
+          'GOOGLE_CLIENT_ID',
+          getEmailProviderEnv(env, 'GOOGLE_CLIENT_ID'),
+        ),
+        clientSecret: requireEmailSetting(
+          'GOOGLE_CLIENT_SECRET',
+          getEmailProviderEnv(env, 'GOOGLE_CLIENT_SECRET'),
+        ),
+        refreshToken,
+      };
+    case 'yahoo':
+      return {
+        provider: account.provider,
+        clientId: requireEmailSetting(
+          'YAHOO_CLIENT_ID',
+          getEmailProviderEnv(env, 'YAHOO_CLIENT_ID'),
+        ),
+        clientSecret: requireEmailSetting(
+          'YAHOO_CLIENT_SECRET',
+          getEmailProviderEnv(env, 'YAHOO_CLIENT_SECRET'),
+        ),
+        refreshToken,
+        accountEmail: account.email,
+      };
+  }
+};
+
+const isEmailAuthenticationError = (error: unknown, provider: EmailProvider) =>
+  provider === 'gmail'
+    ? isGmailAuthenticationError(error)
+    : isYahooAuthenticationError(error);
+
+const markAccountNeedsReconnect = async (
+  account: SelectConnectedEmailAccount,
+  reason?: string,
+) =>
+  await markConnectedEmailAccountNeedsReconnect(
+    account.id,
+    reason ?? getEmailProviderMetadata(account.provider).reconnectMessage,
+  );
 
 export const indexMailboxesByAccountId = (mailboxes: ScheduledMailbox[]) =>
   new Map(mailboxes.map((mailbox) => [mailbox.account.id, mailbox]));
@@ -81,15 +139,9 @@ const loadMailbox = async (
     account.encryptedRefreshToken,
     requireEmailSetting('TOKEN_ENCRYPTION_KEY', env.TOKEN_ENCRYPTION_KEY),
   );
-  const emailClient = createEmailClient({
-    provider: account.provider,
-    clientId: requireEmailSetting('GOOGLE_CLIENT_ID', env.GOOGLE_CLIENT_ID),
-    clientSecret: requireEmailSetting(
-      'GOOGLE_CLIENT_SECRET',
-      env.GOOGLE_CLIENT_SECRET,
-    ),
-    refreshToken,
-  });
+  const emailClient = createEmailClient(
+    getClientConfig(account, env, refreshToken),
+  );
   const startOfToday = getStartOfUtcDay(startedAt);
   const messages = (
     await emailClient.listMessages({
@@ -122,11 +174,8 @@ export const loadScheduledMailboxes = async (
     try {
       mailboxes.push(await loadMailbox(account, env, startedAt));
     } catch (error) {
-      if (isGmailAuthenticationError(error)) {
-        await markConnectedEmailAccountNeedsReconnect(
-          account.id,
-          'Gmail access expired. Reconnect this account to resume inbox checks.',
-        );
+      if (isEmailAuthenticationError(error, account.provider)) {
+        await markAccountNeedsReconnect(account);
       }
       mailboxes.push({
         account,
@@ -245,11 +294,8 @@ export const classifyScheduledMailboxes = async (
       });
       classifiedMailboxes.push({ ...mailbox, messages, classification });
     } catch (error) {
-      if (isGmailAuthenticationError(error)) {
-        await markConnectedEmailAccountNeedsReconnect(
-          mailbox.account.id,
-          'Gmail access expired. Reconnect this account to resume inbox checks.',
-        );
+      if (isEmailAuthenticationError(error, mailbox.account.provider)) {
+        await markAccountNeedsReconnect(mailbox.account);
       }
       classifiedMailboxes.push({
         ...mailbox,
