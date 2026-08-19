@@ -4,6 +4,7 @@ export * from './rfq';
 export * from './purchaseOrder';
 export * from './vendorPurchaseOrder';
 export * from './vendorPurchaseOrderAcknowledgement';
+export * from './activityLog';
 export * from './organization';
 export * from './rfqPdfTemplate';
 export * from './manufacturer';

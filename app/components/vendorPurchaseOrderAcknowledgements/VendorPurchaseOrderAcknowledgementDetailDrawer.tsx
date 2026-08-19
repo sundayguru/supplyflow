@@ -4,6 +4,7 @@ import {
   CalendarDays,
   ClipboardList,
   FileText,
+  History,
   Package,
   Pencil,
   Trash2,
@@ -281,6 +282,12 @@ export const VendorPurchaseOrderAcknowledgementDetailDrawer = ({
           >
             <Trash2 size={16} /> Delete
           </button>
+          <Link
+            to={`/activities?sourceType=vendor_purchase_order_acknowledgement&sourceId=${encodeURIComponent(acknowledgement.id)}`}
+            className='inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
+          >
+            <History size={16} /> View activity
+          </Link>
           <button
             type='button'
             onClick={onEdit}

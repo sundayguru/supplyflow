@@ -1,6 +1,10 @@
 import { data } from 'react-router';
+import { logUpdatedActivity } from '~/db/activityLogs';
 import { getOrganizationForUser } from '~/db/organizations';
-import { createPurchaseOrderPaymentConfirmation } from '~/db/purchaseOrders';
+import {
+  createPurchaseOrderPaymentConfirmation,
+  getPurchaseOrder,
+} from '~/db/purchaseOrders';
 import { getUserFromRequest } from '~/utils/session.server';
 import type { Route } from './+types/purchase-order-payments';
 
@@ -55,6 +59,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
       return data({ error: 'Payment reference is required' }, { status: 400 });
     }
 
+    const existing = await getPurchaseOrder(
+      purchaseOrderId,
+      organization.id,
+      organization.vat,
+    );
     const purchaseOrder = await createPurchaseOrderPaymentConfirmation(
       purchaseOrderId,
       organization.id,
@@ -64,6 +73,19 @@ export const action = async ({ request }: Route.ActionArgs) => {
     );
     if (!purchaseOrder) {
       return data({ error: 'Purchase order not found' }, { status: 404 });
+    }
+    if (existing) {
+      await logUpdatedActivity(
+        {
+          organizationId: organization.id,
+          actorUserId: user.id,
+          sourceType: 'purchase_order',
+          sourceId: purchaseOrder.id,
+          sourceReference: purchaseOrder.reference,
+        },
+        existing as unknown as Record<string, unknown>,
+        purchaseOrder as unknown as Record<string, unknown>,
+      );
     }
 
     return data({ success: true, purchaseOrder });

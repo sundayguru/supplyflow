@@ -29,6 +29,7 @@ import { RfqStatusMenu } from '~/components/rfqs/RfqStatusMenu';
 import { RfqPipeline } from '~/components/rfqs/RfqPipeline';
 import { RfqTable } from '~/components/rfqs/RfqTable';
 import { PipelineViewToggle } from '~/components/pipeline/PipelineViewToggle';
+import { logCreatedActivity } from '~/db/activityLogs';
 import { createRfq, getRfqs } from '~/db/rfqs';
 import { listProductPrices } from '~/db/productPrices';
 import { listManufacturers } from '~/db/manufacturers';
@@ -214,6 +215,16 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     if (!rfq) {
       throw new Error('RFQ could not be created');
     }
+    await logCreatedActivity(
+      {
+        organizationId: organization.id,
+        actorUserId: user.id,
+        sourceType: 'rfq',
+        sourceId: rfq.id,
+        sourceReference: rfq.reference,
+      },
+      rfq,
+    );
 
     return data({ success: true, rfq }, { status: 201 });
   } catch (error) {

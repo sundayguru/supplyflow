@@ -1,5 +1,6 @@
 import { data } from 'react-router';
 import { cloudflareContext } from '~/contexts.server/cloudflareContext.server';
+import { logUpdatedActivity } from '~/db/activityLogs';
 import { getEmailSourceForPurchaseOrder } from '~/db/emailIngestion';
 import { getOrganizationForUser } from '~/db/organizations';
 import {
@@ -182,6 +183,17 @@ export const action = async ({
         { status: 500 },
       );
     }
+    await logUpdatedActivity(
+      {
+        organizationId: organization.id,
+        actorUserId: user.id,
+        sourceType: 'purchase_order',
+        sourceId: updatedPurchaseOrder.id,
+        sourceReference: updatedPurchaseOrder.reference,
+      },
+      purchaseOrder as unknown as Record<string, unknown>,
+      updatedPurchaseOrder as unknown as Record<string, unknown>,
+    );
 
     return data({
       success: true,

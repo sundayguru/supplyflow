@@ -1,6 +1,7 @@
 import { data } from 'react-router';
 import { cloudflareContext } from '~/contexts.server/cloudflareContext.server';
 import { listActiveConnectedEmailAccounts } from '~/db/connectedEmailAccounts';
+import { logUpdatedActivity } from '~/db/activityLogs';
 import { getOrganizationForUser } from '~/db/organizations';
 import { getRfqPdfTemplate } from '~/db/rfqPdfTemplates';
 import {
@@ -163,6 +164,17 @@ export const action = async ({
         { status: 500 },
       );
     }
+    await logUpdatedActivity(
+      {
+        organizationId: organization.id,
+        actorUserId: user.id,
+        sourceType: 'vendor_purchase_order',
+        sourceId: updatedVendorPurchaseOrder.id,
+        sourceReference: updatedVendorPurchaseOrder.reference,
+      },
+      vendorPurchaseOrder as unknown as Record<string, unknown>,
+      updatedVendorPurchaseOrder as unknown as Record<string, unknown>,
+    );
 
     return data({
       success: true,

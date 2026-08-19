@@ -1,5 +1,10 @@
 import { data } from 'react-router';
 import {
+  logCreatedActivity,
+  logDeletedActivity,
+  logUpdatedActivity,
+} from '~/db/activityLogs';
+import {
   getManufacturer,
   updateManufacturer,
   upsertManufacturerFromVendorDetails,
@@ -151,17 +156,24 @@ export const action = async ({ request }: Route.ActionArgs) => {
       if (!resolved.success) {
         return data({ error: resolved.error }, { status: 400 });
       }
-      return data(
-        {
-          success: true,
-          vendorPurchaseOrder: await createVendorPurchaseOrder(
-            organization.id,
-            user.id,
-            resolved.value,
-          ),
-        },
-        { status: 201 },
+      const vendorPurchaseOrder = await createVendorPurchaseOrder(
+        organization.id,
+        user.id,
+        resolved.value,
       );
+      if (vendorPurchaseOrder) {
+        await logCreatedActivity(
+          {
+            organizationId: organization.id,
+            actorUserId: user.id,
+            sourceType: 'vendor_purchase_order',
+            sourceId: vendorPurchaseOrder.id,
+            sourceReference: vendorPurchaseOrder.reference,
+          },
+          vendorPurchaseOrder,
+        );
+      }
+      return data({ success: true, vendorPurchaseOrder }, { status: 201 });
     }
 
     if (request.method === 'PATCH') {
@@ -187,14 +199,30 @@ export const action = async ({ request }: Route.ActionArgs) => {
             { status: 400 },
           );
         }
+        const existing = await getVendorPurchaseOrder(body.id, organization.id);
+        if (!existing) {
+          return data({ error: 'Vendor PO not found' }, { status: 404 });
+        }
         const vendorPurchaseOrder = await updateVendorPurchaseOrderStatus(
           body.id,
           organization.id,
           body.status as VendorPurchaseOrderStatus,
         );
-        return vendorPurchaseOrder
-          ? data({ success: true, vendorPurchaseOrder })
-          : data({ error: 'Vendor PO not found' }, { status: 404 });
+        if (!vendorPurchaseOrder) {
+          return data({ error: 'Vendor PO not found' }, { status: 404 });
+        }
+        await logUpdatedActivity(
+          {
+            organizationId: organization.id,
+            actorUserId: user.id,
+            sourceType: 'vendor_purchase_order',
+            sourceId: vendorPurchaseOrder.id,
+            sourceReference: vendorPurchaseOrder.reference,
+          },
+          existing as unknown as Record<string, unknown>,
+          vendorPurchaseOrder as unknown as Record<string, unknown>,
+        );
+        return data({ success: true, vendorPurchaseOrder });
       }
       const parsed = parseVendorPurchaseOrderInput(body);
       if (!parsed.success) {
@@ -229,14 +257,30 @@ export const action = async ({ request }: Route.ActionArgs) => {
       if (!resolved.success) {
         return data({ error: resolved.error }, { status: 400 });
       }
+      const existing = await getVendorPurchaseOrder(body.id, organization.id);
+      if (!existing) {
+        return data({ error: 'Vendor PO not found' }, { status: 404 });
+      }
       const vendorPurchaseOrder = await updateVendorPurchaseOrder(
         body.id,
         organization.id,
         resolved.value,
       );
-      return vendorPurchaseOrder
-        ? data({ success: true, vendorPurchaseOrder })
-        : data({ error: 'Vendor PO not found' }, { status: 404 });
+      if (!vendorPurchaseOrder) {
+        return data({ error: 'Vendor PO not found' }, { status: 404 });
+      }
+      await logUpdatedActivity(
+        {
+          organizationId: organization.id,
+          actorUserId: user.id,
+          sourceType: 'vendor_purchase_order',
+          sourceId: vendorPurchaseOrder.id,
+          sourceReference: vendorPurchaseOrder.reference,
+        },
+        existing as unknown as Record<string, unknown>,
+        vendorPurchaseOrder as unknown as Record<string, unknown>,
+      );
+      return data({ success: true, vendorPurchaseOrder });
     }
 
     if (request.method === 'DELETE') {
@@ -249,13 +293,28 @@ export const action = async ({ request }: Route.ActionArgs) => {
       ) {
         return data({ error: 'Vendor PO id is required' }, { status: 400 });
       }
+      const existing = await getVendorPurchaseOrder(body.id, organization.id);
+      if (!existing) {
+        return data({ error: 'Vendor PO not found' }, { status: 404 });
+      }
       const vendorPurchaseOrder = await deleteVendorPurchaseOrder(
         body.id,
         organization.id,
       );
-      return vendorPurchaseOrder
-        ? data({ success: true, id: vendorPurchaseOrder.id })
-        : data({ error: 'Vendor PO not found' }, { status: 404 });
+      if (!vendorPurchaseOrder) {
+        return data({ error: 'Vendor PO not found' }, { status: 404 });
+      }
+      await logDeletedActivity(
+        {
+          organizationId: organization.id,
+          actorUserId: user.id,
+          sourceType: 'vendor_purchase_order',
+          sourceId: existing.id,
+          sourceReference: existing.reference,
+        },
+        existing,
+      );
+      return data({ success: true, id: vendorPurchaseOrder.id });
     }
 
     return data({ error: 'Method not allowed' }, { status: 405 });

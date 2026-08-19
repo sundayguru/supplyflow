@@ -9,6 +9,7 @@ import {
   ClipboardList,
   ExternalLink,
   FileText,
+  History,
   LoaderCircle,
   Mail,
   Package,
@@ -457,6 +458,12 @@ export const RfqDetailDrawer = ({
 
         <footer className='border-t border-slate-200 bg-white px-5 py-4 sm:px-7'>
           <div className='grid gap-3 sm:grid-cols-2'>
+            <Link
+              to={`/activities?sourceType=rfq&sourceId=${encodeURIComponent(rfq.id)}`}
+              className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
+            >
+              <History size={17} /> View activity
+            </Link>
             <div className='relative' data-rfq-draft-menu>
               <button
                 type='button'
@@ -499,7 +506,7 @@ export const RfqDetailDrawer = ({
             <button
               type='button'
               onClick={onEdit}
-              className='inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-500'
+              className='inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-500 sm:col-span-2'
             >
               <Pencil size={17} /> Edit RFQ
             </button>

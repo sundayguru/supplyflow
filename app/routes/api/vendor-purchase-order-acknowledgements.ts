@@ -1,4 +1,9 @@
 import { data } from 'react-router';
+import {
+  logCreatedActivity,
+  logDeletedActivity,
+  logUpdatedActivity,
+} from '~/db/activityLogs';
 import { getOrganizationForUser } from '~/db/organizations';
 import {
   createVendorPurchaseOrderAcknowledgement,
@@ -71,15 +76,28 @@ export const action = async ({ request }: Route.ActionArgs) => {
       ) {
         return data({ error: 'Linked vendor PO not found' }, { status: 400 });
       }
+      const vendorPurchaseOrderAcknowledgement =
+        await createVendorPurchaseOrderAcknowledgement(
+          organization.id,
+          user.id,
+          parsed.value,
+        );
+      if (vendorPurchaseOrderAcknowledgement) {
+        await logCreatedActivity(
+          {
+            organizationId: organization.id,
+            actorUserId: user.id,
+            sourceType: 'vendor_purchase_order_acknowledgement',
+            sourceId: vendorPurchaseOrderAcknowledgement.id,
+            sourceReference: vendorPurchaseOrderAcknowledgement.reference,
+          },
+          vendorPurchaseOrderAcknowledgement,
+        );
+      }
       return data(
         {
           success: true,
-          vendorPurchaseOrderAcknowledgement:
-            await createVendorPurchaseOrderAcknowledgement(
-              organization.id,
-              user.id,
-              parsed.value,
-            ),
+          vendorPurchaseOrderAcknowledgement,
         },
         { status: 201 },
       );
@@ -111,18 +129,43 @@ export const action = async ({ request }: Route.ActionArgs) => {
             { status: 400 },
           );
         }
+        const existing = await getVendorPurchaseOrderAcknowledgement(
+          body.id,
+          organization.id,
+        );
+        if (!existing) {
+          return data(
+            { error: 'Vendor PO acknowledgement not found' },
+            { status: 404 },
+          );
+        }
         const vendorPurchaseOrderAcknowledgement =
           await updateVendorPurchaseOrderAcknowledgementStatus(
             body.id,
             organization.id,
             body.status as VendorPurchaseOrderAcknowledgementStatus,
           );
-        return vendorPurchaseOrderAcknowledgement
-          ? data({ success: true, vendorPurchaseOrderAcknowledgement })
-          : data(
-              { error: 'Vendor PO acknowledgement not found' },
-              { status: 404 },
-            );
+        if (!vendorPurchaseOrderAcknowledgement) {
+          return data(
+            { error: 'Vendor PO acknowledgement not found' },
+            { status: 404 },
+          );
+        }
+        await logUpdatedActivity(
+          {
+            organizationId: organization.id,
+            actorUserId: user.id,
+            sourceType: 'vendor_purchase_order_acknowledgement',
+            sourceId: vendorPurchaseOrderAcknowledgement.id,
+            sourceReference: vendorPurchaseOrderAcknowledgement.reference,
+          },
+          existing as unknown as Record<string, unknown>,
+          vendorPurchaseOrderAcknowledgement as unknown as Record<
+            string,
+            unknown
+          >,
+        );
+        return data({ success: true, vendorPurchaseOrderAcknowledgement });
       }
       const parsed = parseVendorPurchaseOrderAcknowledgementInput(body);
       if (!parsed.success) {
@@ -136,18 +179,43 @@ export const action = async ({ request }: Route.ActionArgs) => {
       ) {
         return data({ error: 'Linked vendor PO not found' }, { status: 400 });
       }
+      const existing = await getVendorPurchaseOrderAcknowledgement(
+        body.id,
+        organization.id,
+      );
+      if (!existing) {
+        return data(
+          { error: 'Vendor PO acknowledgement not found' },
+          { status: 404 },
+        );
+      }
       const vendorPurchaseOrderAcknowledgement =
         await updateVendorPurchaseOrderAcknowledgement(
           body.id,
           organization.id,
           parsed.value,
         );
-      return vendorPurchaseOrderAcknowledgement
-        ? data({ success: true, vendorPurchaseOrderAcknowledgement })
-        : data(
-            { error: 'Vendor PO acknowledgement not found' },
-            { status: 404 },
-          );
+      if (!vendorPurchaseOrderAcknowledgement) {
+        return data(
+          { error: 'Vendor PO acknowledgement not found' },
+          { status: 404 },
+        );
+      }
+      await logUpdatedActivity(
+        {
+          organizationId: organization.id,
+          actorUserId: user.id,
+          sourceType: 'vendor_purchase_order_acknowledgement',
+          sourceId: vendorPurchaseOrderAcknowledgement.id,
+          sourceReference: vendorPurchaseOrderAcknowledgement.reference,
+        },
+        existing as unknown as Record<string, unknown>,
+        vendorPurchaseOrderAcknowledgement as unknown as Record<
+          string,
+          unknown
+        >,
+      );
+      return data({ success: true, vendorPurchaseOrderAcknowledgement });
     }
 
     if (request.method === 'DELETE') {
@@ -163,17 +231,38 @@ export const action = async ({ request }: Route.ActionArgs) => {
           { status: 400 },
         );
       }
+      const existing = await getVendorPurchaseOrderAcknowledgement(
+        body.id,
+        organization.id,
+      );
+      if (!existing) {
+        return data(
+          { error: 'Vendor PO acknowledgement not found' },
+          { status: 404 },
+        );
+      }
       const vendorPurchaseOrderAcknowledgement =
         await deleteVendorPurchaseOrderAcknowledgement(
           body.id,
           organization.id,
         );
-      return vendorPurchaseOrderAcknowledgement
-        ? data({ success: true, id: vendorPurchaseOrderAcknowledgement.id })
-        : data(
-            { error: 'Vendor PO acknowledgement not found' },
-            { status: 404 },
-          );
+      if (!vendorPurchaseOrderAcknowledgement) {
+        return data(
+          { error: 'Vendor PO acknowledgement not found' },
+          { status: 404 },
+        );
+      }
+      await logDeletedActivity(
+        {
+          organizationId: organization.id,
+          actorUserId: user.id,
+          sourceType: 'vendor_purchase_order_acknowledgement',
+          sourceId: existing.id,
+          sourceReference: existing.reference,
+        },
+        existing,
+      );
+      return data({ success: true, id: vendorPurchaseOrderAcknowledgement.id });
     }
 
     return data({ error: 'Method not allowed' }, { status: 405 });

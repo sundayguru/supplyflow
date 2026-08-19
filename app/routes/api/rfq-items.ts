@@ -1,7 +1,9 @@
 import { data } from 'react-router';
 import type { Route } from './+types/rfq-items';
+import { logUpdatedActivity } from '~/db/activityLogs';
 import {
   deleteRfqItem,
+  getRfq,
   getOrganizationRfqItem,
   updateRfqItem,
 } from '~/db/rfqs';
@@ -52,6 +54,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
       if (!itemContext) {
         return data({ error: 'RFQ item not found' }, { status: 404 });
       }
+      const existing = await getRfq(
+        itemContext.rfqId,
+        organization.id,
+        organization.vat,
+      );
       const [syncedItem] = await syncRfqItemsWithProductPrices(
         organization.id,
         user.id,
@@ -74,12 +81,30 @@ export const action = async ({ request }: Route.ActionArgs) => {
         syncedItem,
         organization.vat,
       );
-      return rfq
-        ? data({ success: true, rfq })
-        : data({ error: 'RFQ item not found' }, { status: 404 });
+      if (!rfq) {
+        return data({ error: 'RFQ item not found' }, { status: 404 });
+      }
+      if (existing) {
+        await logUpdatedActivity(
+          {
+            organizationId: organization.id,
+            actorUserId: user.id,
+            sourceType: 'rfq',
+            sourceId: rfq.id,
+            sourceReference: rfq.reference,
+          },
+          existing as unknown as Record<string, unknown>,
+          rfq as unknown as Record<string, unknown>,
+        );
+      }
+      return data({ success: true, rfq });
     }
 
     if (request.method === 'DELETE') {
+      const itemContext = await getOrganizationRfqItem(id, organization.id);
+      const existing = itemContext
+        ? await getRfq(itemContext.rfqId, organization.id, organization.vat)
+        : null;
       const result = await deleteRfqItem(id, organization.id, organization.vat);
       if (result.status === 'not-found') {
         return data({ error: 'RFQ item not found' }, { status: 404 });
@@ -88,6 +113,19 @@ export const action = async ({ request }: Route.ActionArgs) => {
         return data(
           { error: 'An RFQ must contain at least one item' },
           { status: 409 },
+        );
+      }
+      if (existing) {
+        await logUpdatedActivity(
+          {
+            organizationId: organization.id,
+            actorUserId: user.id,
+            sourceType: 'rfq',
+            sourceId: result.rfq.id,
+            sourceReference: result.rfq.reference,
+          },
+          existing as unknown as Record<string, unknown>,
+          result.rfq as unknown as Record<string, unknown>,
         );
       }
       return data({ success: true, rfq: result.rfq });

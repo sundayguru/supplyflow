@@ -1,6 +1,11 @@
 import { data } from 'react-router';
 import type { Route } from './+types/purchase-orders';
 import {
+  logCreatedActivity,
+  logDeletedActivity,
+  logUpdatedActivity,
+} from '~/db/activityLogs';
+import {
   createPurchaseOrder,
   deletePurchaseOrder,
   getPurchaseOrder,
@@ -94,26 +99,33 @@ export const action = async ({ request }: Route.ActionArgs) => {
       ) {
         return data({ error: 'PDF template not found' }, { status: 400 });
       }
-      return data(
+      const purchaseOrder = await createPurchaseOrder(
+        organization.id,
+        user.id,
         {
-          success: true,
-          purchaseOrder: await createPurchaseOrder(
+          ...parsed.value,
+          items: await resolveItemManufacturers(
+            parsed.value.items,
+            body,
             organization.id,
             user.id,
-            {
-              ...parsed.value,
-              items: await resolveItemManufacturers(
-                parsed.value.items,
-                body,
-                organization.id,
-                user.id,
-              ),
-            },
-            organization.vat,
           ),
         },
-        { status: 201 },
+        organization.vat,
       );
+      if (purchaseOrder) {
+        await logCreatedActivity(
+          {
+            organizationId: organization.id,
+            actorUserId: user.id,
+            sourceType: 'purchase_order',
+            sourceId: purchaseOrder.id,
+            sourceReference: purchaseOrder.reference,
+          },
+          purchaseOrder,
+        );
+      }
+      return data({ success: true, purchaseOrder }, { status: 201 });
     }
 
     if (request.method === 'PATCH') {
@@ -140,15 +152,35 @@ export const action = async ({ request }: Route.ActionArgs) => {
             { status: 400 },
           );
         }
+        const existing = await getPurchaseOrder(
+          body.id,
+          organization.id,
+          organization.vat,
+        );
+        if (!existing) {
+          return data({ error: 'Purchase order not found' }, { status: 404 });
+        }
         const purchaseOrder = await updatePurchaseOrderStatus(
           body.id,
           organization.id,
           body.status as PurchaseOrderStatus,
           organization.vat,
         );
-        return purchaseOrder
-          ? data({ success: true, purchaseOrder })
-          : data({ error: 'Purchase order not found' }, { status: 404 });
+        if (!purchaseOrder) {
+          return data({ error: 'Purchase order not found' }, { status: 404 });
+        }
+        await logUpdatedActivity(
+          {
+            organizationId: organization.id,
+            actorUserId: user.id,
+            sourceType: 'purchase_order',
+            sourceId: purchaseOrder.id,
+            sourceReference: purchaseOrder.reference,
+          },
+          existing as unknown as Record<string, unknown>,
+          purchaseOrder as unknown as Record<string, unknown>,
+        );
+        return data({ success: true, purchaseOrder });
       }
       if ('intent' in body && body.intent === 'validate') {
         const purchaseOrder = await getPurchaseOrder(
@@ -178,9 +210,21 @@ export const action = async ({ request }: Route.ActionArgs) => {
           validation.summary,
           organization.vat,
         );
-        return updatedPurchaseOrder
-          ? data({ success: true, purchaseOrder: updatedPurchaseOrder })
-          : data({ error: 'Purchase order not found' }, { status: 404 });
+        if (!updatedPurchaseOrder) {
+          return data({ error: 'Purchase order not found' }, { status: 404 });
+        }
+        await logUpdatedActivity(
+          {
+            organizationId: organization.id,
+            actorUserId: user.id,
+            sourceType: 'purchase_order',
+            sourceId: updatedPurchaseOrder.id,
+            sourceReference: updatedPurchaseOrder.reference,
+          },
+          purchaseOrder as unknown as Record<string, unknown>,
+          updatedPurchaseOrder as unknown as Record<string, unknown>,
+        );
+        return data({ success: true, purchaseOrder: updatedPurchaseOrder });
       }
       const parsed = parsePurchaseOrderInput(body);
       if (!parsed.success) {
@@ -200,6 +244,14 @@ export const action = async ({ request }: Route.ActionArgs) => {
       ) {
         return data({ error: 'PDF template not found' }, { status: 400 });
       }
+      const existing = await getPurchaseOrder(
+        body.id,
+        organization.id,
+        organization.vat,
+      );
+      if (!existing) {
+        return data({ error: 'Purchase order not found' }, { status: 404 });
+      }
       const purchaseOrder = await updatePurchaseOrder(
         body.id,
         organization.id,
@@ -217,6 +269,17 @@ export const action = async ({ request }: Route.ActionArgs) => {
       if (!purchaseOrder) {
         return data({ error: 'Purchase order not found' }, { status: 404 });
       }
+      await logUpdatedActivity(
+        {
+          organizationId: organization.id,
+          actorUserId: user.id,
+          sourceType: 'purchase_order',
+          sourceId: purchaseOrder.id,
+          sourceReference: purchaseOrder.reference,
+        },
+        existing as unknown as Record<string, unknown>,
+        purchaseOrder as unknown as Record<string, unknown>,
+      );
       return data({ success: true, purchaseOrder });
     }
 
@@ -233,10 +296,28 @@ export const action = async ({ request }: Route.ActionArgs) => {
           { status: 400 },
         );
       }
+      const existing = await getPurchaseOrder(
+        body.id,
+        organization.id,
+        organization.vat,
+      );
+      if (!existing) {
+        return data({ error: 'Purchase order not found' }, { status: 404 });
+      }
       const purchaseOrder = await deletePurchaseOrder(body.id, organization.id);
       if (!purchaseOrder) {
         return data({ error: 'Purchase order not found' }, { status: 404 });
       }
+      await logDeletedActivity(
+        {
+          organizationId: organization.id,
+          actorUserId: user.id,
+          sourceType: 'purchase_order',
+          sourceId: existing.id,
+          sourceReference: existing.reference,
+        },
+        existing,
+      );
       return data({ success: true, id: purchaseOrder.id });
     }
 

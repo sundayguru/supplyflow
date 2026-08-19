@@ -7,6 +7,7 @@ import {
   Download,
   ExternalLink,
   FileText,
+  History,
   Mail,
   MailPlus,
   Package,
@@ -362,6 +363,12 @@ export const VendorPurchaseOrderDetailDrawer = ({
         </div>
 
         <footer className='space-y-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-7'>
+          <Link
+            to={`/activities?sourceType=vendor_purchase_order&sourceId=${encodeURIComponent(currentVendorPurchaseOrder.id)}`}
+            className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
+          >
+            <History size={17} /> View activity
+          </Link>
           {draftEmail.data && 'error' in draftEmail.data && (
             <p className='rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'>
               {draftEmail.data.error}

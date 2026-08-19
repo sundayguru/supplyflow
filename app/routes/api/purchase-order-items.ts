@@ -1,7 +1,10 @@
 import { data } from 'react-router';
 import type { Route } from './+types/purchase-order-items';
+import { logUpdatedActivity } from '~/db/activityLogs';
 import {
   deletePurchaseOrderItem,
+  getPurchaseOrder,
+  getOrganizationPurchaseOrderItem,
   updatePurchaseOrderItem,
   updatePurchaseOrderItemStatus,
 } from '~/db/purchaseOrders';
@@ -47,6 +50,17 @@ export const action = async ({ request }: Route.ActionArgs) => {
     }
 
     if (request.method === 'PATCH') {
+      const itemContext = await getOrganizationPurchaseOrderItem(
+        id,
+        organization.id,
+      );
+      const existing = itemContext
+        ? await getPurchaseOrder(
+            itemContext.purchaseOrderId,
+            organization.id,
+            organization.vat,
+          )
+        : null;
       if (
         typeof body === 'object' &&
         body !== null &&
@@ -68,9 +82,26 @@ export const action = async ({ request }: Route.ActionArgs) => {
           body.status as PurchaseOrderItemStatus,
           organization.vat,
         );
-        return purchaseOrder
-          ? data({ success: true, purchaseOrder })
-          : data({ error: 'Purchase order item not found' }, { status: 404 });
+        if (!purchaseOrder) {
+          return data(
+            { error: 'Purchase order item not found' },
+            { status: 404 },
+          );
+        }
+        if (existing) {
+          await logUpdatedActivity(
+            {
+              organizationId: organization.id,
+              actorUserId: user.id,
+              sourceType: 'purchase_order',
+              sourceId: purchaseOrder.id,
+              sourceReference: purchaseOrder.reference,
+            },
+            existing as unknown as Record<string, unknown>,
+            purchaseOrder as unknown as Record<string, unknown>,
+          );
+        }
+        return data({ success: true, purchaseOrder });
       }
 
       const parsed = parsePurchaseOrderItemInput(body);
@@ -88,12 +119,40 @@ export const action = async ({ request }: Route.ActionArgs) => {
         }),
         organization.vat,
       );
-      return purchaseOrder
-        ? data({ success: true, purchaseOrder })
-        : data({ error: 'Purchase order item not found' }, { status: 404 });
+      if (!purchaseOrder) {
+        return data(
+          { error: 'Purchase order item not found' },
+          { status: 404 },
+        );
+      }
+      if (existing) {
+        await logUpdatedActivity(
+          {
+            organizationId: organization.id,
+            actorUserId: user.id,
+            sourceType: 'purchase_order',
+            sourceId: purchaseOrder.id,
+            sourceReference: purchaseOrder.reference,
+          },
+          existing as unknown as Record<string, unknown>,
+          purchaseOrder as unknown as Record<string, unknown>,
+        );
+      }
+      return data({ success: true, purchaseOrder });
     }
 
     if (request.method === 'DELETE') {
+      const itemContext = await getOrganizationPurchaseOrderItem(
+        id,
+        organization.id,
+      );
+      const existing = itemContext
+        ? await getPurchaseOrder(
+            itemContext.purchaseOrderId,
+            organization.id,
+            organization.vat,
+          )
+        : null;
       const result = await deletePurchaseOrderItem(
         id,
         organization.id,
@@ -109,6 +168,19 @@ export const action = async ({ request }: Route.ActionArgs) => {
         return data(
           { error: 'A purchase order must contain at least one item' },
           { status: 409 },
+        );
+      }
+      if (existing) {
+        await logUpdatedActivity(
+          {
+            organizationId: organization.id,
+            actorUserId: user.id,
+            sourceType: 'purchase_order',
+            sourceId: result.purchaseOrder.id,
+            sourceReference: result.purchaseOrder.reference,
+          },
+          existing as unknown as Record<string, unknown>,
+          result.purchaseOrder as unknown as Record<string, unknown>,
         );
       }
       return data({ success: true, purchaseOrder: result.purchaseOrder });

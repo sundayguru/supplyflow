@@ -1,6 +1,11 @@
 import type { Route } from './+types/rfqs';
 import { data } from 'react-router';
 import {
+  logCreatedActivity,
+  logDeletedActivity,
+  logUpdatedActivity,
+} from '~/db/activityLogs';
+import {
   createRfq,
   deleteRfq,
   getRfq,
@@ -64,36 +69,43 @@ export const action = async ({ request }: Route.ActionArgs) => {
       ) {
         return data({ error: 'PDF template not found' }, { status: 400 });
       }
-      return data(
+      const rfq = await createRfq(
+        organization.id,
+        user.id,
         {
-          success: true,
-          rfq: await createRfq(
+          ...parsed.value,
+          sourcePdfKey: null,
+          items: await syncRfqItemsWithProductPrices(
             organization.id,
             user.id,
-            {
-              ...parsed.value,
-              sourcePdfKey: null,
-              items: await syncRfqItemsWithProductPrices(
+            parsed.value.currency,
+            applyProductPriceUpdateFlags(
+              body,
+              await resolveItemManufacturers(
+                parsed.value.items,
+                body,
                 organization.id,
                 user.id,
-                parsed.value.currency,
-                applyProductPriceUpdateFlags(
-                  body,
-                  await resolveItemManufacturers(
-                    parsed.value.items,
-                    body,
-                    organization.id,
-                    user.id,
-                  ),
-                ),
               ),
-            },
-            organization.vat,
-            organization.priceMarkup,
+            ),
           ),
         },
-        { status: 201 },
+        organization.vat,
+        organization.priceMarkup,
       );
+      if (rfq) {
+        await logCreatedActivity(
+          {
+            organizationId: organization.id,
+            actorUserId: user.id,
+            sourceType: 'rfq',
+            sourceId: rfq.id,
+            sourceReference: rfq.reference,
+          },
+          rfq,
+        );
+      }
+      return data({ success: true, rfq }, { status: 201 });
     }
 
     if (request.method === 'PATCH') {
@@ -114,15 +126,35 @@ export const action = async ({ request }: Route.ActionArgs) => {
         ) {
           return data({ error: 'Select a valid RFQ status' }, { status: 400 });
         }
+        const existing = await getRfq(
+          body.id,
+          organization.id,
+          organization.vat,
+        );
+        if (!existing) {
+          return data({ error: 'RFQ not found' }, { status: 404 });
+        }
         const rfq = await updateRfqStatus(
           body.id,
           organization.id,
           body.status as RfqStatus,
           organization.vat,
         );
-        return rfq
-          ? data({ success: true, rfq })
-          : data({ error: 'RFQ not found' }, { status: 404 });
+        if (!rfq) {
+          return data({ error: 'RFQ not found' }, { status: 404 });
+        }
+        await logUpdatedActivity(
+          {
+            organizationId: organization.id,
+            actorUserId: user.id,
+            sourceType: 'rfq',
+            sourceId: rfq.id,
+            sourceReference: rfq.reference,
+          },
+          existing as unknown as Record<string, unknown>,
+          rfq as unknown as Record<string, unknown>,
+        );
+        return data({ success: true, rfq });
       }
       const parsed = parseRfqInput(body, organization.priceMarkup);
       if (!parsed.success) {
@@ -164,6 +196,17 @@ export const action = async ({ request }: Route.ActionArgs) => {
       if (!rfq) {
         return data({ error: 'RFQ not found' }, { status: 404 });
       }
+      await logUpdatedActivity(
+        {
+          organizationId: organization.id,
+          actorUserId: user.id,
+          sourceType: 'rfq',
+          sourceId: rfq.id,
+          sourceReference: rfq.reference,
+        },
+        existing as unknown as Record<string, unknown>,
+        rfq as unknown as Record<string, unknown>,
+      );
       return data({ success: true, rfq });
     }
 
@@ -177,10 +220,24 @@ export const action = async ({ request }: Route.ActionArgs) => {
       ) {
         return data({ error: 'RFQ id is required' }, { status: 400 });
       }
+      const existing = await getRfq(body.id, organization.id, organization.vat);
+      if (!existing) {
+        return data({ error: 'RFQ not found' }, { status: 404 });
+      }
       const rfq = await deleteRfq(body.id, organization.id);
       if (!rfq) {
         return data({ error: 'RFQ not found' }, { status: 404 });
       }
+      await logDeletedActivity(
+        {
+          organizationId: organization.id,
+          actorUserId: user.id,
+          sourceType: 'rfq',
+          sourceId: existing.id,
+          sourceReference: existing.reference,
+        },
+        existing,
+      );
       return data({ success: true, id: rfq.id });
     }
 

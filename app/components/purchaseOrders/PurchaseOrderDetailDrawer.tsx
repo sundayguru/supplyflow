@@ -8,6 +8,7 @@ import {
   Download,
   ExternalLink,
   FileText,
+  History,
   ShieldCheck,
   ShieldAlert,
   LoaderCircle,
@@ -778,6 +779,12 @@ export const PurchaseOrderDetailDrawer = ({
         </div>
 
         <footer className='space-y-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-7'>
+          <Link
+            to={`/activities?sourceType=purchase_order&sourceId=${encodeURIComponent(currentPurchaseOrder.id)}`}
+            className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
+          >
+            <History size={17} /> View activity
+          </Link>
           {canValidate && (
             <button
               type='button'

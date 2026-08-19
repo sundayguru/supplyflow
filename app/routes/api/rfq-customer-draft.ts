@@ -1,5 +1,6 @@
 import { data } from 'react-router';
 import { cloudflareContext } from '~/contexts.server/cloudflareContext.server';
+import { logUpdatedActivity } from '~/db/activityLogs';
 import { getEmailSourceForRfq } from '~/db/emailIngestion';
 import { getOrganizationForUser } from '~/db/organizations';
 import { getRfqPdfTemplate } from '~/db/rfqPdfTemplates';
@@ -211,6 +212,17 @@ export const action = async ({
         { status: 500 },
       );
     }
+    await logUpdatedActivity(
+      {
+        organizationId: organization.id,
+        actorUserId: user.id,
+        sourceType: 'rfq',
+        sourceId: updatedRfq.id,
+        sourceReference: updatedRfq.reference,
+      },
+      rfq as unknown as Record<string, unknown>,
+      updatedRfq as unknown as Record<string, unknown>,
+    );
 
     return data({ success: true, draft, generatedReply: bodyText, intent });
   } catch (error) {
