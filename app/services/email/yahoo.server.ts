@@ -71,7 +71,7 @@ export const createYahooAuthorizationUrl = (input: {
     client_id: input.clientId,
     redirect_uri: input.redirectUri,
     response_type: 'code',
-    scope: 'openid email profile mail-r',
+    scope: 'openid email profile',
     prompt: 'consent',
     nonce: crypto.randomUUID(),
     state: input.state,

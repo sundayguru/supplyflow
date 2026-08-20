@@ -115,6 +115,8 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
       'Yahoo Mail could not be connected. Please try again.',
     yahoo_invalid_oauth_state:
       'The Yahoo Mail connection session expired. Please try connecting again.',
+    yahoo_invalid_scope:
+      'Yahoo rejected the requested mail scope. Confirm this Yahoo app is approved for Yahoo Mail read access.',
     yahoo_missing_oauth_response:
       'Yahoo Mail did not return the expected OAuth response. Please try connecting again.',
     yahoo_oauth_not_configured: 'Yahoo OAuth credentials are not configured.',

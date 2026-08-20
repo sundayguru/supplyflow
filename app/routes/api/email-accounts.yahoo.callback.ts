@@ -33,7 +33,9 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
   if (oauthError) {
-    return redirect('/connected-accounts?error=yahoo_connection_denied');
+    return redirect(
+      `/connected-accounts?error=${oauthError === 'access_denied' ? 'yahoo_connection_denied' : oauthError === 'invalid_scope' ? 'yahoo_invalid_scope' : 'yahoo_connection_failed'}`,
+    );
   }
   if (!code || !state) {
     return redirect('/connected-accounts?error=yahoo_missing_oauth_response');
