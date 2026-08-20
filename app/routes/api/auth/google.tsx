@@ -19,7 +19,7 @@ type GlobalWithProcess = typeof globalThis & {
 const processEnv = (globalThis as GlobalWithProcess).process?.env;
 const GOOGLE_CLIENT_ID = processEnv?.GOOGLE_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = processEnv?.GOOGLE_CLIENT_SECRET || '';
-const BASE_URL = processEnv?.BASE_URL || 'http://localhost:5173';
+const BASE_URL = processEnv?.BASE_URL;
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';

@@ -16,6 +16,9 @@ import { getUserFromRequest } from '~/utils/session.server';
 const getEnvString = (env: unknown, name: string) =>
   (env as Record<string, string | undefined>)[name];
 
+const getBaseUrl = (env: unknown, request: Request) =>
+  getEnvString(env, 'BASE_URL') ?? new URL(request.url).origin;
+
 export const loader = async ({ request, context }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
   if (!user) {
@@ -26,15 +29,19 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     return redirect('/connected-accounts?error=owner_required');
   }
   const url = new URL(request.url);
+  const oauthError = url.searchParams.get('error');
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
+  if (oauthError) {
+    return redirect('/connected-accounts?error=yahoo_connection_denied');
+  }
   if (!code || !state) {
-    return redirect('/connected-accounts?error=missing_oauth_response');
+    return redirect('/connected-accounts?error=yahoo_missing_oauth_response');
   }
 
   const oauthState = await consumeEmailAccountOauthState(state);
   if (!oauthState || oauthState.userId !== user.id) {
-    return redirect('/connected-accounts?error=invalid_oauth_state');
+    return redirect('/connected-accounts?error=yahoo_invalid_oauth_state');
   }
   const { env } = context.get(cloudflareContext);
   const clientId = getEnvString(env, 'YAHOO_CLIENT_ID');
@@ -47,7 +54,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   }
 
   try {
-    const redirectUri = `${url.origin}/api/email-accounts/yahoo/callback`;
+    const redirectUri = `${getBaseUrl(env, request)}/api/email-accounts/yahoo/callback`;
     const credentials = await exchangeYahooAuthorizationCode({
       clientId,
       clientSecret,

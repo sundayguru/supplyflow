@@ -9,6 +9,9 @@ import { getUserFromRequest } from '~/utils/session.server';
 const getEnvString = (env: unknown, name: string) =>
   (env as Record<string, string | undefined>)[name];
 
+const getBaseUrl = (env: unknown, request: Request) =>
+  getEnvString(env, 'BASE_URL') ?? new URL(request.url).origin;
+
 export const loader = async ({ request, context }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
   if (!user) {
@@ -26,7 +29,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     return redirect('/connected-accounts?error=yahoo_oauth_not_configured');
   }
   const state = await createEmailAccountOauthState(user.id);
-  const redirectUri = `${new URL(request.url).origin}/api/email-accounts/yahoo/callback`;
+  const redirectUri = `${getBaseUrl(env, request)}/api/email-accounts/yahoo/callback`;
   return redirect(
     createYahooAuthorizationUrl({
       clientId,

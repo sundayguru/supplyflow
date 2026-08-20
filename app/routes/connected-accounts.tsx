@@ -99,18 +99,30 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
   const fetcher = useFetcher();
   const [searchParams] = useSearchParams();
   const error = searchParams.get('error');
-  const errorMessage =
-    error === 'encryption_not_configured'
-      ? 'Token encryption is not configured. Add TOKEN_ENCRYPTION_KEY and restart the app.'
-      : error === 'oauth_not_configured'
-        ? 'Google OAuth credentials are not configured.'
-        : error === 'yahoo_oauth_not_configured'
-          ? 'Yahoo OAuth credentials are not configured.'
-          : error === 'yahoo_connection_failed'
-            ? 'Yahoo Mail could not be connected. Please try again.'
-            : error
-              ? 'Gmail could not be connected. Please try again.'
-              : null;
+  const errorMessages: Record<string, string> = {
+    connection_failed: 'Gmail could not be connected. Please try again.',
+    encryption_not_configured:
+      'Token encryption is not configured. Add TOKEN_ENCRYPTION_KEY and restart the app.',
+    invalid_oauth_state:
+      'The email connection session expired. Please try connecting again.',
+    missing_oauth_response:
+      'The email provider did not return the expected OAuth response. Please try connecting again.',
+    oauth_not_configured: 'Google OAuth credentials are not configured.',
+    owner_required:
+      'Only the organization owner can manage connected accounts.',
+    yahoo_connection_denied: 'Yahoo Mail connection was cancelled.',
+    yahoo_connection_failed:
+      'Yahoo Mail could not be connected. Please try again.',
+    yahoo_invalid_oauth_state:
+      'The Yahoo Mail connection session expired. Please try connecting again.',
+    yahoo_missing_oauth_response:
+      'Yahoo Mail did not return the expected OAuth response. Please try connecting again.',
+    yahoo_oauth_not_configured: 'Yahoo OAuth credentials are not configured.',
+  };
+  const errorMessage = error
+    ? (errorMessages[error] ??
+      'Email account could not be connected. Please try again.')
+    : null;
   const connectedProvider =
     searchParams.get('connected') === 'yahoo' ? 'yahoo' : 'gmail';
   const connectedProviderMetadata = getEmailProviderMetadata(connectedProvider);
