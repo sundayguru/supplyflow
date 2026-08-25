@@ -1,6 +1,12 @@
 import { and, desc, eq, gt } from 'drizzle-orm';
 import { getDb } from './connection';
-import { connectedEmailAccounts, emailAccountOauthStates } from './schemas';
+import {
+  connectedEmailAccounts,
+  emailAccountOauthStates,
+  emailAccountSyncStates,
+  emailIngestions,
+  vendorPurchaseOrders,
+} from './schemas';
 import type { EmailProvider } from '~/services/email/providers';
 
 export const listConnectedEmailAccounts = (organizationId: string) => {
@@ -142,6 +148,35 @@ export const deleteConnectedEmailAccount = async (
   organizationId: string,
 ) => {
   const db = getDb();
+  const [existingAccount] = await db
+    .select({ id: connectedEmailAccounts.id })
+    .from(connectedEmailAccounts)
+    .where(
+      and(
+        eq(connectedEmailAccounts.id, id),
+        eq(connectedEmailAccounts.organizationId, organizationId),
+      ),
+    )
+    .limit(1);
+  if (!existingAccount) {
+    return null;
+  }
+
+  await db
+    .delete(emailAccountSyncStates)
+    .where(eq(emailAccountSyncStates.accountId, id));
+  await db
+    .update(emailIngestions)
+    .set({ accountId: null, updatedAt: new Date().toISOString() })
+    .where(eq(emailIngestions.accountId, id));
+  await db
+    .update(vendorPurchaseOrders)
+    .set({
+      generatedEmailDraftAccountId: null,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(eq(vendorPurchaseOrders.generatedEmailDraftAccountId, id));
+
   const [account] = await db
     .delete(connectedEmailAccounts)
     .where(
