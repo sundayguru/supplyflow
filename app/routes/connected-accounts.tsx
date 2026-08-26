@@ -5,8 +5,10 @@ import {
   useFetcher,
   useSearchParams,
 } from 'react-router';
+import { useState } from 'react';
 import { AlertTriangle, Mail, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import type { Route } from './+types/connected-accounts';
+import { WarningModal } from '~/components/WarningModal';
 import {
   deleteConnectedEmailAccount,
   listConnectedEmailAccounts,
@@ -97,6 +99,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
 const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
   const fetcher = useFetcher();
+  const [accountToDelete, setAccountToDelete] = useState<{
+    id: string;
+    email: string;
+  } | null>(null);
   const [searchParams] = useSearchParams();
   const error = searchParams.get('error');
   const errorMessages: Record<string, string> = {
@@ -265,6 +271,13 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
                         <input type='hidden' name='intent' value='delete' />
                         <button
                           type='submit'
+                          onClick={(event) => {
+                            event.preventDefault();
+                            setAccountToDelete({
+                              id: account.id,
+                              email: account.email,
+                            });
+                          }}
                           aria-label={`Remove ${account.email}`}
                           className='rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-700'
                         >
@@ -325,6 +338,29 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
           })
         )}
       </div>
+
+      <WarningModal
+        isOpen={accountToDelete !== null}
+        title='Remove connected account?'
+        description={
+          accountToDelete
+            ? `Removing ${accountToDelete.email} will stop SupplyFlow from monitoring this inbox and delete its connection. You will need to reconnect it to resume monitoring.`
+            : ''
+        }
+        confirmText='Remove account'
+        cancelText='Keep account'
+        onClose={() => setAccountToDelete(null)}
+        onConfirm={() => {
+          if (!accountToDelete) {
+            return;
+          }
+          fetcher.submit(
+            { id: accountToDelete.id, intent: 'delete' },
+            { method: 'post' },
+          );
+          setAccountToDelete(null);
+        }}
+      />
     </div>
   );
 };
