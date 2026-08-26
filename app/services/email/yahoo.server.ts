@@ -71,7 +71,7 @@ export const createYahooAuthorizationUrl = (input: {
     client_id: input.clientId,
     redirect_uri: input.redirectUri,
     response_type: 'code',
-    scope: 'openid email profile',
+    scope: 'openid mail-r',
     prompt: 'consent',
     nonce: crypto.randomUUID(),
     state: input.state,
@@ -216,17 +216,72 @@ class ImapConnection {
   }
 
   async authenticate(email: string, accessToken: string) {
-    const xoauth2 = encodeBase64String(
-      `user=${email}\x01auth=Bearer ${accessToken}\x01\x01`,
+    const capabilities = await this.capability();
+    const authenticationFailures: string[] = [];
+    if (capabilities.has('AUTH=OAUTHBEARER')) {
+      const oauthBearer = encodeBase64String(
+        [
+          `n,a=${email},`,
+          `host=${YAHOO_IMAP_HOST}`,
+          `port=${YAHOO_IMAP_PORT}`,
+          `auth=Bearer ${accessToken}`,
+          '',
+          '',
+        ].join('\x01'),
+      );
+      try {
+        await this.command(`AUTHENTICATE OAUTHBEARER ${oauthBearer}`, {
+          authenticationCommand: true,
+        });
+        return;
+      } catch (error) {
+        authenticationFailures.push(
+          `OAUTHBEARER: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
+      }
+    }
+
+    if (capabilities.has('AUTH=XOAUTH2')) {
+      const xoauth2 = encodeBase64String(
+        `user=${email}\x01auth=Bearer ${accessToken}\x01\x01`,
+      );
+      try {
+        await this.command('AUTHENTICATE XOAUTH2', {
+          authenticationCommand: true,
+          continuationResponse: xoauth2,
+        });
+        return;
+      } catch (error) {
+        authenticationFailures.push(
+          `XOAUTH2: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
+      }
+    }
+
+    throw new YahooAuthenticationError(
+      authenticationFailures.length > 0
+        ? `Yahoo IMAP OAuth authentication failed. Reconnect this Yahoo account to grant mail-r access. ${authenticationFailures.join('; ')}`
+        : 'Yahoo IMAP server does not advertise OAuth authentication support',
     );
-    await this.command('AUTHENTICATE XOAUTH2', {
-      authenticationCommand: true,
-      continuationResponse: xoauth2,
-    });
   }
 
   async select(folder: string) {
     await this.command(`SELECT ${quoteImapString(folder || 'INBOX')}`);
+  }
+
+  async capability() {
+    const result = await this.command('CAPABILITY');
+    const capabilityLine = result.text
+      .split(CRLF)
+      .find((line) => line.startsWith('* CAPABILITY'));
+    return new Set(
+      capabilityLine
+        ?.replace('* CAPABILITY', '')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((capability) => capability.toUpperCase()) ?? [],
+    );
   }
 
   async search(options: ListMessagesOptions) {
@@ -280,9 +335,9 @@ class ImapConnection {
     while (true) {
       const line = await this.readLine();
       textParts.push(line);
-      if (line.startsWith('+') && options?.continuationResponse) {
+      if (line.startsWith('+')) {
         await this.writer.write(
-          textEncoder.encode(`${options.continuationResponse}${CRLF}`),
+          textEncoder.encode(`${options?.continuationResponse ?? ''}${CRLF}`),
         );
         continue;
       }
