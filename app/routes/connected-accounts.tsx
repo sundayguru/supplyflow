@@ -6,9 +6,17 @@ import {
   useSearchParams,
 } from 'react-router';
 import { useState } from 'react';
-import { AlertTriangle, Mail, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import {
+  AlertTriangle,
+  ChevronDown,
+  Mail,
+  Plus,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react';
 import type { Route } from './+types/connected-accounts';
 import { WarningModal } from '~/components/WarningModal';
+import { DropdownMenu } from '~/components/DropdownMenu';
 import {
   deleteConnectedEmailAccount,
   listConnectedEmailAccounts,
@@ -103,6 +111,7 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
     id: string;
     email: string;
   } | null>(null);
+  const [isConnectMenuOpen, setIsConnectMenuOpen] = useState(false);
   const [searchParams] = useSearchParams();
   const error = searchParams.get('error');
   const errorMessages: Record<string, string> = {
@@ -161,19 +170,48 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
           </p>
         </div>
         {loaderData.isOwner && (
-          <div className='flex flex-wrap gap-3'>
-            {emailProviders.map((provider) => {
-              const metadata = getEmailProviderMetadata(provider);
-              return (
-                <Link
-                  key={provider}
-                  to={metadata.startPath}
-                  className='inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 hover:bg-emerald-500'
-                >
-                  <Plus size={18} /> Connect {metadata.label}
-                </Link>
-              );
-            })}
+          <div className='relative'>
+            <button
+              type='button'
+              onClick={() => setIsConnectMenuOpen((open) => !open)}
+              aria-haspopup='menu'
+              aria-expanded={isConnectMenuOpen}
+              className='inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-500'
+            >
+              <Plus size={18} />
+              Connect account
+              <ChevronDown
+                size={16}
+                className={`transition-transform ${isConnectMenuOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+            <DropdownMenu
+              isOpen={isConnectMenuOpen}
+              onClose={() => setIsConnectMenuOpen(false)}
+            >
+              <p className='px-4 pt-2 pb-1 text-[11px] font-bold tracking-widest text-slate-400 uppercase'>
+                Choose a provider
+              </p>
+              {emailProviders.map((provider) => {
+                const metadata = getEmailProviderMetadata(provider);
+                return (
+                  <Link
+                    key={provider}
+                    to={metadata.startPath}
+                    onClick={() => setIsConnectMenuOpen(false)}
+                    role='menuitem'
+                    className='flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50'
+                  >
+                    <span
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg ${metadata.brandClassName}`}
+                    >
+                      <Mail size={16} />
+                    </span>
+                    <span>Connect {metadata.label}</span>
+                  </Link>
+                );
+              })}
+            </DropdownMenu>
           </div>
         )}
       </div>
