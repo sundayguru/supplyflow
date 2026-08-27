@@ -12,6 +12,11 @@ export type YahooClientConfig = {
   clientSecret: string;
   refreshToken: string;
   accountEmail: string;
+  authorizationUrl?: string;
+  tokenUrl?: string;
+  userinfoUrl?: string;
+  imapHost?: string;
+  provider?: 'yahoo' | 'aol';
 };
 
 type YahooTokenResponse = {
@@ -65,8 +70,9 @@ export const createYahooAuthorizationUrl = (input: {
   clientId: string;
   redirectUri: string;
   state: string;
+  authorizationUrl?: string;
 }) => {
-  const url = new URL(YAHOO_AUTHORIZATION_URL);
+  const url = new URL(input.authorizationUrl ?? YAHOO_AUTHORIZATION_URL);
   url.search = new URLSearchParams({
     client_id: input.clientId,
     redirect_uri: input.redirectUri,
@@ -84,12 +90,18 @@ export const exchangeYahooAuthorizationCode = async (input: {
   clientSecret: string;
   redirectUri: string;
   code: string;
+  tokenUrl?: string;
 }) => {
-  const response = await yahooTokenRequest(input.clientId, input.clientSecret, {
-    redirect_uri: input.redirectUri,
-    code: input.code,
-    grant_type: 'authorization_code',
-  });
+  const response = await yahooTokenRequest(
+    input.clientId,
+    input.clientSecret,
+    {
+      redirect_uri: input.redirectUri,
+      code: input.code,
+      grant_type: 'authorization_code',
+    },
+    input.tokenUrl,
+  );
   if (!response.access_token || !response.refresh_token) {
     throw new Error('Yahoo did not return offline access credentials');
   }
@@ -99,8 +111,11 @@ export const exchangeYahooAuthorizationCode = async (input: {
   };
 };
 
-export const getYahooProfile = async (accessToken: string) => {
-  const response = await fetch(YAHOO_USERINFO_URL, {
+export const getYahooProfile = async (
+  accessToken: string,
+  userinfoUrl = YAHOO_USERINFO_URL,
+) => {
+  const response = await fetch(userinfoUrl, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!response.ok) {
@@ -124,8 +139,9 @@ const yahooTokenRequest = async (
   clientId: string,
   clientSecret: string,
   body: Record<string, string>,
+  tokenUrl = YAHOO_TOKEN_URL,
 ) => {
-  const response = await fetch(YAHOO_TOKEN_URL, {
+  const response = await fetch(tokenUrl, {
     method: 'POST',
     headers: {
       Authorization: `Basic ${encodeBase64String(`${clientId}:${clientSecret}`)}`,
@@ -151,6 +167,7 @@ const getAccessToken = async (config: YahooClientConfig) => {
       refresh_token: config.refreshToken,
       grant_type: 'refresh_token',
     },
+    config.tokenUrl,
   );
   if (!response.access_token) {
     throw new Error('Yahoo token response did not include an access token');
@@ -189,18 +206,22 @@ class ImapConnection {
   private buffer = new Uint8Array();
   private tagNumber = 0;
 
-  constructor(private readonly socket: Socket) {
+  constructor(
+    private readonly socket: Socket,
+    private readonly imapHost: string,
+    private readonly provider: 'yahoo' | 'aol',
+  ) {
     this.reader = socket.readable.getReader();
     this.writer = socket.writable.getWriter();
   }
 
-  static async open() {
+  static async open(imapHost: string, provider: 'yahoo' | 'aol') {
     const socket = connect(
-      { hostname: YAHOO_IMAP_HOST, port: YAHOO_IMAP_PORT },
+      { hostname: imapHost, port: YAHOO_IMAP_PORT },
       { secureTransport: 'on', allowHalfOpen: false },
     );
     await socket.opened;
-    const connection = new ImapConnection(socket);
+    const connection = new ImapConnection(socket, imapHost, provider);
     await connection.readGreeting();
     return connection;
   }
@@ -222,7 +243,7 @@ class ImapConnection {
       const oauthBearer = encodeBase64String(
         [
           `n,a=${email},`,
-          `host=${YAHOO_IMAP_HOST}`,
+          `host=${this.imapHost}`,
           `port=${YAHOO_IMAP_PORT}`,
           `auth=Bearer ${accessToken}`,
           '',
@@ -260,8 +281,8 @@ class ImapConnection {
 
     throw new YahooAuthenticationError(
       authenticationFailures.length > 0
-        ? `Yahoo IMAP OAuth authentication failed. Reconnect this Yahoo account to grant mail-r access. ${authenticationFailures.join('; ')}`
-        : 'Yahoo IMAP server does not advertise OAuth authentication support',
+        ? `${this.provider === 'aol' ? 'AOL' : 'Yahoo'} IMAP OAuth authentication failed. Reconnect this account to grant mail-r access. ${authenticationFailures.join('; ')}`
+        : `${this.provider === 'aol' ? 'AOL' : 'Yahoo'} IMAP server does not advertise OAuth authentication support`,
     );
   }
 
@@ -315,7 +336,9 @@ class ImapConnection {
   private async readGreeting() {
     const greeting = await this.readLine();
     if (!greeting.startsWith('* OK')) {
-      throw new Error(`Yahoo IMAP rejected connection: ${greeting}`);
+      throw new Error(
+        `${this.provider === 'aol' ? 'AOL' : 'Yahoo'} IMAP rejected connection: ${greeting}`,
+      );
     }
   }
 
@@ -356,7 +379,7 @@ class ImapConnection {
         if (line.startsWith(`${tag} NO`) || line.startsWith(`${tag} BAD`)) {
           if (options?.authenticationCommand) {
             throw new YahooAuthenticationError(
-              `Yahoo IMAP authentication failed: ${line}`,
+              `${this.provider === 'aol' ? 'AOL' : 'Yahoo'} IMAP authentication failed: ${line}`,
             );
           }
           throw new Error(`Yahoo IMAP command failed: ${line}`);
@@ -389,7 +412,9 @@ class ImapConnection {
   private async readChunk() {
     const result = await this.reader.read();
     if (result.done) {
-      throw new Error('Yahoo IMAP socket closed unexpectedly');
+      throw new Error(
+        `${this.provider === 'aol' ? 'AOL' : 'Yahoo'} IMAP socket closed unexpectedly`,
+      );
     }
     this.buffer = concatBytes(this.buffer, result.value);
   }
@@ -669,7 +694,10 @@ const listYahooMessages = async (
   options: ListMessagesOptions,
 ) => {
   const accessToken = await getAccessToken(config);
-  const connection = await ImapConnection.open();
+  const connection = await ImapConnection.open(
+    config.imapHost ?? YAHOO_IMAP_HOST,
+    config.provider ?? 'yahoo',
+  );
   try {
     await connection.authenticate(config.accountEmail, accessToken);
     await connection.select(options.folder ?? 'INBOX');
@@ -692,8 +720,18 @@ const listYahooMessages = async (
 };
 
 export const createYahooClient = (config: YahooClientConfig): EmailClient => ({
-  provider: 'yahoo',
+  provider: config.provider ?? 'yahoo',
   async listMessages(options) {
     return await listYahooMessages(config, options);
   },
 });
+
+export const createAolClient = (config: YahooClientConfig): EmailClient =>
+  createYahooClient({
+    ...config,
+    provider: 'aol',
+    authorizationUrl: 'https://api.login.aol.com/oauth2/request_auth',
+    tokenUrl: 'https://api.login.aol.com/oauth2/get_token',
+    userinfoUrl: 'https://api.login.aol.com/openid/v1/userinfo',
+    imapHost: 'imap.aol.com',
+  });

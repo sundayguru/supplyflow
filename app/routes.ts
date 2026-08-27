@@ -105,5 +105,13 @@ export default [
       'api/email-accounts/yahoo/callback',
       'routes/api/email-accounts.yahoo.callback.ts',
     ),
+    route(
+      'api/email-accounts/aol/start',
+      'routes/api/email-accounts.aol.start.ts',
+    ),
+    route(
+      'api/email-accounts/aol/callback',
+      'routes/api/email-accounts.aol.callback.ts',
+    ),
   ]),
 ] satisfies RouteConfig;

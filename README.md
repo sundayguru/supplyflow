@@ -81,6 +81,10 @@ Required Worker secrets:
 ```sh
 npx wrangler secret put GOOGLE_CLIENT_ID --env production
 npx wrangler secret put GOOGLE_CLIENT_SECRET --env production
+npx wrangler secret put YAHOO_CLIENT_ID --env production
+npx wrangler secret put YAHOO_CLIENT_SECRET --env production
+npx wrangler secret put AOL_CLIENT_ID --env production
+npx wrangler secret put AOL_CLIENT_SECRET --env production
 npx wrangler secret put GROQ_API_KEY --env production
 npx wrangler secret put GEMINI_API_KEY --env production
 npx wrangler secret put OLLAMA_API_KEY --env production

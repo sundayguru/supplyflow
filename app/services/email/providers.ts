@@ -1,4 +1,4 @@
-export type EmailProvider = 'gmail' | 'yahoo';
+export type EmailProvider = 'gmail' | 'yahoo' | 'aol';
 
 export type EmailProviderMetadata = {
   label: string;
@@ -28,6 +28,16 @@ export const emailProviderMetadata = {
       'Yahoo Mail could not be connected. Please try again.',
     reconnectMessage:
       'Yahoo Mail access expired. Reconnect this account to resume inbox checks.',
+  },
+  aol: {
+    label: 'AOL Mail',
+    startPath: '/api/email-accounts/aol/start',
+    brandClassName: 'bg-blue-50 text-blue-700',
+    missingCredentialsMessage: 'AOL OAuth credentials are not configured.',
+    connectionFailedMessage:
+      'AOL Mail could not be connected. Please try again.',
+    reconnectMessage:
+      'AOL Mail access expired. Reconnect this account to resume inbox checks.',
   },
 } satisfies Record<EmailProvider, EmailProviderMetadata>;
 

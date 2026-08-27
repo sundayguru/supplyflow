@@ -2,6 +2,7 @@ import { createGmailClient } from './gmail.server';
 import type { EmailProvider } from './providers';
 import type { EmailClient } from './types';
 import { createYahooClient } from './yahoo.server';
+import { createAolClient } from './aol.server';
 
 export type EmailClientConfig =
   | {
@@ -16,6 +17,13 @@ export type EmailClientConfig =
       clientSecret: string;
       refreshToken: string;
       accountEmail: string;
+    }
+  | {
+      provider: 'aol';
+      clientId: string;
+      clientSecret: string;
+      refreshToken: string;
+      accountEmail: string;
     };
 
 export const createEmailClient = (config: EmailClientConfig): EmailClient => {
@@ -24,6 +32,8 @@ export const createEmailClient = (config: EmailClientConfig): EmailClient => {
       return createGmailClient(config);
     case 'yahoo':
       return createYahooClient(config);
+    case 'aol':
+      return createAolClient(config);
   }
 };
 

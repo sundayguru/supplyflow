@@ -19,6 +19,7 @@ import {
 } from '~/services/email/providers';
 import type { EmailClient, EmailMessage } from '~/services/email/types';
 import { isYahooAuthenticationError } from '~/services/email/yahoo.server';
+import { isAolAuthenticationError } from '~/services/email/aol.server';
 import { decryptToken } from '~/utils/tokenEncryption.server';
 
 export const SCHEDULED_UNREAD_MESSAGE_LIMIT = 25;
@@ -85,13 +86,29 @@ const getClientConfig = (
         refreshToken,
         accountEmail: account.email,
       };
+    case 'aol':
+      return {
+        provider: account.provider,
+        clientId: requireEmailSetting(
+          'AOL_CLIENT_ID',
+          getEmailProviderEnv(env, 'AOL_CLIENT_ID'),
+        ),
+        clientSecret: requireEmailSetting(
+          'AOL_CLIENT_SECRET',
+          getEmailProviderEnv(env, 'AOL_CLIENT_SECRET'),
+        ),
+        refreshToken,
+        accountEmail: account.email,
+      };
   }
 };
 
 const isEmailAuthenticationError = (error: unknown, provider: EmailProvider) =>
   provider === 'gmail'
     ? isGmailAuthenticationError(error)
-    : isYahooAuthenticationError(error);
+    : provider === 'yahoo'
+      ? isYahooAuthenticationError(error)
+      : isAolAuthenticationError(error);
 
 const markAccountNeedsReconnect = async (
   account: SelectConnectedEmailAccount,

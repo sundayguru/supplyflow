@@ -135,13 +135,26 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
     yahoo_missing_oauth_response:
       'Yahoo Mail did not return the expected OAuth response. Please try connecting again.',
     yahoo_oauth_not_configured: 'Yahoo OAuth credentials are not configured.',
+    aol_connection_denied: 'AOL Mail connection was cancelled.',
+    aol_connection_failed: 'AOL Mail could not be connected. Please try again.',
+    aol_invalid_oauth_state:
+      'The AOL Mail connection session expired. Please try connecting again.',
+    aol_invalid_scope:
+      'AOL rejected the requested mail scope. Confirm this AOL app is approved for AOL Mail read access.',
+    aol_missing_oauth_response:
+      'AOL Mail did not return the expected OAuth response. Please try again.',
+    aol_oauth_not_configured: 'AOL OAuth credentials are not configured.',
   };
   const errorMessage = error
     ? (errorMessages[error] ??
       'Email account could not be connected. Please try again.')
     : null;
   const connectedProvider =
-    searchParams.get('connected') === 'yahoo' ? 'yahoo' : 'gmail';
+    searchParams.get('connected') === 'yahoo'
+      ? 'yahoo'
+      : searchParams.get('connected') === 'aol'
+        ? 'aol'
+        : 'gmail';
   const connectedProviderMetadata = getEmailProviderMetadata(connectedProvider);
   const actionError =
     fetcher.data &&
@@ -240,8 +253,8 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
             </span>
             <h2 className='mt-4 text-lg font-bold'>No inboxes connected</h2>
             <p className='mt-1 text-sm text-slate-500'>
-              Connect Gmail or Yahoo Mail to begin detecting RFQ requests
-              automatically.
+              Connect Gmail, Yahoo Mail, or AOL Mail to begin detecting RFQ
+              requests automatically.
             </p>
           </div>
         ) : (
