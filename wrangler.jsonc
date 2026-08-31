@@ -12,14 +12,14 @@
   },
   "triggers": {
     "crons": [
-      "* * * * *"
+      "0 * * * *"
     ],
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "supplyflow",
-      "database_id": "3701850f-7fe1-4a1b-a1ef-3837e4870b33",
+      "database_id": "3f8d50e1-8df5-4e74-b538-035f8a505c67",
       "migrations_dir": "./drizzle",
     },
   ],
@@ -41,7 +41,7 @@
         {
           "binding": "DB",
           "database_name": "supplyflow",
-          "database_id": "3701850f-7fe1-4a1b-a1ef-3837e4870b33",
+          "database_id": "3f8d50e1-8df5-4e74-b538-035f8a505c67",
           "migrations_dir": "./drizzle",
         },
       ],
