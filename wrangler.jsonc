@@ -52,7 +52,7 @@
         },
       ],
       "vars": {
-        "BASE_URL": "https://supplyflow.com",
+        "BASE_URL": "https://supplyflow.rallyard-com.workers.dev",
       },
     },
     "dev": {
