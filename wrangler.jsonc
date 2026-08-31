@@ -34,7 +34,7 @@
       "name": "prod-supplyflow",
       "triggers": {
         "crons": [
-          "* * * * *"
+          "0 * * * *"
         ],
       },
       "d1_databases": [
@@ -60,7 +60,7 @@
       "routes": [],
       "triggers": {
         "crons": [
-          "* * * * *"
+          "0 * * * *"
         ],
       },
       "d1_databases": [
