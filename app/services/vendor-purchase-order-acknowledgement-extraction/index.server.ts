@@ -3,6 +3,7 @@ import { createGeminiVendorPurchaseOrderAcknowledgementExtractor } from './gemin
 import { createGroqVendorPurchaseOrderAcknowledgementExtractor } from './groq.server';
 import { createOllamaVendorPurchaseOrderAcknowledgementExtractor } from './ollama.server';
 import type { VendorPurchaseOrderAcknowledgementExtractor } from './types';
+import type { LlmUsageContext } from '~/utils/llmUsage.server';
 
 type SharedVendorPurchaseOrderAcknowledgementExtractorConfig = {
   apiKey: string;
@@ -12,6 +13,7 @@ type SharedVendorPurchaseOrderAcknowledgementExtractorConfig = {
 export type VendorPurchaseOrderAcknowledgementExtractorConfig =
   SharedVendorPurchaseOrderAcknowledgementExtractorConfig & {
     provider: OrganizationAiProvider;
+    usage?: LlmUsageContext;
   };
 
 export const createVendorPurchaseOrderAcknowledgementExtractor = (

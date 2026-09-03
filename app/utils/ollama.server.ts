@@ -2,6 +2,7 @@ import type {
   LlmGenerationRequest,
   LlmGenerationResponse,
 } from './groq.server';
+import { saveLlmUsage } from './llmUsage.server';
 
 const OLLAMA_API_URL = 'https://ollama.com/api/chat';
 
@@ -9,6 +10,8 @@ type OllamaChatResponse = {
   message?: {
     content?: string;
   };
+  prompt_eval_count?: number;
+  eval_count?: number;
 };
 
 export const OllamaService = {
@@ -19,6 +22,7 @@ export const OllamaService = {
     temperature,
     maxTokens,
     apiKey,
+    usage,
   }: LlmGenerationRequest & {
     apiKey: string;
   }): Promise<LlmGenerationResponse> {
@@ -56,6 +60,12 @@ export const OllamaService = {
     }
 
     const payload = (await response.json()) as OllamaChatResponse;
+    await saveLlmUsage(usage, {
+      provider: 'ollama',
+      model,
+      inputTokens: payload.prompt_eval_count,
+      outputTokens: payload.eval_count,
+    });
     const text = payload.message?.content?.trim();
 
     if (!text) {

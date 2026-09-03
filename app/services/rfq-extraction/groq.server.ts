@@ -10,6 +10,7 @@ type GroqRfqExtractorConfig = {
   apiKey: string;
   model: string;
   defaultPriceMarkup: number;
+  usage?: import('~/utils/llmUsage.server').LlmUsageContext;
 };
 
 export const createGroqRfqExtractor = (
@@ -23,6 +24,7 @@ export const createGroqRfqExtractor = (
       userPrompt: buildRfqExtractionPrompt(message),
       temperature: 0.1,
       maxTokens: 4000,
+      usage: config.usage,
     });
     return parseRfqExtractionResponse(
       response.text,

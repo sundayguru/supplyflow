@@ -1,9 +1,12 @@
+import { saveLlmUsage } from './llmUsage.server';
+
 export type LlmGenerationRequest = {
   model: string;
   systemPrompt: string;
   userPrompt: string;
   temperature?: number;
   maxTokens?: number;
+  usage?: import('./llmUsage.server').LlmUsageContext;
 };
 
 export type LlmGenerationResponse = {
@@ -27,6 +30,7 @@ type GroqChatCompletionResponse = {
       content?: string;
     };
   }>;
+  usage?: { prompt_tokens?: number; completion_tokens?: number };
 };
 
 export const GroqService = {
@@ -37,6 +41,7 @@ export const GroqService = {
     temperature,
     maxTokens,
     apiKey,
+    usage,
   }: LlmGenerationRequest & {
     apiKey?: string;
   }): Promise<LlmGenerationResponse> {
@@ -68,6 +73,12 @@ export const GroqService = {
     }
 
     const payload = (await response.json()) as GroqChatCompletionResponse;
+    await saveLlmUsage(usage, {
+      provider: 'groq',
+      model,
+      inputTokens: payload.usage?.prompt_tokens,
+      outputTokens: payload.usage?.completion_tokens,
+    });
     const text = payload.choices?.[0]?.message?.content?.trim();
 
     if (!text) {

@@ -4,11 +4,13 @@ import { GeminiService } from '~/utils/gemini.server';
 import { GroqService, type LlmGenerationResponse } from '~/utils/groq.server';
 import { parseLlmJson } from '~/utils/llmJson';
 import { OllamaService } from '~/utils/ollama.server';
+import type { LlmUsageContext } from '~/utils/llmUsage.server';
 
 type RfqReplyDraftConfig = {
   provider: OrganizationAiProvider;
   apiKey: string;
   model: string;
+  usage?: LlmUsageContext;
 };
 
 type GenerateRfqReplyDraftInput = {
@@ -90,6 +92,7 @@ const generate = async (
     userPrompt,
     temperature: 0.3,
     maxTokens: 1200,
+    usage: config.usage,
   };
   switch (config.provider) {
     case 'google':

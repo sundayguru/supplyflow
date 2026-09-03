@@ -334,6 +334,11 @@ export const classifyMailboxMessages = async ({
     provider: model.provider,
     apiKey: requireSetting(providerApiKey.name, providerApiKey.value),
     model: model.value,
+    usage: {
+      organizationId: organization.id,
+      userId: account.userId,
+      feature: 'email-classification',
+    },
   };
   const rfqExtractor = createRfqExtractor({
     ...extractorConfig,

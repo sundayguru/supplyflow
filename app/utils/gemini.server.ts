@@ -3,6 +3,7 @@ import type {
   LlmGenerationRequest,
   LlmGenerationResponse,
 } from './groq.server';
+import { saveLlmUsage } from './llmUsage.server';
 
 export const GeminiService = {
   async generate({
@@ -12,6 +13,7 @@ export const GeminiService = {
     temperature,
     maxTokens,
     apiKey,
+    usage,
   }: LlmGenerationRequest & {
     apiKey: string;
   }): Promise<LlmGenerationResponse> {
@@ -29,6 +31,12 @@ export const GeminiService = {
       },
     });
     const result = await generativeModel.generateContent(userPrompt);
+    await saveLlmUsage(usage, {
+      provider: 'google',
+      model,
+      inputTokens: result.response.usageMetadata?.promptTokenCount,
+      outputTokens: result.response.usageMetadata?.candidatesTokenCount,
+    });
     const text = result.response.text().trim();
     if (!text) {
       throw new Error('Gemini returned an empty response');

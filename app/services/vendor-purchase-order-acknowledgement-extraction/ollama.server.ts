@@ -9,6 +9,7 @@ import {
 type OllamaVendorPurchaseOrderAcknowledgementExtractorConfig = {
   apiKey: string;
   model: string;
+  usage?: import('~/utils/llmUsage.server').LlmUsageContext;
 };
 
 export const createOllamaVendorPurchaseOrderAcknowledgementExtractor = (
@@ -23,6 +24,7 @@ export const createOllamaVendorPurchaseOrderAcknowledgementExtractor = (
         buildVendorPurchaseOrderAcknowledgementExtractionPrompt(message),
       temperature: 0.1,
       maxTokens: 4000,
+      usage: config.usage,
     });
     return parseVendorPurchaseOrderAcknowledgementExtractionResponse(
       response.text,

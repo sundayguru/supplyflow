@@ -3,11 +3,13 @@ import { createGroqRfqExtractor } from './groq.server';
 import { createGeminiRfqExtractor } from './gemini.server';
 import { createOllamaRfqExtractor } from './ollama.server';
 import type { RfqExtractor } from './types';
+import type { LlmUsageContext } from '~/utils/llmUsage.server';
 
 type SharedRfqExtractorConfig = {
   apiKey: string;
   model: string;
   defaultPriceMarkup: number;
+  usage?: LlmUsageContext;
 };
 
 export type RfqExtractorConfig = SharedRfqExtractorConfig & {

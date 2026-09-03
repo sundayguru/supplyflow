@@ -9,6 +9,7 @@ import {
 type GroqVendorPurchaseOrderAcknowledgementExtractorConfig = {
   apiKey: string;
   model: string;
+  usage?: import('~/utils/llmUsage.server').LlmUsageContext;
 };
 
 export const createGroqVendorPurchaseOrderAcknowledgementExtractor = (
@@ -23,6 +24,7 @@ export const createGroqVendorPurchaseOrderAcknowledgementExtractor = (
         buildVendorPurchaseOrderAcknowledgementExtractionPrompt(message),
       temperature: 0.1,
       maxTokens: 4000,
+      usage: config.usage,
     });
     return parseVendorPurchaseOrderAcknowledgementExtractionResponse(
       response.text,

@@ -1,6 +1,6 @@
 import { Link, Form } from 'react-router';
 import { motion } from 'motion/react';
-import { Building2, LogOut, Settings } from 'lucide-react';
+import { BarChart3, Building2, LogOut, Settings } from 'lucide-react';
 
 type ProfileMenuProps = {
   userName: string;
@@ -66,6 +66,14 @@ export const ProfileMenu = ({
           >
             <Building2 size={16} />
             Organization
+          </Link>
+          <Link
+            to='/llm-usage'
+            onClick={onClose}
+            className='flex items-center gap-3 px-4 py-2.5 text-sm text-black/70 transition-colors hover:bg-black/5'
+          >
+            <BarChart3 size={16} />
+            LLM usage
           </Link>
           <Link
             to='/settings'

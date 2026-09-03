@@ -9,6 +9,7 @@ import {
 type GroqPurchaseOrderExtractorConfig = {
   apiKey: string;
   model: string;
+  usage?: import('~/utils/llmUsage.server').LlmUsageContext;
 };
 
 export const createGroqPurchaseOrderExtractor = (
@@ -22,6 +23,7 @@ export const createGroqPurchaseOrderExtractor = (
       userPrompt: buildPurchaseOrderExtractionPrompt(message),
       temperature: 0.1,
       maxTokens: 4000,
+      usage: config.usage,
     });
     return parsePurchaseOrderExtractionResponse(response.text, message);
   },

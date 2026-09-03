@@ -3,6 +3,7 @@ import { createGeminiPurchaseOrderExtractor } from './gemini.server';
 import { createGroqPurchaseOrderExtractor } from './groq.server';
 import { createOllamaPurchaseOrderExtractor } from './ollama.server';
 import type { PurchaseOrderExtractor } from './types';
+import type { LlmUsageContext } from '~/utils/llmUsage.server';
 
 type SharedPurchaseOrderExtractorConfig = {
   apiKey: string;
@@ -12,6 +13,7 @@ type SharedPurchaseOrderExtractorConfig = {
 export type PurchaseOrderExtractorConfig =
   SharedPurchaseOrderExtractorConfig & {
     provider: OrganizationAiProvider;
+    usage?: LlmUsageContext;
   };
 
 export const createPurchaseOrderExtractor = (

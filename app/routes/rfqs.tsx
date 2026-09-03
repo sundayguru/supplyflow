@@ -171,6 +171,11 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       apiKey: requireSetting(providerApiKey.name, providerApiKey.value),
       model: model.value,
       defaultPriceMarkup: organization.priceMarkup,
+      usage: {
+        organizationId: organization.id,
+        userId: user.id,
+        feature: 'rfq-extraction',
+      },
     });
     const extracted = await extractor.extract({
       id: crypto.randomUUID(),

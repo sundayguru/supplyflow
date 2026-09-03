@@ -155,6 +155,11 @@ export const action = async ({
                   providerApiKey.value,
                 ),
                 model: model.value,
+                usage: {
+                  organizationId: organization.id,
+                  userId: user.id,
+                  feature: 'rfq-reply-draft',
+                },
               },
               rfq,
               organizationName: organization.name,

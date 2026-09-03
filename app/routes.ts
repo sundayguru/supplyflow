@@ -30,6 +30,7 @@ export default [
       'routes/vendor-purchase-order-acknowledgements.tsx',
     ),
     route('activities', 'routes/activities.tsx'),
+    route('llm-usage', 'routes/llm-usage.tsx'),
     route('manufacturers', 'routes/manufacturers.tsx'),
     route('product-prices', 'routes/product-prices.tsx'),
     route('rfq-pdf-templates', 'routes/rfq-pdf-templates.tsx'),
