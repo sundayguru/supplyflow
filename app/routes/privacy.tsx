@@ -7,38 +7,38 @@ const privacySections = [
   {
     title: 'What we collect',
     content:
-      'We collect the information you provide when you create an account, upload learning materials, bookmark units, or interact with quizzes and courses. This may include your name, email address, profile details, course content you upload, and learning activity within the app.',
+      'SupplyFlow processes account and organization details, such as names, email addresses, and workspace settings. It also processes information entered or imported for RFQs, quotations, customer and vendor purchase orders, products, prices, contacts, files, and activity records. These records may include personal details of your customers, vendors, and colleagues.',
   },
   {
-    title: 'How we use your information',
+    title: 'Connected email accounts',
     content:
-      'We use your information to operate the platform, personalize your learning experience, generate courses and quizzes, show your progress, and keep the app secure and reliable. We may also use aggregated usage information to improve the product.',
+      'If you connect an email account, SupplyFlow uses the connection to monitor the selected inbox or folder, identify RFQs and purchase orders, and create related records. It may process message content, sender details, subjects, attachments, and processing status. Disconnecting an account stops future monitoring of that connection; records already created in the workspace may remain.',
   },
   {
-    title: 'Course materials and uploads',
+    title: 'How we use information',
     content:
-      'Materials you upload are used to generate learning content and, when the course is published, the course is available to other learners. Please only upload content you have the right to use and share.',
+      'We use information to provide and secure the service, organize RFQs and purchase orders, prepare quotations and documents, track pricing and activity, and show reports to your organization. Where enabled, automated tools may analyze business records or email content and help prepare draft replies. Generated results should be checked before use.',
   },
   {
-    title: 'Sharing and visibility',
+    title: 'Sharing and access',
     content:
-      'Your private account information is not displayed publicly by default. Public profile details, published courses, community activity, and other content you intentionally share may be visible to other users. We do not sell your personal information.',
+      'People with access to your organization’s workspace may see its business records according to their role. Information may also be processed by providers that support hosting, connected email, and automated features. When you send or share a quotation, purchase order, or message, its recipients receive the information you include.',
   },
   {
     title: 'Data retention',
     content:
-      'We keep your information for as long as your account is active or as needed to provide the service, comply with legal obligations, resolve disputes, and enforce our policies. You can contact us if you want your account information removed.',
+      'Workspace records and account information are kept while needed to provide the service and may be retained longer where required for legal, security, or dispute resolution purposes. Removing a connected email account stops access to that account but does not automatically delete RFQs, purchase orders, or other records created from it.',
   },
   {
     title: 'Your choices',
     content:
-      'You can manage much of your information from your account, including updating profile details and removing courses where available. If you believe content or personal data should be removed, contact us and we will review the request.',
+      'You can update information in your workspace and manage connected email accounts where those controls are available. For requests to access, correct, or delete personal information, contact your organization’s workspace owner or contact SupplyFlow through your service channel. We will review requests in line with applicable law.',
   },
 ];
 
 export default function PrivacyPage() {
   return (
-    <div className='min-h-screen bg-[#f5f5f0] px-4 py-16'>
+    <div className='min-h-screen bg-[#f7f8f4] px-4 py-16'>
       <div className='mx-auto max-w-4xl'>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -46,21 +46,21 @@ export default function PrivacyPage() {
           className='mb-10 rounded-[40px] border border-black/5 bg-white p-8 shadow-sm md:p-12'
         >
           <div className='mb-6 flex items-center gap-3'>
-            <div className='flex h-12 w-12 items-center justify-center rounded-2xl bg-[#5A5A40] text-white'>
+            <div className='flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-700 text-white'>
               <ShieldCheck size={24} />
             </div>
             <div>
-              <p className='text-[11px] font-bold tracking-[0.25em] text-[#5A5A40] uppercase'>
+              <p className='text-[11px] font-bold tracking-[0.25em] text-emerald-700 uppercase'>
                 Privacy Policy
               </p>
               <h1 className='font-serif text-4xl text-[#1a1a1a] md:text-5xl'>
-                Your learning data, handled with care
+                Your business data, handled with care
               </h1>
             </div>
           </div>
           <p className='max-w-3xl font-serif text-lg leading-relaxed text-black/60 italic'>
-            This privacy policy explains how CourseXQuiz collects, uses, and
-            protects information in this free learning app.
+            This policy explains how SupplyFlow handles information used in
+            quotation, RFQ, purchase order, and connected email workflows.
           </p>
         </motion.div>
 
@@ -81,11 +81,12 @@ export default function PrivacyPage() {
           ))}
         </div>
 
-        <div className='mt-10 flex flex-col items-center justify-between gap-4 rounded-[32px] border border-black/5 bg-[#1a1a1a] p-8 text-white md:flex-row'>
+        <div className='mt-10 flex flex-col items-center justify-between gap-4 rounded-[32px] border border-black/5 bg-black/10 p-8 text-black md:flex-row'>
           <div className='flex items-center gap-3'>
             <Logo />
-            <p className='text-sm text-white/70'>
-              Questions about privacy or your data? info@coursexquiz.com
+            <p className='text-sm'>
+              Questions about your data? Contact your workspace owner or
+              SupplyFlow through your service channel.
             </p>
           </div>
           <Link
