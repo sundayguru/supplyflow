@@ -164,15 +164,15 @@ const LandingPage = () => {
 
   return (
     <MotionConfig reducedMotion='user'>
-      <main className='min-h-screen overflow-hidden bg-[#f7f8f4] font-sans text-slate-950'>
+      <main className='min-h-screen overflow-x-clip bg-[#f7f8f4] font-sans text-slate-950'>
         <motion.header
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: 'easeOut' }}
-          className='relative z-50 border-b border-slate-900/5 bg-[#f7f8f4]/90 backdrop-blur-xl'
+          className='sticky top-0 z-50 border-b border-slate-900/5 bg-[#f7f8f4]/90 backdrop-blur-xl'
         >
           <div className='mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10'>
-            <Logo>SupplyFlow</Logo>
+            <Logo />
 
             <nav
               className='hidden items-center gap-8 md:flex'
@@ -414,7 +414,7 @@ const LandingPage = () => {
 
         <section
           id='problem'
-          className='bg-slate-950 py-20 text-white sm:py-28'
+          className='scroll-mt-20 bg-slate-950 py-20 text-white sm:py-28'
         >
           <div className='mx-auto grid max-w-7xl gap-14 px-5 sm:px-8 lg:grid-cols-2 lg:px-10'>
             <SectionHeading
@@ -445,7 +445,7 @@ const LandingPage = () => {
           </div>
         </section>
 
-        <section id='solution' className='py-20 sm:py-28'>
+        <section id='solution' className='scroll-mt-20 py-20 sm:py-28'>
           <div className='mx-auto max-w-7xl px-5 sm:px-8 lg:px-10'>
             <SectionHeading
               centered
@@ -483,7 +483,10 @@ const LandingPage = () => {
           </div>
         </section>
 
-        <section id='results' className='px-5 pb-20 sm:px-8 sm:pb-28 lg:px-10'>
+        <section
+          id='results'
+          className='scroll-mt-20 px-5 pb-20 sm:px-8 sm:pb-28 lg:px-10'
+        >
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -565,7 +568,7 @@ const LandingPage = () => {
 
         <footer className='border-t border-slate-200 bg-white'>
           <div className='mx-auto flex max-w-7xl flex-col gap-5 px-5 py-8 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10'>
-            <Logo size='sm'>SupplyFlow</Logo>
+            <Logo />
             <p>Quotation intelligence for modern supply teams.</p>
             <div className='flex gap-5'>
               <Link to='/privacy' className='hover:text-slate-900'>

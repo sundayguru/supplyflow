@@ -29,6 +29,16 @@
       "bucket_name": "supplyflow",
     },
   ],
+  "routes": [
+    {
+      "pattern": "suploop.com",
+      "custom_domain": true,
+    },
+    {
+      "pattern": "www.suploop.com",
+      "custom_domain": true,
+    },
+  ],
   "env": {
     "production": {
       "name": "prod-supplyflow",

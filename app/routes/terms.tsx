@@ -83,7 +83,7 @@ export default function TermsPage() {
 
         <div className='mt-10 flex flex-col items-center justify-between gap-4 rounded-[32px] border border-black/5 bg-[#1a1a1a] p-8 text-white md:flex-row'>
           <div className='flex items-center gap-3'>
-            <Logo size='sm' />
+            <Logo />
             <p className='text-sm text-white/70'>
               Using CourseXQuiz means agreeing to these terms.
             </p>

@@ -34,7 +34,7 @@ export const AuthPageLayout = ({
           className='flex items-center px-6 py-10 sm:px-10 lg:px-14'
         >
           <div className='mx-auto w-full max-w-md'>
-            <Logo className='mb-10'>SupplyFlow</Logo>
+            <Logo className='mb-10' />
             <p className='text-xs font-bold tracking-[0.2em] text-emerald-700 uppercase'>
               {eyebrow}
             </p>
