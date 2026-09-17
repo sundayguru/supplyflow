@@ -212,7 +212,7 @@ export const generateRfqPdf = async (
     if (footerBanner) {
       drawFullWidthBanner(page, footerBanner, 0, FOOTER_HEIGHT);
     } else {
-      page.drawText('SupplyFlow quotation sample', {
+      page.drawText('Suploop quotation sample', {
         x: SIDE_MARGIN,
         y: 24,
         font: regular,
@@ -351,11 +351,11 @@ export const generateRfqPdf = async (
       : []),
     ...(rfq.applyVat
       ? [
-          [
-            `VAT (${organization.vat}%)`,
-            formatMoney(rfq.vatValue, rfq.currency),
-          ],
-        ]
+        [
+          `VAT (${organization.vat}%)`,
+          formatMoney(rfq.vatValue, rfq.currency),
+        ],
+      ]
       : []),
     ['Total', formatMoney(rfq.totalValue, rfq.currency)],
   ];
@@ -453,7 +453,7 @@ export const generateProformaInvoicePdf = async (
     if (footerBanner) {
       drawFullWidthBanner(page, footerBanner, 0, FOOTER_HEIGHT);
     } else {
-      page.drawText('SupplyFlow proforma invoice', {
+      page.drawText('Suploop proforma invoice', {
         x: SIDE_MARGIN,
         y: 24,
         font: regular,
@@ -617,11 +617,11 @@ export const generateProformaInvoicePdf = async (
     ['Subtotal', formatMoney(purchaseOrder.subtotal, purchaseOrder.currency)],
     ...(purchaseOrder.applyVat
       ? [
-          [
-            `VAT (${organization.vat}%)`,
-            formatMoney(purchaseOrder.vatValue, purchaseOrder.currency),
-          ],
-        ]
+        [
+          `VAT (${organization.vat}%)`,
+          formatMoney(purchaseOrder.vatValue, purchaseOrder.currency),
+        ],
+      ]
       : []),
     [
       'Total due',
@@ -722,7 +722,7 @@ export const generateVendorPurchaseOrderPdf = async (
     if (footerBanner) {
       drawFullWidthBanner(page, footerBanner, 0, FOOTER_HEIGHT);
     } else {
-      page.drawText('SupplyFlow purchase order', {
+      page.drawText('Suploop purchase order', {
         x: SIDE_MARGIN,
         y: 24,
         font: regular,

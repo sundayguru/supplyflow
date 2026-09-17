@@ -99,7 +99,7 @@ local development, place the same secret names in the ignored `.dev.vars` file.
 Organization owners choose the preferred model on the organization page.
 
 Generate an encryption key with `openssl rand -base64 32`. In the Google OAuth
-client, register `https://supplyflow.com/api/email-accounts/google/callback`
+client, register `https://suploop.com/api/email-accounts/google/callback`
 and the equivalent localhost callback as authorized redirect URIs.
 
 Test the scheduled handler locally with the Cloudflare Vite development server:

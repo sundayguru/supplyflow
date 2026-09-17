@@ -121,7 +121,7 @@ export const RfqPdfTemplatePreview = ({
           </div>
           <Banner
             url={footerUrl}
-            fallback='SupplyFlow quotation sample - Page 1'
+            fallback='Suploop quotation sample - Page 1'
             position='footer'
           />
         </div>
@@ -147,7 +147,7 @@ export const RfqPdfTemplatePreview = ({
           </div>
           <Banner
             url={footerUrl}
-            fallback='SupplyFlow quotation sample - Last page'
+            fallback='Suploop quotation sample - Last page'
             position='footer'
           />
         </div>

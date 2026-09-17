@@ -37,7 +37,7 @@ export const links: Route.LinksFunction = () => [
 
 export const meta = () => {
   return [
-    { title: 'Supplyflow' },
+    { title: 'Suploop' },
     { name: 'description', content: `Supply chain automation` },
   ];
 };

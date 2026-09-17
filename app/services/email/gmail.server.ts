@@ -267,7 +267,7 @@ const createMultipartDraftMessage = (
   input: CreateDraftReplyInput | CreateDraftEmailInput,
   options: { isReply: boolean },
 ) => {
-  const boundary = `supplyflow-${crypto.randomUUID()}`;
+  const boundary = `suploop-${crypto.randomUUID()}`;
   const filename = sanitizeMimeFilename(input.attachment.filename);
   const subject =
     options.isReply && !/^re:/i.test(input.subject)
@@ -398,11 +398,11 @@ const getMessage = async (
     const attachmentId = part.body?.attachmentId;
     const data = attachmentId
       ? (
-          await gmailRequest<GmailAttachmentResponse>(
-            `/messages/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachmentId)}`,
-            accessToken,
-          )
-        ).data
+        await gmailRequest<GmailAttachmentResponse>(
+          `/messages/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachmentId)}`,
+          accessToken,
+        )
+      ).data
       : part.body?.data;
     if (!data) {
       continue;

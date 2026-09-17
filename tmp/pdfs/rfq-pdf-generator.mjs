@@ -12,7 +12,7 @@ var __commonJS = (cb, mod) =>
   function __require() {
     return (
       mod ||
-        (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod),
+      (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod),
       mod.exports
     );
   };
@@ -128,8 +128,8 @@ function __awaiter(thisArg, _arguments, P, generator) {
     return value instanceof P
       ? value
       : new P(function (resolve) {
-          resolve(value);
-        });
+        resolve(value);
+      });
   }
   return new (P || (P = Promise))(function (resolve, reject) {
     function fulfilled(value) {
@@ -156,14 +156,14 @@ function __awaiter(thisArg, _arguments, P, generator) {
 }
 function __generator(thisArg, body) {
   var _ = {
-      label: 0,
-      sent: function () {
-        if (t[0] & 1) throw t[1];
-        return t[1];
-      },
-      trys: [],
-      ops: [],
+    label: 0,
+    sent: function () {
+      if (t[0] & 1) throw t[1];
+      return t[1];
     },
+    trys: [],
+    ops: [],
+  },
     f,
     y,
     t,
@@ -171,9 +171,9 @@ function __generator(thisArg, body) {
   return (
     (g = { next: verb(0), throw: verb(1), return: verb(2) }),
     typeof Symbol === 'function' &&
-      (g[Symbol.iterator] = function () {
-        return this;
-      }),
+    (g[Symbol.iterator] = function () {
+      return this;
+    }),
     g
   );
   function verb(n) {
@@ -187,7 +187,7 @@ function __generator(thisArg, body) {
       try {
         if (
           ((f = 1),
-          y &&
+            y &&
             (t =
               op[0] & 2
                 ? y['return']
@@ -375,12 +375,12 @@ function __asyncDelegator(o) {
   function verb(n, f) {
     i[n] = o[n]
       ? function (v) {
-          return (p = !p)
-            ? { value: __await(o[n](v)), done: n === 'return' }
-            : f
-              ? f(v)
-              : v;
-        }
+        return (p = !p)
+          ? { value: __await(o[n](v)), done: n === 'return' }
+          : f
+            ? f(v)
+            : v;
+      }
       : f;
   }
 }
@@ -392,7 +392,7 @@ function __asyncValues(o) {
   return m
     ? m.call(o)
     : ((o =
-        typeof __values === 'function' ? __values(o) : o[Symbol.iterator]()),
+      typeof __values === 'function' ? __values(o) : o[Symbol.iterator]()),
       (i = {}),
       verb('next'),
       verb('throw'),
@@ -489,7 +489,7 @@ var require_base64 = __commonJS({
     exports.decodeFromBase64DataUri =
       exports.decodeFromBase64 =
       exports.encodeToBase64 =
-        void 0;
+      void 0;
     var chars =
       'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
     var lookup = new Uint8Array(256);
@@ -580,7 +580,7 @@ var require_strings = __commonJS({
       exports.toHexStringOfMinLength =
       exports.toCodePoint =
       exports.toCharCode =
-        void 0;
+      void 0;
     exports.toCharCode = function (character) {
       return character.charCodeAt(0);
     };
@@ -658,7 +658,7 @@ var require_strings = __commonJS({
     };
     exports.charSplit = function (text) {
       var chars = [];
-      for (var idx = 0, len = text.length; idx < len; ) {
+      for (var idx = 0, len = text.length; idx < len;) {
         var _a = exports.charAtIndex(text, idx),
           c = _a[0],
           cLen = _a[1];
@@ -745,17 +745,17 @@ var require_strings = __commonJS({
           : '' + offsetSign + offsetHours + ':' + offsetMins;
       var date = /* @__PURE__ */ new Date(
         year +
-          '-' +
-          month +
-          '-' +
-          day +
-          'T' +
-          hours +
-          ':' +
-          mins +
-          ':' +
-          secs +
-          tzOffset,
+        '-' +
+        month +
+        '-' +
+        day +
+        'T' +
+        hours +
+        ':' +
+        mins +
+        ':' +
+        secs +
+        tzOffset,
       );
       return date;
     };
@@ -794,7 +794,7 @@ var require_arrays = __commonJS({
       exports.mergeIntoTypedArray =
       exports.typedArrayFor =
       exports.last =
-        void 0;
+      void 0;
     var base64_1 = require_base64();
     var strings_1 = require_strings();
     exports.last = function (array) {
@@ -960,7 +960,7 @@ var require_unicode = __commonJS({
       exports.isWithinBMP =
       exports.utf16Encode =
       exports.utf8Encode =
-        void 0;
+      void 0;
     var strings_1 = require_strings();
     exports.utf8Encode = function (input, byteOrderMark) {
       if (byteOrderMark === void 0) {
@@ -968,7 +968,7 @@ var require_unicode = __commonJS({
       }
       var encoded = [];
       if (byteOrderMark) encoded.push(239, 187, 191);
-      for (var idx = 0, len = input.length; idx < len; ) {
+      for (var idx = 0, len = input.length; idx < len;) {
         var codePoint = input.codePointAt(idx);
         if (codePoint < 128) {
           var byte1 = codePoint & 127;
@@ -1005,7 +1005,7 @@ var require_unicode = __commonJS({
       }
       var encoded = [];
       if (byteOrderMark) encoded.push(65279);
-      for (var idx = 0, len = input.length; idx < len; ) {
+      for (var idx = 0, len = input.length; idx < len;) {
         var codePoint = input.codePointAt(idx);
         if (codePoint < 65536) {
           encoded.push(codePoint);
@@ -2171,7 +2171,7 @@ var require_deflate = __commonJS({
         }
         scan += 2;
         match++;
-        do {} while (
+        do { } while (
           _win[++scan] === _win[++match] &&
           _win[++scan] === _win[++match] &&
           _win[++scan] === _win[++match] &&
@@ -2256,7 +2256,7 @@ var require_deflate = __commonJS({
       if (max_block_size > s.pending_buf_size - 5) {
         max_block_size = s.pending_buf_size - 5;
       }
-      for (;;) {
+      for (; ;) {
         if (s.lookahead <= 1) {
           fill_window(s);
           if (s.lookahead === 0 && flush === Z_NO_FLUSH) {
@@ -2303,7 +2303,7 @@ var require_deflate = __commonJS({
     function deflate_fast(s, flush) {
       var hash_head;
       var bflush;
-      for (;;) {
+      for (; ;) {
         if (s.lookahead < MIN_LOOKAHEAD) {
           fill_window(s);
           if (s.lookahead < MIN_LOOKAHEAD && flush === Z_NO_FLUSH) {
@@ -2386,7 +2386,7 @@ var require_deflate = __commonJS({
       var hash_head;
       var bflush;
       var max_insert;
-      for (;;) {
+      for (; ;) {
         if (s.lookahead < MIN_LOOKAHEAD) {
           fill_window(s);
           if (s.lookahead < MIN_LOOKAHEAD && flush === Z_NO_FLUSH) {
@@ -2491,7 +2491,7 @@ var require_deflate = __commonJS({
       var prev;
       var scan, strend;
       var _win = s.window;
-      for (;;) {
+      for (; ;) {
         if (s.lookahead <= MAX_MATCH) {
           fill_window(s);
           if (s.lookahead <= MAX_MATCH && flush === Z_NO_FLUSH) {
@@ -2511,7 +2511,7 @@ var require_deflate = __commonJS({
             prev === _win[++scan]
           ) {
             strend = s.strstart + MAX_MATCH;
-            do {} while (
+            do { } while (
               prev === _win[++scan] &&
               prev === _win[++scan] &&
               prev === _win[++scan] &&
@@ -2563,7 +2563,7 @@ var require_deflate = __commonJS({
     }
     function deflate_huff(s, flush) {
       var bflush;
-      for (;;) {
+      for (; ;) {
         if (s.lookahead === 0) {
           fill_window(s);
           if (s.lookahead === 0) {
@@ -2856,10 +2856,10 @@ var require_deflate = __commonJS({
             put_byte(
               s,
               (s.gzhead.text ? 1 : 0) +
-                (s.gzhead.hcrc ? 2 : 0) +
-                (!s.gzhead.extra ? 0 : 4) +
-                (!s.gzhead.name ? 0 : 8) +
-                (!s.gzhead.comment ? 0 : 16),
+              (s.gzhead.hcrc ? 2 : 0) +
+              (!s.gzhead.extra ? 0 : 4) +
+              (!s.gzhead.name ? 0 : 8) +
+              (!s.gzhead.comment ? 0 : 16),
             );
             put_byte(s, s.gzhead.time & 255);
             put_byte(s, (s.gzhead.time >> 8) & 255);
@@ -3328,7 +3328,7 @@ var require_strings2 = __commonJS({
       var i, out, c, c_len;
       var len = max || buf.length;
       var utf16buf = new Array(len * 2);
-      for (out = 0, i = 0; i < len; ) {
+      for (out = 0, i = 0; i < len;) {
         c = buf[i++];
         if (c < 128) {
           utf16buf[out++] = c;
@@ -3635,7 +3635,7 @@ var require_inffast = __commonJS({
           bits += 8;
         }
         here = lcode[hold & lmask];
-        dolen: for (;;) {
+        dolen: for (; ;) {
           op = here >>> 24;
           hold >>>= op;
           bits -= op;
@@ -3661,7 +3661,7 @@ var require_inffast = __commonJS({
               bits += 8;
             }
             here = dcode[hold & dmask];
-            dodist: for (;;) {
+            dodist: for (; ;) {
               op = here >>> 24;
               hold >>>= op;
               bits -= op;
@@ -3946,7 +3946,7 @@ var require_inftrees = __commonJS({
       ) {
         return 1;
       }
-      for (;;) {
+      for (; ;) {
         here_bits = len - drop;
         if (work[sym] < end) {
           here_op = 0;
@@ -4321,7 +4321,7 @@ var require_inflate = __commonJS({
       _in = have;
       _out = left;
       ret = Z_OK;
-      inf_leave: for (;;) {
+      inf_leave: for (; ;) {
         switch (state.mode) {
           case HEAD:
             if (state.wrap === 0) {
@@ -4784,7 +4784,7 @@ var require_inflate = __commonJS({
           /* falls through */
           case CODELENS:
             while (state.have < state.nlen + state.ndist) {
-              for (;;) {
+              for (; ;) {
                 here = state.lencode[hold & ((1 << state.lenbits) - 1)];
                 here_bits = here >>> 24;
                 here_op = (here >>> 16) & 255;
@@ -4944,7 +4944,7 @@ var require_inflate = __commonJS({
               break;
             }
             state.back = 0;
-            for (;;) {
+            for (; ;) {
               here = state.lencode[hold & ((1 << state.lenbits) - 1)];
               here_bits = here >>> 24;
               here_op = (here >>> 16) & 255;
@@ -4963,11 +4963,11 @@ var require_inflate = __commonJS({
               last_bits = here_bits;
               last_op = here_op;
               last_val = here_val;
-              for (;;) {
+              for (; ;) {
                 here =
                   state.lencode[
-                    last_val +
-                      ((hold & ((1 << (last_bits + last_op)) - 1)) >> last_bits)
+                  last_val +
+                  ((hold & ((1 << (last_bits + last_op)) - 1)) >> last_bits)
                   ];
                 here_bits = here >>> 24;
                 here_op = (here >>> 16) & 255;
@@ -5027,7 +5027,7 @@ var require_inflate = __commonJS({
             state.mode = DIST;
           /* falls through */
           case DIST:
-            for (;;) {
+            for (; ;) {
               here = state.distcode[hold & ((1 << state.distbits) - 1)];
               here_bits = here >>> 24;
               here_op = (here >>> 16) & 255;
@@ -5046,11 +5046,11 @@ var require_inflate = __commonJS({
               last_bits = here_bits;
               last_op = here_op;
               last_val = here_val;
-              for (;;) {
+              for (; ;) {
                 here =
                   state.distcode[
-                    last_val +
-                      ((hold & ((1 << (last_bits + last_op)) - 1)) >> last_bits)
+                  last_val +
+                  ((hold & ((1 << (last_bits + last_op)) - 1)) >> last_bits)
                   ];
                 here_bits = here >>> 24;
                 here_op = (here >>> 16) & 255;
@@ -6042,7 +6042,7 @@ var require_objects = __commonJS({
       exports.isStandardFont =
       exports.StandardFontValues =
       exports.values =
-        void 0;
+      void 0;
     var standard_fonts_1 = require_lib();
     exports.values = function (obj) {
       return Object.keys(obj).map(function (k) {
@@ -6086,7 +6086,7 @@ var require_validators = __commonJS({
       exports.createValueErrorMsg =
       exports.singleQuote =
       exports.backtick =
-        void 0;
+      void 0;
     var objects_1 = require_objects();
     exports.backtick = function (val) {
       return '`' + val + '`';
@@ -6227,12 +6227,12 @@ var require_validators = __commonJS({
       if (value < min || value > max) {
         throw new Error(
           exports.backtick(valueName) +
-            ' must be at least ' +
-            min +
-            ' and at most ' +
-            max +
-            ', but was actually ' +
-            value,
+          ' must be at least ' +
+          min +
+          ' and at most ' +
+          max +
+          ', but was actually ' +
+          value,
         );
       }
     };
@@ -6246,10 +6246,10 @@ var require_validators = __commonJS({
       if (value % multiplier !== 0) {
         throw new Error(
           exports.backtick(valueName) +
-            ' must be a multiple of ' +
-            multiplier +
-            ', but was actually ' +
-            value,
+          ' must be a multiple of ' +
+          multiplier +
+          ', but was actually ' +
+          value,
         );
       }
     };
@@ -6257,8 +6257,8 @@ var require_validators = __commonJS({
       if (!Number.isInteger(value)) {
         throw new Error(
           exports.backtick(valueName) +
-            ' must be an integer, but was actually ' +
-            value,
+          ' must be an integer, but was actually ' +
+          value,
         );
       }
     };
@@ -6266,8 +6266,8 @@ var require_validators = __commonJS({
       if (![1, 0].includes(Math.sign(value))) {
         throw new Error(
           exports.backtick(valueName) +
-            ' must be a positive number or 0, but was actually ' +
-            value,
+          ' must be a positive number or 0, but was actually ' +
+          value,
         );
       }
     };
@@ -6430,7 +6430,7 @@ var require_errors2 = __commonJS({
       exports.UnexpectedObjectTypeError =
       exports.PrivateConstructorError =
       exports.MethodNotImplementedError =
-        void 0;
+      void 0;
     var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
     var utils_1 = require_utils2();
     var MethodNotImplementedError =
@@ -6473,7 +6473,7 @@ var require_errors2 = __commonJS({
               null && _a !== void 0
               ? _a
               : (_b = t === null || t === void 0 ? void 0 : t.constructor) ===
-                    null || _b === void 0
+                null || _b === void 0
                 ? void 0
                 : _b.name;
           };
@@ -7022,7 +7022,7 @@ var require_PDFObject = __commonJS({
     var PDFObject =
       /** @class */
       (function () {
-        function PDFObject2() {}
+        function PDFObject2() { }
         PDFObject2.prototype.clone = function (_context) {
           throw new errors_1.MethodNotImplementedError(
             this.constructor.name,
@@ -10540,9 +10540,9 @@ var require_CustomFontEmbedder = __commonJS({
                       // https://stackoverflow.com/questions/35485179/stemv-value-of-the-truetype-font
                       StemV: 0,
                     }),
-                    (_c[this.isCFF() ? 'FontFile3' : 'FontFile2'] =
-                      fontStreamRef),
-                    _c),
+                      (_c[this.isCFF() ? 'FontFile3' : 'FontFile2'] =
+                        fontStreamRef),
+                      _c),
                   );
                   return [2, context.register(fontDescriptor)];
               }
@@ -11162,14 +11162,14 @@ var require_UPNG = __commonJS({
           else if (depth == 2)
             for (var x = 0; x < w; x++) {
               var gr =
-                  85 * ((data[off + (x >>> 2)] >>> (6 - ((x & 3) << 1))) & 3),
+                85 * ((data[off + (x >>> 2)] >>> (6 - ((x & 3) << 1))) & 3),
                 al = gr == tr * 85 ? 0 : 255;
               bf32[to + x] = (al << 24) | (gr << 16) | (gr << 8) | gr;
             }
           else if (depth == 4)
             for (var x = 0; x < w; x++) {
               var gr =
-                  17 * ((data[off + (x >>> 1)] >>> (4 - ((x & 1) << 2))) & 15),
+                17 * ((data[off + (x >>> 1)] >>> (4 - ((x & 1) << 2))) & 15),
                 al = gr == tr * 17 ? 0 : 255;
               bf32[to + x] = (al << 24) | (gr << 16) | (gr << 8) | gr;
             }
@@ -12347,9 +12347,9 @@ var require_UPNG = __commonJS({
           blend = alwaysBlend ? 1 : 0;
         if (j != 0) {
           var tlim =
-              forbidPrev || alwaysBlend || j == 1 || frms[j - 2].dispose != 0
-                ? 1
-                : 2,
+            forbidPrev || alwaysBlend || j == 1 || frms[j - 2].dispose != 0
+              ? 1
+              : 2,
             tstp = 0,
             tarea = 1e9;
           for (var it = 0; it < tlim; it++) {
@@ -13900,9 +13900,9 @@ var require_LZWStream = __commonJS({
                 (nextCode + earlyChange) & (nextCode + earlyChange - 1)
                   ? codeLength
                   : Math.min(
-                      Math.log(nextCode + earlyChange) / 0.6931471805599453 + 1,
-                      12,
-                    ) | 0;
+                    Math.log(nextCode + earlyChange) / 0.6931471805599453 + 1,
+                    12,
+                  ) | 0;
             }
             prevCode = code;
             decodedLength += currentSequenceLength;
@@ -14206,7 +14206,7 @@ var require_ViewerPreferences = __commonJS({
       exports.PrintScaling =
       exports.ReadingDirection =
       exports.NonFullScreenPageMode =
-        void 0;
+      void 0;
     var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
     var PDFArray_1 = tslib_1.__importDefault(require_PDFArray());
     var PDFBool_1 = tslib_1.__importDefault(require_PDFBool());
@@ -14831,7 +14831,7 @@ var require_PDFAnnotation = __commonJS({
             return N;
           throw new Error(
             'Unexpected N type: ' +
-              (N === null || N === void 0 ? void 0 : N.constructor.name),
+            (N === null || N === void 0 ? void 0 : N.constructor.name),
           );
         };
         PDFAnnotation2.prototype.setNormalAppearance = function (appearance) {
@@ -14991,7 +14991,7 @@ var require_AppearanceCharacteristics = __commonJS({
           var components = [];
           for (
             var idx = 0,
-              len = BC === null || BC === void 0 ? void 0 : BC.size();
+            len = BC === null || BC === void 0 ? void 0 : BC.size();
             idx < len;
             idx++
           ) {
@@ -15007,7 +15007,7 @@ var require_AppearanceCharacteristics = __commonJS({
           var components = [];
           for (
             var idx = 0,
-              len = BG === null || BG === void 0 ? void 0 : BG.size();
+            len = BG === null || BG === void 0 ? void 0 : BG.size();
             idx < len;
             idx++
           ) {
@@ -15344,13 +15344,13 @@ var require_PDFAcroButton = __commonJS({
               (_b = exportValues[idx]) !== null && _b !== void 0
                 ? _b
                 : PDFHexString_1.default.fromText(
-                    (_d =
-                      (_c = widget.getOnValue()) === null || _c === void 0
-                        ? void 0
-                        : _c.decodeText()) !== null && _d !== void 0
-                      ? _d
-                      : '',
-                  );
+                  (_d =
+                    (_c = widget.getOnValue()) === null || _c === void 0
+                      ? void 0
+                      : _c.decodeText()) !== null && _d !== void 0
+                    ? _d
+                    : '',
+                );
             Opt.push(exportVal);
           }
           this.setOpt(Opt);
@@ -15463,7 +15463,7 @@ var require_flags = __commonJS({
       exports.AcroTextFlags =
       exports.AcroButtonFlags =
       exports.AcroFieldFlags =
-        void 0;
+      void 0;
     var flag = function (bitIndex) {
       return 1 << bitIndex;
     };
@@ -16222,7 +16222,7 @@ var require_PDFAcroForm = __commonJS({
           if (fields === void 0 || index === void 0) {
             throw new Error(
               'Tried to remove inexistent field ' +
-                field.getFullyQualifiedName(),
+              field.getFullyQualifiedName(),
             );
           }
           fields.remove(index);
@@ -17555,7 +17555,7 @@ var require_PDFParser = __commonJS({
             return (
               obj instanceof PDFDict_1.default &&
               obj.lookup(PDFName_1.default.of('Type')) ===
-                PDFName_1.default.of('Catalog')
+              PDFName_1.default.of('Catalog')
             );
           };
           var catalog = this.context.lookup(this.context.trailerInfo.Root);
@@ -17624,7 +17624,7 @@ var require_PDFParser = __commonJS({
                     !(
                       object instanceof PDFRawStream_1.default &&
                       object.dict.lookup(PDFName_1.default.of('Type')) ===
-                        PDFName_1.default.of('ObjStm')
+                      PDFName_1.default.of('ObjStm')
                     )
                   )
                     return [3, 2];
@@ -17641,7 +17641,7 @@ var require_PDFParser = __commonJS({
                   if (
                     object instanceof PDFRawStream_1.default &&
                     object.dict.lookup(PDFName_1.default.of('Type')) ===
-                      PDFName_1.default.of('XRef')
+                    PDFName_1.default.of('XRef')
                   ) {
                     PDFXRefStreamParser_1.default
                       .forStream(object)
@@ -18310,7 +18310,7 @@ var require_rotations = __commonJS({
       exports.degrees =
       exports.radians =
       exports.RotationTypes =
-        void 0;
+      void 0;
     var utils_1 = require_utils2();
     var RotationTypes;
     (function (RotationTypes2) {
@@ -18451,7 +18451,7 @@ var require_operators = __commonJS({
       exports.concatTransformationMatrix =
       exports.clipEvenOdd =
       exports.clip =
-        void 0;
+      void 0;
     var objects_1 = require_objects2();
     var rotations_1 = require_rotations();
     var core_1 = require_core();
@@ -18718,9 +18718,9 @@ var require_operators = __commonJS({
       return exports.setTextMatrix(
         cos(objects_1.asNumber(rotationAngle)),
         sin(objects_1.asNumber(rotationAngle)) +
-          tan(objects_1.asNumber(xSkewAngle)),
+        tan(objects_1.asNumber(xSkewAngle)),
         -sin(objects_1.asNumber(rotationAngle)) +
-          tan(objects_1.asNumber(ySkewAngle)),
+        tan(objects_1.asNumber(ySkewAngle)),
         cos(objects_1.asNumber(rotationAngle)),
         x,
         y,
@@ -18817,7 +18817,7 @@ var require_colors = __commonJS({
       exports.rgb =
       exports.grayscale =
       exports.ColorTypes =
-        void 0;
+      void 0;
     var operators_1 = require_operators();
     var utils_1 = require_utils2();
     var ColorTypes;
@@ -18853,11 +18853,11 @@ var require_colors = __commonJS({
           ? operators_1.setFillingRgbColor(color.red, color.green, color.blue)
           : color.type === CMYK
             ? operators_1.setFillingCmykColor(
-                color.cyan,
-                color.magenta,
-                color.yellow,
-                color.key,
-              )
+              color.cyan,
+              color.magenta,
+              color.yellow,
+              color.key,
+            )
             : utils_1.error('Invalid color: ' + JSON.stringify(color));
     };
     exports.setStrokingColor = function (color) {
@@ -18867,11 +18867,11 @@ var require_colors = __commonJS({
           ? operators_1.setStrokingRgbColor(color.red, color.green, color.blue)
           : color.type === CMYK
             ? operators_1.setStrokingCmykColor(
-                color.cyan,
-                color.magenta,
-                color.yellow,
-                color.key,
-              )
+              color.cyan,
+              color.magenta,
+              color.yellow,
+              color.key,
+            )
             : utils_1.error('Invalid color: ' + JSON.stringify(color));
     };
     exports.componentsToColor = function (comps, scale) {
@@ -18884,11 +18884,11 @@ var require_colors = __commonJS({
           ? exports.rgb(comps[0] * scale, comps[1] * scale, comps[2] * scale)
           : (comps === null || comps === void 0 ? void 0 : comps.length) === 4
             ? exports.cmyk(
-                comps[0] * scale,
-                comps[1] * scale,
-                comps[2] * scale,
-                comps[3] * scale,
-              )
+              comps[0] * scale,
+              comps[1] * scale,
+              comps[2] * scale,
+              comps[3] * scale,
+            )
             : void 0;
     };
     exports.colorToComponents = function (color) {
@@ -19339,7 +19339,7 @@ var require_operations = __commonJS({
       exports.drawImage =
       exports.drawLinesOfText =
       exports.drawText =
-        void 0;
+      void 0;
     var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
     var colors_1 = require_colors();
     var operators_1 = require_operators();
@@ -19350,7 +19350,7 @@ var require_operations = __commonJS({
       return [
         operators_1.pushGraphicsState(),
         options.graphicsState &&
-          operators_1.setGraphicsState(options.graphicsState),
+        operators_1.setGraphicsState(options.graphicsState),
         operators_1.beginText(),
         colors_1.setFillingColor(options.color),
         operators_1.setFontAndSize(options.font, options.size),
@@ -19370,7 +19370,7 @@ var require_operations = __commonJS({
       var operators = [
         operators_1.pushGraphicsState(),
         options.graphicsState &&
-          operators_1.setGraphicsState(options.graphicsState),
+        operators_1.setGraphicsState(options.graphicsState),
         operators_1.beginText(),
         colors_1.setFillingColor(options.color),
         operators_1.setFontAndSize(options.font, options.size),
@@ -19396,7 +19396,7 @@ var require_operations = __commonJS({
       return [
         operators_1.pushGraphicsState(),
         options.graphicsState &&
-          operators_1.setGraphicsState(options.graphicsState),
+        operators_1.setGraphicsState(options.graphicsState),
         operators_1.translate(options.x, options.y),
         operators_1.rotateRadians(rotations_1.toRadians(options.rotate)),
         operators_1.scale(options.width, options.height),
@@ -19412,7 +19412,7 @@ var require_operations = __commonJS({
       return [
         operators_1.pushGraphicsState(),
         options.graphicsState &&
-          operators_1.setGraphicsState(options.graphicsState),
+        operators_1.setGraphicsState(options.graphicsState),
         operators_1.translate(options.x, options.y),
         operators_1.rotateRadians(rotations_1.toRadians(options.rotate)),
         operators_1.scale(options.xScale, options.yScale),
@@ -19429,7 +19429,7 @@ var require_operations = __commonJS({
       return [
         operators_1.pushGraphicsState(),
         options.graphicsState &&
-          operators_1.setGraphicsState(options.graphicsState),
+        operators_1.setGraphicsState(options.graphicsState),
         options.color && colors_1.setStrokingColor(options.color),
         operators_1.setLineWidth(options.thickness),
         operators_1.setDashPattern(
@@ -19449,7 +19449,7 @@ var require_operations = __commonJS({
       return [
         operators_1.pushGraphicsState(),
         options.graphicsState &&
-          operators_1.setGraphicsState(options.graphicsState),
+        operators_1.setGraphicsState(options.graphicsState),
         options.color && colors_1.setFillingColor(options.color),
         options.borderColor && colors_1.setStrokingColor(options.borderColor),
         operators_1.setLineWidth(options.borderWidth),
@@ -19528,13 +19528,13 @@ var require_operations = __commonJS({
           [
             operators_1.pushGraphicsState(),
             options.graphicsState &&
-              operators_1.setGraphicsState(options.graphicsState),
+            operators_1.setGraphicsState(options.graphicsState),
             options.color && colors_1.setFillingColor(options.color),
             options.borderColor &&
-              colors_1.setStrokingColor(options.borderColor),
+            colors_1.setStrokingColor(options.borderColor),
             operators_1.setLineWidth(options.borderWidth),
             options.borderLineCap &&
-              operators_1.setLineCap(options.borderLineCap),
+            operators_1.setLineCap(options.borderLineCap),
             operators_1.setDashPattern(
               (_a = options.borderDashArray) !== null && _a !== void 0
                 ? _a
@@ -19544,21 +19544,21 @@ var require_operations = __commonJS({
           ],
           options.rotate === void 0
             ? exports.drawEllipsePath({
-                x: options.x,
-                y: options.y,
-                xScale: options.xScale,
-                yScale: options.yScale,
-              })
+              x: options.x,
+              y: options.y,
+              xScale: options.xScale,
+              yScale: options.yScale,
+            })
             : drawEllipseCurves({
-                x: options.x,
-                y: options.y,
-                xScale: options.xScale,
-                yScale: options.yScale,
-                rotate:
-                  (_c = options.rotate) !== null && _c !== void 0
-                    ? _c
-                    : rotations_1.degrees(0),
-              }),
+              x: options.x,
+              y: options.y,
+              xScale: options.xScale,
+              yScale: options.yScale,
+              rotate:
+                (_c = options.rotate) !== null && _c !== void 0
+                  ? _c
+                  : rotations_1.degrees(0),
+            }),
           [
             // prettier-ignore
             options.color && options.borderWidth ? operators_1.fillAndStroke() : options.color ? operators_1.fill() : options.borderColor ? operators_1.stroke() : operators_1.closePath(),
@@ -19574,7 +19574,7 @@ var require_operations = __commonJS({
           [
             operators_1.pushGraphicsState(),
             options.graphicsState &&
-              operators_1.setGraphicsState(options.graphicsState),
+            operators_1.setGraphicsState(options.graphicsState),
             operators_1.translate(options.x, options.y),
             operators_1.rotateRadians(
               rotations_1.toRadians(
@@ -19589,11 +19589,11 @@ var require_operations = __commonJS({
               : operators_1.scale(1, -1),
             options.color && colors_1.setFillingColor(options.color),
             options.borderColor &&
-              colors_1.setStrokingColor(options.borderColor),
+            colors_1.setStrokingColor(options.borderColor),
             options.borderWidth &&
-              operators_1.setLineWidth(options.borderWidth),
+            operators_1.setLineWidth(options.borderWidth),
             options.borderLineCap &&
-              operators_1.setLineCap(options.borderLineCap),
+            operators_1.setLineCap(options.borderLineCap),
             operators_1.setDashPattern(
               (_b = options.borderDashArray) !== null && _b !== void 0
                 ? _b
@@ -19635,19 +19635,19 @@ var require_operations = __commonJS({
         ? [operators_1.translate(0, 0), operators_1.rotateDegrees(0)]
         : options.rotation === 90
           ? [
-              operators_1.translate(options.width, 0),
-              operators_1.rotateDegrees(90),
-            ]
+            operators_1.translate(options.width, 0),
+            operators_1.rotateDegrees(90),
+          ]
           : options.rotation === 180
             ? [
-                operators_1.translate(options.width, options.height),
-                operators_1.rotateDegrees(180),
-              ]
+              operators_1.translate(options.width, options.height),
+              operators_1.rotateDegrees(180),
+            ]
             : options.rotation === 270
               ? [
-                  operators_1.translate(0, options.height),
-                  operators_1.rotateDegrees(270),
-                ]
+                operators_1.translate(0, options.height),
+                operators_1.rotateDegrees(270),
+              ]
               : [];
     };
     exports.drawCheckBox = function (options) {
@@ -19917,7 +19917,7 @@ var require_errors3 = __commonJS({
       exports.ForeignPageError =
       exports.FontkitNotRegisteredError =
       exports.EncryptedPDFError =
-        void 0;
+      void 0;
     var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
     var EncryptedPDFError =
       /** @class */
@@ -20177,7 +20177,7 @@ var require_layout = __commonJS({
     exports.layoutSinglelineText =
       exports.layoutCombedText =
       exports.layoutMultilineText =
-        void 0;
+      void 0;
     var errors_1 = require_errors3();
     var alignment_1 = require_alignment();
     var utils_1 = require_utils2();
@@ -20411,7 +20411,7 @@ var require_appearances = __commonJS({
       exports.defaultRadioGroupAppearanceProvider =
       exports.defaultCheckBoxAppearanceProvider =
       exports.normalizeAppearance =
-        void 0;
+      void 0;
     var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
     var operations_1 = require_operations();
     var colors_1 = require_colors();
@@ -20432,7 +20432,7 @@ var require_appearances = __commonJS({
         (_a = field.getDefaultAppearance()) !== null && _a !== void 0 ? _a : '';
       var daMatch =
         (_b = utils_1.findLastMatch(da, tfRegex).match) !== null &&
-        _b !== void 0
+          _b !== void 0
           ? _b
           : [];
       var defaultFontSize = Number(daMatch[2]);
@@ -20490,7 +20490,7 @@ var require_appearances = __commonJS({
       var bs = widget.getBorderStyle();
       var borderWidth =
         (_a = bs === null || bs === void 0 ? void 0 : bs.getWidth()) !== null &&
-        _a !== void 0
+          _a !== void 0
           ? _a
           : 0;
       var rotation = rotations_1.reduceRotation(
@@ -20593,7 +20593,7 @@ var require_appearances = __commonJS({
       var bs = widget.getBorderStyle();
       var borderWidth =
         (_a = bs === null || bs === void 0 ? void 0 : bs.getWidth()) !== null &&
-        _a !== void 0
+          _a !== void 0
           ? _a
           : 0;
       var rotation = rotations_1.reduceRotation(
@@ -20712,7 +20712,7 @@ var require_appearances = __commonJS({
           : '';
       var borderWidth =
         (_d = bs === null || bs === void 0 ? void 0 : bs.getWidth()) !== null &&
-        _d !== void 0
+          _d !== void 0
           ? _d
           : 0;
       var rotation = rotations_1.reduceRotation(
@@ -20820,7 +20820,7 @@ var require_appearances = __commonJS({
       var text = (_a = textField.getText()) !== null && _a !== void 0 ? _a : '';
       var borderWidth =
         (_b = bs === null || bs === void 0 ? void 0 : bs.getWidth()) !== null &&
-        _b !== void 0
+          _b !== void 0
           ? _b
           : 0;
       var rotation = rotations_1.reduceRotation(
@@ -20935,7 +20935,7 @@ var require_appearances = __commonJS({
         (_a = dropdown.getSelected()[0]) !== null && _a !== void 0 ? _a : '';
       var borderWidth =
         (_b = bs === null || bs === void 0 ? void 0 : bs.getWidth()) !== null &&
-        _b !== void 0
+          _b !== void 0
           ? _b
           : 0;
       var rotation = rotations_1.reduceRotation(
@@ -20962,14 +20962,14 @@ var require_appearances = __commonJS({
         height: height - (borderWidth + padding) * 2,
       };
       var _e = layout_1.layoutSinglelineText(text, {
-          alignment: alignment_1.TextAlignment.Left,
-          fontSize:
-            widgetFontSize !== null && widgetFontSize !== void 0
-              ? widgetFontSize
-              : fieldFontSize,
-          font,
-          bounds,
-        }),
+        alignment: alignment_1.TextAlignment.Left,
+        fontSize:
+          widgetFontSize !== null && widgetFontSize !== void 0
+            ? widgetFontSize
+            : fieldFontSize,
+        font,
+        bounds,
+      }),
         line = _e.line,
         fontSize = _e.fontSize;
       var textColor =
@@ -21019,7 +21019,7 @@ var require_appearances = __commonJS({
       var bs = widget.getBorderStyle();
       var borderWidth =
         (_a = bs === null || bs === void 0 ? void 0 : bs.getWidth()) !== null &&
-        _a !== void 0
+          _a !== void 0
           ? _a
           : 0;
       var rotation = rotations_1.reduceRotation(
@@ -21054,14 +21054,14 @@ var require_appearances = __commonJS({
         height: height - (borderWidth + padding) * 2,
       };
       var _d = layout_1.layoutMultilineText(text, {
-          alignment: alignment_1.TextAlignment.Left,
-          fontSize:
-            widgetFontSize !== null && widgetFontSize !== void 0
-              ? widgetFontSize
-              : fieldFontSize,
-          font,
-          bounds,
-        }),
+        alignment: alignment_1.TextAlignment.Left,
+        fontSize:
+          widgetFontSize !== null && widgetFontSize !== void 0
+            ? widgetFontSize
+            : fieldFontSize,
+        font,
+        bounds,
+      }),
         lines = _d.lines,
         fontSize = _d.fontSize,
         lineHeight = _d.lineHeight;
@@ -21561,7 +21561,7 @@ var require_PDFField = __commonJS({
           if (textColor) {
             var da =
               (_a = this.acroField.getDefaultAppearance()) !== null &&
-              _a !== void 0
+                _a !== void 0
                 ? _a
                 : '';
             var newDa =
@@ -23359,8 +23359,8 @@ var require_PDFForm = __commonJS({
         if (parts[idx] === '') {
           throw new Error(
             'Periods in PDF field names must be separated by at least one character: "' +
-              fullyQualifiedName +
-              '"',
+            fullyQualifiedName +
+            '"',
           );
         }
       }
@@ -24394,8 +24394,8 @@ var require_PDFDocument = __commonJS({
                   maybeCopyPage =
                     context === this.context
                       ? function (p) {
-                          return p;
-                        }
+                        return p;
+                      }
                       : core_1.PDFObjectCopier.for(context, this.context).copy;
                   embeddedPages = new Array(pages.length);
                   ((idx = 0), (len = pages.length));
@@ -24993,11 +24993,11 @@ var require_PDFPage = __commonJS({
             options.maxWidth === void 0
               ? utils_1.lineSplit(utils_1.cleanText(text))
               : utils_1.breakTextIntoLines(
-                  text,
-                  wordBreaks,
-                  options.maxWidth,
-                  textWidth,
-                );
+                text,
+                wordBreaks,
+                options.maxWidth,
+                textWidth,
+              );
           var encodedLines = new Array(lines.length);
           for (var idx = 0, len = lines.length; idx < len; idx++) {
             encodedLines[idx] = newFont.encodeText(lines[idx]);
@@ -25778,7 +25778,7 @@ var require_PDFButton = __commonJS({
                   : options.borderWidth) !== null && _b !== void 0
                 ? _b
                 : 0) /
-                2,
+              2,
             y:
               ((_c =
                 options === null || options === void 0 ? void 0 : options.y) !==
@@ -25791,7 +25791,7 @@ var require_PDFButton = __commonJS({
                   : options.borderWidth) !== null && _d !== void 0
                 ? _d
                 : 0) /
-                2,
+              2,
             width:
               (_e =
                 options === null || options === void 0
@@ -26288,7 +26288,7 @@ var generateRfqTemplateSamplePdf = async (
         height,
       });
     } else {
-      page2.drawText('SupplyFlow quotation sample', {
+      page2.drawText('Suploop quotation sample', {
         x: SIDE_MARGIN,
         y: 24,
         font: regular,

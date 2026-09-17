@@ -75,7 +75,7 @@ export default function ResetPasswordPage({
     <AuthPageLayout
       eyebrow='Secure your account'
       title='Choose a new password.'
-      description='Use at least eight characters and choose something unique to your SupplyFlow workspace.'
+      description='Use at least eight characters and choose something unique to your Suploop workspace.'
     >
       <Form method='post' className='space-y-4'>
         <input type='hidden' name='token' value={token} />

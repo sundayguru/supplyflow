@@ -4,9 +4,9 @@ import { generateRfqTemplateSamplePdf } from './rfq-pdf-generator.mjs';
 const timestamp = new Date().toISOString();
 const organization = {
   id: 'org-sample',
-  name: 'SupplyFlow Industrial',
+  name: 'Suploop Industrial',
   description: null,
-  website: 'https://supplyflow.com',
+  website: 'https://suploop.com',
   phone: null,
   address: 'Berlin, Germany',
   preferredModel: 'gemini-2.5-flash',

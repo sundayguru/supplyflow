@@ -158,9 +158,9 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
   const connectedProviderMetadata = getEmailProviderMetadata(connectedProvider);
   const actionError =
     fetcher.data &&
-    typeof fetcher.data === 'object' &&
-    'error' in fetcher.data &&
-    typeof fetcher.data.error === 'string'
+      typeof fetcher.data === 'object' &&
+      'error' in fetcher.data &&
+      typeof fetcher.data.error === 'string'
       ? fetcher.data.error
       : null;
 
@@ -175,7 +175,7 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
             Connected accounts
           </h1>
           <p className='mt-2 text-sm text-slate-500'>
-            Connect multiple inboxes and choose which ones SupplyFlow monitors.
+            Connect multiple inboxes and choose which ones Suploop monitors.
             Organization default folder:{' '}
             <span className='font-medium text-slate-700'>
               {loaderData.organizationEmailFolder}
@@ -395,7 +395,7 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
         title='Remove connected account?'
         description={
           accountToDelete
-            ? `Removing ${accountToDelete.email} will stop SupplyFlow from monitoring this inbox and delete its connection. You will need to reconnect it to resume monitoring.`
+            ? `Removing ${accountToDelete.email} will stop Suploop from monitoring this inbox and delete its connection. You will need to reconnect it to resume monitoring.`
             : ''
         }
         confirmText='Remove account'

@@ -126,7 +126,7 @@ const EmailIngestionsPage = ({ loaderData }: Route.ComponentProps) => {
           Email ingestions
         </h1>
         <p className='mt-2 text-sm text-slate-500'>
-          Review every monitored email and see how SupplyFlow handled it.
+          Review every monitored email and see how Suploop handled it.
         </p>
       </div>
 

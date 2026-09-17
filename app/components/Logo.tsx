@@ -17,10 +17,10 @@ export const Logo = ({
   return (
     <Link
       to={to}
-      aria-label={children ? undefined : 'Supplyflow home'}
+      aria-label={children ? undefined : 'Suploop home'}
       className={`group flex items-center gap-3 ${className}`}
     >
-      <img src="/logo.svg" alt="Supplyflow" className="w-40" />
+      <img src="/logo.svg" alt="Suploop" className="w-40" />
     </Link>
   );
 };

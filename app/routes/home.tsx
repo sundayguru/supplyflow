@@ -25,11 +25,11 @@ import { Logo } from '~/components/Logo';
 import type { Route } from './+types/home';
 
 export const meta: Route.MetaFunction = () => [
-  { title: 'SupplyFlow | Turn every RFQ into an opportunity' },
+  { title: 'Suploop | Turn every RFQ into an opportunity' },
   {
     name: 'description',
     content:
-      'SupplyFlow automates RFQ intake, quotation tracking, pricing history, and reporting so your team can quote faster and win more business.',
+      'Suploop automates RFQ intake, quotation tracking, pricing history, and reporting so your team can quote faster and win more business.',
   },
 ];
 
@@ -116,23 +116,20 @@ const SectionHeading = ({
     className={centered ? 'mx-auto max-w-2xl text-center' : 'max-w-2xl'}
   >
     <p
-      className={`mb-4 text-xs font-bold tracking-[0.2em] uppercase ${
-        inverted ? 'text-emerald-300' : 'text-emerald-700'
-      }`}
+      className={`mb-4 text-xs font-bold tracking-[0.2em] uppercase ${inverted ? 'text-emerald-300' : 'text-emerald-700'
+        }`}
     >
       {eyebrow}
     </p>
     <h2
-      className={`font-serif text-4xl leading-[1.05] font-semibold tracking-tight sm:text-5xl ${
-        inverted ? 'text-white' : 'text-slate-950'
-      }`}
+      className={`font-serif text-4xl leading-[1.05] font-semibold tracking-tight sm:text-5xl ${inverted ? 'text-white' : 'text-slate-950'
+        }`}
     >
       {title}
     </h2>
     <p
-      className={`mt-5 text-base leading-7 sm:text-lg ${
-        inverted ? 'text-slate-300' : 'text-slate-600'
-      }`}
+      className={`mt-5 text-base leading-7 sm:text-lg ${inverted ? 'text-slate-300' : 'text-slate-600'
+        }`}
     >
       {description}
     </p>
@@ -148,11 +145,10 @@ type CtaLinkProps = {
 const CtaLink = ({ to, children, inverted = false }: CtaLinkProps) => (
   <Link
     to={to}
-    className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold transition-all hover:-translate-y-0.5 ${
-      inverted
-        ? 'bg-white text-slate-950 shadow-lg shadow-black/10 hover:bg-emerald-50'
-        : 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/15 hover:bg-emerald-500'
-    }`}
+    className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold transition-all hover:-translate-y-0.5 ${inverted
+      ? 'bg-white text-slate-950 shadow-lg shadow-black/10 hover:bg-emerald-50'
+      : 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/15 hover:bg-emerald-500'
+      }`}
   >
     {children}
     <ArrowRight className='h-4 w-4' aria-hidden='true' />
@@ -182,7 +178,7 @@ const LandingPage = () => {
                 className='text-sm font-medium text-slate-600 hover:text-slate-950'
                 href='#problem'
               >
-                Why SupplyFlow
+                Why Suploop
               </a>
               <a
                 className='text-sm font-medium text-slate-600 hover:text-slate-950'
@@ -226,7 +222,7 @@ const LandingPage = () => {
             >
               <div className='mx-auto flex max-w-7xl flex-col gap-2'>
                 {[
-                  ['Why SupplyFlow', '#problem'],
+                  ['Why Suploop', '#problem'],
                   ['Solutions', '#solution'],
                   ['Results', '#results'],
                 ].map(([label, href]) => (
@@ -267,7 +263,7 @@ const LandingPage = () => {
                 <span className='text-emerald-600'>opportunity.</span>
               </h1>
               <p className='mt-7 max-w-xl text-lg leading-8 text-slate-600'>
-                SupplyFlow captures quotation requests, coordinates your team,
+                Suploop captures quotation requests, coordinates your team,
                 reuses pricing intelligence, and reveals what converts—all in
                 one dependable workspace.
               </p>
@@ -559,7 +555,7 @@ const LandingPage = () => {
               </p>
               <div className='mt-8'>
                 <CtaLink to='/auth/register' inverted>
-                  Start with SupplyFlow
+                  Start with Suploop
                 </CtaLink>
               </div>
             </div>
