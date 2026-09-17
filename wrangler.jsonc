@@ -62,7 +62,7 @@
         },
       ],
       "vars": {
-        "BASE_URL": "https://supplyflow.rallyard-com.workers.dev",
+        "BASE_URL": "https://suploop.com",
       },
     },
     "dev": {
@@ -88,7 +88,7 @@
         },
       ],
       "vars": {
-        "BASE_URL": "https://c78b-95-91-214-211.ngrok-free.app",
+        "BASE_URL": "http://localhost:5173",
       },
     },
   },
