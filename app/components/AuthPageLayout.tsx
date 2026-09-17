@@ -1,6 +1,7 @@
 import { Check, FileCheck2, TrendingUp } from 'lucide-react';
 import { motion } from 'motion/react';
 import type { ReactNode } from 'react';
+import { Link } from 'react-router';
 
 import { Logo } from './Logo';
 
@@ -45,6 +46,14 @@ export const AuthPageLayout = ({
               {description}
             </p>
             <div className='mt-8'>{children}</div>
+            <p className='mt-8 text-center text-xs text-slate-500'>
+              <Link
+                to='/terms'
+                className='underline underline-offset-4 hover:text-emerald-700'
+              >
+                Terms and Conditions
+              </Link>
+            </p>
           </div>
         </motion.section>
 

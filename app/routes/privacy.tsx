@@ -7,12 +7,12 @@ const privacySections = [
   {
     title: 'What we collect',
     content:
-      'SupplyFlow processes account and organization details, such as names, email addresses, and workspace settings. It also processes information entered or imported for RFQs, quotations, customer and vendor purchase orders, products, prices, contacts, files, and activity records. These records may include personal details of your customers, vendors, and colleagues.',
+      'Suploop processes account and organization details, such as names, email addresses, and workspace settings. It also processes information entered or imported for RFQs, quotations, customer and vendor purchase orders, products, prices, contacts, files, and activity records. These records may include personal details of your customers, vendors, and colleagues.',
   },
   {
     title: 'Connected email accounts',
     content:
-      'If you connect an email account, SupplyFlow uses the connection to monitor the selected inbox or folder, identify RFQs and purchase orders, and create related records. It may process message content, sender details, subjects, attachments, and processing status. Disconnecting an account stops future monitoring of that connection; records already created in the workspace may remain.',
+      'If you connect an email account, Suploop uses the connection to monitor the selected inbox or folder, identify RFQs and purchase orders, and create related records. It may process message content, sender details, subjects, attachments, and processing status. Disconnecting an account stops future monitoring of that connection; records already created in the workspace may remain.',
   },
   {
     title: 'How we use information',
@@ -32,7 +32,7 @@ const privacySections = [
   {
     title: 'Your choices',
     content:
-      'You can update information in your workspace and manage connected email accounts where those controls are available. For requests to access, correct, or delete personal information, contact your organization’s workspace owner or contact SupplyFlow through your service channel. We will review requests in line with applicable law.',
+      'You can update information in your workspace and manage connected email accounts where those controls are available. For requests to access, correct, or delete personal information, contact your organization’s workspace owner or contact Suploop through your service channel. We will review requests in line with applicable law.',
   },
 ];
 
@@ -59,7 +59,7 @@ export default function PrivacyPage() {
             </div>
           </div>
           <p className='max-w-3xl font-serif text-lg leading-relaxed text-black/60 italic'>
-            This policy explains how SupplyFlow handles information used in
+            This policy explains how Suploop handles information used in
             quotation, RFQ, purchase order, and connected email workflows.
           </p>
         </motion.div>
@@ -85,8 +85,8 @@ export default function PrivacyPage() {
           <div className='flex items-center gap-3'>
             <Logo />
             <p className='text-sm'>
-              Questions about your data? Contact your workspace owner or
-              SupplyFlow through your service channel.
+              Questions about your data? Contact your workspace owner or Suploop
+              through your service channel.
             </p>
           </div>
           <Link

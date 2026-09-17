@@ -7,7 +7,7 @@ const termsSections = [
   {
     title: 'Using the app',
     content:
-      'SupplyFlow helps organizations manage requests for quotation (RFQs), quotations, customer and vendor purchase orders, pricing records, and related communications. You agree to use the service only for lawful business purposes and in a way that respects other users and third parties.',
+      'Suploop helps organizations manage requests for quotation (RFQs), quotations, customer and vendor purchase orders, pricing records, and related communications. You agree to use the service only for lawful business purposes and in a way that respects other users and third parties.',
   },
   {
     title: 'Accounts and workspaces',
@@ -17,17 +17,17 @@ const termsSections = [
   {
     title: 'Business information',
     content:
-      'You retain your rights to the RFQs, purchase orders, quotations, files, pricing data, and other information you provide. You must have the rights and permissions needed to enter that information, connect an inbox, and allow SupplyFlow to process it to provide the service. Do not add information you are not authorized to use or share.',
+      'You retain your rights to the RFQs, purchase orders, quotations, files, pricing data, and other information you provide. You must have the rights and permissions needed to enter that information, connect an inbox, and allow Suploop to process it to provide the service. Do not add information you are not authorized to use or share.',
   },
   {
     title: 'Connected email and generated drafts',
     content:
-      'If you connect an email account, SupplyFlow may monitor the selected inbox or folder, identify business requests, and create records or draft replies. Review extracted details, generated text, attachments, recipients, and prices before using or sending them. You are responsible for communications sent from your accounts.',
+      'If you connect an email account, Suploop may monitor the selected inbox or folder, identify business requests, and create records or draft replies. Review extracted details, generated text, attachments, recipients, and prices before using or sending them. You are responsible for communications sent from your accounts.',
   },
   {
     title: 'Quotations and purchase orders',
     content:
-      'SupplyFlow is a workflow tool. Your organization remains responsible for checking product details, quantities, prices, taxes, delivery terms, and approvals before issuing a quotation, purchase order, or other business document. Creating or tracking a record in SupplyFlow does not itself establish acceptance by a customer or vendor.',
+      'Suploop is a workflow tool. Your organization remains responsible for checking product details, quantities, prices, taxes, delivery terms, and approvals before issuing a quotation, purchase order, or other business document. Creating or tracking a record in Suploop does not itself establish acceptance by a customer or vendor.',
   },
   {
     title: 'Acceptable behavior',
@@ -64,7 +64,7 @@ export default function TermsPage() {
             </div>
           </div>
           <p className='max-w-3xl font-serif text-lg leading-relaxed text-black/60 italic'>
-            These terms explain how to use SupplyFlow for RFQs, quotations,
+            These terms explain how to use Suploop for RFQs, quotations,
             purchase orders, and related business workflows.
           </p>
         </motion.div>
@@ -90,7 +90,7 @@ export default function TermsPage() {
           <div className='flex items-center gap-3'>
             <Logo />
             <p className='text-sm'>
-              Use SupplyFlow responsibly and review your business documents.
+              Use Suploop responsibly and review your business documents.
             </p>
           </div>
           <Link
