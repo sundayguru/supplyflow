@@ -29,6 +29,9 @@
       "bucket_name": "supplyflow",
     },
   ],
+  "vars": {
+    "BASE_URL": "https://suploop.com",
+  },
   "routes": [
     {
       "pattern": "suploop.com",
