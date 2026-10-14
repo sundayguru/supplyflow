@@ -1,5 +1,5 @@
 import { Bold, Italic, List, ListOrdered, Underline } from 'lucide-react';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 type RichTextEditorProps = {
   value: string;
@@ -16,6 +16,14 @@ const controls = [
 
 export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
   const editorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    // Replacing HTML after local edits destroys the browser's selection.
+    if (editor && editor.innerHTML !== value) {
+      editor.innerHTML = value;
+    }
+  }, [value]);
 
   const runCommand = (command: string) => {
     editorRef.current?.focus();
@@ -50,7 +58,6 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
           suppressContentEditableWarning
           onInput={(event) => onChange(event.currentTarget.innerHTML)}
           className='min-h-44 p-4 text-sm leading-6 text-slate-700 outline-none'
-          dangerouslySetInnerHTML={{ __html: value }}
         />
       </div>
     </div>
