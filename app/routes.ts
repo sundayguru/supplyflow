@@ -76,6 +76,7 @@ export default [
       'routes/api/purchase-order-proforma-draft.ts',
     ),
     route('api/rfqs/:rfqId/customer-draft', 'routes/api/rfq-customer-draft.ts'),
+    route('api/rfqs/:rfqId/customer-pdf', 'routes/api/rfq-customer-pdf.ts'),
     route('api/rfqs/:rfqId/source-pdf', 'routes/api/rfq-source-pdf.ts'),
     route('api/rfq-items', 'routes/api/rfq-items.ts'),
     route(

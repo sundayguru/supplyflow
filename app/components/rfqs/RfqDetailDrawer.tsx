@@ -7,6 +7,7 @@ import {
   CircleDollarSign,
   Clipboard,
   ClipboardList,
+  Download,
   ExternalLink,
   FileText,
   History,
@@ -458,6 +459,13 @@ export const RfqDetailDrawer = ({
 
         <footer className='border-t border-slate-200 bg-white px-5 py-4 sm:px-7'>
           <div className='grid gap-3 sm:grid-cols-2'>
+            <a
+              href={`/api/rfqs/${encodeURIComponent(rfq.id)}/customer-pdf`}
+              download
+              className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:col-span-2'
+            >
+              <Download size={17} /> Download customer PDF
+            </a>
             <Link
               to={`/activities?sourceType=rfq&sourceId=${encodeURIComponent(rfq.id)}`}
               className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'

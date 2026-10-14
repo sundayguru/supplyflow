@@ -10,6 +10,7 @@ import { generateRfqReplyDraft } from '~/services/rfq-reply-draft.server';
 import { organizationAiModels } from '~/types/organization';
 import { getProviderApiKey } from '~/utils/organization-ai.server';
 import { generateRfqPdf } from '~/utils/rfqPdf.server';
+import { getRfqPdfFilename } from '~/utils/rfqPdfFilename';
 import { getUserFromRequest } from '~/utils/session.server';
 import { decryptToken } from '~/utils/tokenEncryption.server';
 import type { Route } from './+types/rfq-customer-draft';
@@ -20,9 +21,6 @@ const requireSetting = (name: string, value: string | undefined) => {
   }
   return value;
 };
-
-const safeFilename = (value: string) =>
-  value.replace(/[^a-z0-9.-]+/gi, '-').replace(/^-|-$/g, '') || 'rfq';
 
 type DraftIntent = 'regenerate' | 'updatePdf';
 
@@ -185,7 +183,7 @@ export const action = async ({
       subject: source.subject ?? rfq.reference,
       bodyText,
       attachment: {
-        filename: `${safeFilename(rfq.reference)}.pdf`,
+        filename: getRfqPdfFilename(rfq.reference),
         contentType: 'application/pdf',
         bytes: pdf,
       },
