@@ -1,3 +1,5 @@
+import { formatAutoResponseDate } from '~/utils/autoResponseDate';
+import { renderAutoResponse } from '~/utils/autoResponses';
 import { markConnectedEmailAccountNeedsReconnect } from '~/db/connectedEmailAccounts';
 import {
   listDueRfqQuoteReminders,
@@ -17,20 +19,6 @@ type RfqQuoteReminderResult = {
 };
 
 const REMINDER_DELAY_MS = 5 * 24 * 60 * 60 * 1000;
-
-const buildReminderBody = (input: {
-  reference: string;
-  customerName: string;
-  organizationName: string;
-}) =>
-  [
-    `Hello ${input.customerName},`,
-    '',
-    `We are following up on quotation ${input.reference}. Please let us know if you have any updates, questions, or feedback when you have a moment.`,
-    '',
-    'Best regards,',
-    input.organizationName,
-  ].join('\n');
 
 export const runRfqQuoteReminderSync = async (
   mailboxes: ScheduledMailbox[],
@@ -63,11 +51,18 @@ export const runRfqQuoteReminderSync = async (
         threadId: reminder.threadId,
         to: recipient,
         subject: reminder.subject ?? reminder.reference,
-        bodyText: buildReminderBody({
-          reference: reminder.reference,
-          customerName: reminder.customerName,
-          organizationName: reminder.organizationName,
-        }),
+        bodyText: renderAutoResponse(
+          'quoteReminderTemplate',
+          reminder.quoteReminderTemplate,
+          {
+            reference: reminder.reference,
+            receivedDate: formatAutoResponseDate(
+              reminder.receivedAt ?? reminder.createdAt,
+            ),
+            customerName: reminder.customerName,
+            organizationName: reminder.organizationName,
+          },
+        ),
       });
 
       const updated = await markRfqQuoteReminderSent(reminder.rfqId);

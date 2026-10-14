@@ -1,3 +1,5 @@
+import { formatAutoResponseDate } from '~/utils/autoResponseDate';
+import { renderAutoResponse } from '~/utils/autoResponses';
 import { markConnectedEmailAccountNeedsReconnect } from '~/db/connectedEmailAccounts';
 import {
   claimEmail,
@@ -103,30 +105,17 @@ const resolveLinkedRfqId = (
   );
 };
 
-const buildRfqAcknowledgementBody = (
-  rfq: RfqRecord,
-  organizationName: string,
-) =>
-  [
-    'Hello,',
-    '',
-    'Thank you for your request for quotation. We have received it and it will be processed as soon as possible.',
-    '',
-    `Reference: ${rfq.reference}`,
-    '',
-    'Best regards,',
-    organizationName,
-  ].join('\n');
-
 const sendRfqAcknowledgement = async ({
   emailClient,
   message,
   organizationName,
+  template,
   rfq,
 }: {
   emailClient: EmailClient;
   message: EmailMessage;
   organizationName: string;
+  template: string | null;
   rfq: RfqRecord;
 }) => {
   if (!emailClient.sendReply || !message.from.address) {
@@ -137,34 +126,26 @@ const sendRfqAcknowledgement = async ({
     threadId: message.threadId,
     to: message.from.address,
     subject: message.subject || rfq.reference,
-    bodyText: buildRfqAcknowledgementBody(rfq, organizationName),
+    bodyText: renderAutoResponse('rfqAcknowledgementTemplate', template, {
+      reference: rfq.reference,
+      customerName: rfq.customerName,
+      receivedDate: formatAutoResponseDate(message.receivedAt),
+      organizationName,
+    }),
   });
 };
-
-const buildPurchaseOrderAcknowledgementBody = (
-  purchaseOrder: PurchaseOrderRecord,
-  organizationName: string,
-) =>
-  [
-    'Hello,',
-    '',
-    'Thank you for your purchase order. We have received it and will process it as soon as possible.',
-    '',
-    `Reference: ${purchaseOrder.reference}`,
-    '',
-    'Best regards,',
-    organizationName,
-  ].join('\n');
 
 const sendPurchaseOrderAcknowledgement = async ({
   emailClient,
   message,
   organizationName,
+  template,
   purchaseOrder,
 }: {
   emailClient: EmailClient;
   message: EmailMessage;
   organizationName: string;
+  template: string | null;
   purchaseOrder: PurchaseOrderRecord;
 }) => {
   if (!emailClient.sendReply || !message.from.address) {
@@ -175,9 +156,15 @@ const sendPurchaseOrderAcknowledgement = async ({
     threadId: message.threadId,
     to: message.from.address,
     subject: message.subject || purchaseOrder.reference,
-    bodyText: buildPurchaseOrderAcknowledgementBody(
-      purchaseOrder,
-      organizationName,
+    bodyText: renderAutoResponse(
+      'purchaseOrderAcknowledgementTemplate',
+      template,
+      {
+        reference: purchaseOrder.reference,
+        customerName: purchaseOrder.supplierName,
+        receivedDate: formatAutoResponseDate(message.receivedAt),
+        organizationName,
+      },
     ),
   });
 };
@@ -275,6 +262,7 @@ const processAccount = async (
           message,
           organizationName: organization.name,
           purchaseOrder,
+          template: organization.purchaseOrderAcknowledgementTemplate,
         });
       } catch (acknowledgementError) {
         if (isGmailAuthenticationError(acknowledgementError)) {
@@ -343,6 +331,7 @@ const processAccount = async (
           message,
           organizationName: organization.name,
           rfq,
+          template: organization.rfqAcknowledgementTemplate,
         });
       } catch (acknowledgementError) {
         if (isGmailAuthenticationError(acknowledgementError)) {

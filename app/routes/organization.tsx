@@ -23,6 +23,10 @@ import {
 import { getUserFromRequest } from '~/utils/session.server';
 import { isSupportedCurrencyCode } from '~/utils/currencies';
 import {
+  autoResponseDefinitions,
+  validateAutoResponseTemplate,
+} from '~/utils/autoResponses';
+import {
   isOrganizationAiModel,
   organizationAiModels,
 } from '~/types/organization';
@@ -51,6 +55,19 @@ export const action = async ({ request }: Route.ActionArgs) => {
   }
   const formData = await request.formData();
   const intent = formData.get('intent');
+  for (const definition of autoResponseDefinitions) {
+    const value = formData.get(definition.field);
+    if (typeof value !== 'string') {
+      return data(
+        { error: 'Automatic response messages must be text' },
+        { status: 400 },
+      );
+    }
+    const error = validateAutoResponseTemplate(value);
+    if (error) {
+      return data({ error: `${definition.label}: ${error}` }, { status: 400 });
+    }
+  }
   const name = optionalField(formData, 'name');
   const preferredModel = formData.get('preferredModel');
   const vat = Number(formData.get('vat'));
@@ -98,6 +115,15 @@ export const action = async ({ request }: Route.ActionArgs) => {
     priceMarkup,
     currency,
     emailFolder,
+    rfqAcknowledgementTemplate: optionalField(
+      formData,
+      'rfqAcknowledgementTemplate',
+    ),
+    purchaseOrderAcknowledgementTemplate: optionalField(
+      formData,
+      'purchaseOrderAcknowledgementTemplate',
+    ),
+    quoteReminderTemplate: optionalField(formData, 'quoteReminderTemplate'),
   };
 
   if (values.website) {

@@ -64,7 +64,9 @@ export const isOrganizationAiModel = (
 ): value is OrganizationAiModel =>
   organizationAiModels.some((model) => model.value === value);
 
-export type OrganizationDetails = {
+import type { AutoResponseTemplates } from './autoResponse';
+
+export type OrganizationDetails = AutoResponseTemplates & {
   id: string;
   name: string;
   description: string | null;

@@ -33,6 +33,11 @@ export const organizations = sqliteTable(
     vat: real('vat').notNull().default(0),
     priceMarkup: real('price_markup').notNull().default(0),
     currency: text('currency', { length: 3 }).notNull().default('EUR'),
+    rfqAcknowledgementTemplate: text('rfq_acknowledgement_template'),
+    purchaseOrderAcknowledgementTemplate: text(
+      'purchase_order_acknowledgement_template',
+    ),
+    quoteReminderTemplate: text('quote_reminder_template'),
     emailFolder: text('email_folder', { length: 255 })
       .notNull()
       .default('INBOX'),

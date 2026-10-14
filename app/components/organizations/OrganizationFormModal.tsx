@@ -4,13 +4,15 @@ import { useFetcher } from 'react-router';
 import { Button } from '~/components/Button';
 import { Input, TextArea } from '~/components/FormFields';
 import { Modal } from '~/components/Modal';
+import type { AutoResponseTemplates } from '~/types/autoResponse';
+import { AutoResponseTemplateFields } from './AutoResponseTemplateFields';
 import { currencyOptionLabel, supportedCurrencies } from '~/utils/currencies';
 import {
   organizationAiModels,
   type OrganizationAiModel,
 } from '~/types/organization';
 
-type OrganizationFormValues = {
+type OrganizationFormValues = AutoResponseTemplates & {
   name: string;
   description: string | null;
   website: string | null;
@@ -186,6 +188,7 @@ export const OrganizationFormModal = ({
           <p className='-mt-2 text-xs text-black/45'>
             Gmail folder or label to pull emails from. Defaults to INBOX.
           </p>
+          <AutoResponseTemplateFields templates={organization} />
           {fetcher.data && 'error' in fetcher.data && (
             <p className='rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700'>
               {fetcher.data.error}

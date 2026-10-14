@@ -281,6 +281,13 @@
       "when": 1792004948217,
       "tag": "0040_robust_wonder_man",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "6",
+      "when": 1792006440465,
+      "tag": "0041_careless_sphinx",
+      "breakpoints": true
     }
   ]
 }

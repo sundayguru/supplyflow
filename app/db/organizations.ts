@@ -86,6 +86,9 @@ export const updateOrganization = async (
       | 'vat'
       | 'priceMarkup'
       | 'currency'
+      | 'rfqAcknowledgementTemplate'
+      | 'purchaseOrderAcknowledgementTemplate'
+      | 'quoteReminderTemplate'
       | 'emailFolder'
     >
   >,

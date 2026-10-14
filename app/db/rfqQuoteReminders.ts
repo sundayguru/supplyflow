@@ -15,6 +15,8 @@ export const listDueRfqQuoteReminders = (cutoff: Date, limit = 50) => {
       rfqId: rfqs.id,
       organizationId: rfqs.organizationId,
       reference: rfqs.reference,
+      receivedAt: emailIngestions.receivedAt,
+      createdAt: rfqs.createdAt,
       customerName: rfqs.customerName,
       customerEmail: rfqs.customerEmail,
       quotationSentAt: rfqs.quotationSentAt,
@@ -27,6 +29,7 @@ export const listDueRfqQuoteReminders = (cutoff: Date, limit = 50) => {
       accountEmail: connectedEmailAccounts.email,
       encryptedRefreshToken: connectedEmailAccounts.encryptedRefreshToken,
       organizationName: organizations.name,
+      quoteReminderTemplate: organizations.quoteReminderTemplate,
     })
     .from(rfqs)
     .innerJoin(organizations, eq(rfqs.organizationId, organizations.id))
