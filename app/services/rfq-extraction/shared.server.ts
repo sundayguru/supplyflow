@@ -40,13 +40,16 @@ Return exactly one JSON object with this shape:
       "unit": string such as "unit" or "piece",
       "description": string,
       "manufacturerId": null,
+      "manufacturerName": manufacturer or OEM name explicitly mentioned for this item, or null,
       "manufacturerPartNumber": string or null,
       "specifications": string or null
     }]
   }
 }
 
-An RFQ asks for price, availability, lead time, or a formal quotation for one or more products/services. Do not classify newsletters, invoices, order confirmations, support requests, or casual sales messages as RFQs. Preserve technical specifications faithfully. If the source content is an RFQ, extract at least one item.`;
+An RFQ asks for price, availability, lead time, or a formal quotation for one or more products/services. Do not classify newsletters, invoices, order confirmations, support requests, or casual sales messages as RFQs. Preserve technical specifications faithfully. If the source content is an RFQ, extract at least one item.
+
+Identify manufacturer, OEM (original equipment manufacturer), make, or brand names from the subject, email body, and document text. Associate each name with the correct requested item. A manufacturer stated for the entire request applies to all items only when the source clearly says so. Do not treat the sender, customer company, distributor, or email signature as the manufacturer unless the source explicitly identifies it as the item's manufacturer. Preserve the stated name; do not infer it from a part number or invent a manufacturer. If multiple names are ambiguous, use null. Always leave manufacturerId null; the application resolves names to organization records.`;
 
 export const buildRfqExtractionPrompt = (message: EmailMessage) => {
   if (!message.from.address) {
@@ -110,6 +113,7 @@ export const parseRfqExtractionResponse = (
                   typeof item === 'object' && item !== null
                     ? {
                         ...item,
+                        manufacturerId: null,
                         priceMarkup:
                           'priceMarkup' in item && Number(item.priceMarkup) > 0
                             ? item.priceMarkup
@@ -133,5 +137,21 @@ export const parseRfqExtractionResponse = (
   if (!parsed.success) {
     throw new Error(`RFQ extraction validation failed: ${parsed.error}`);
   }
-  return { isRfq: true, confidence, reason, rfq: parsed.value };
+  const items = parsed.value.items.map((item, index) => {
+    const sourceItem: unknown = candidate?.items[index];
+    const manufacturerName =
+      typeof sourceItem === 'object' &&
+      sourceItem !== null &&
+      'manufacturerName' in sourceItem &&
+      typeof sourceItem.manufacturerName === 'string'
+        ? sourceItem.manufacturerName.trim().replace(/\s+/g, ' ') || null
+        : null;
+    if (manufacturerName && manufacturerName.length > 255) {
+      throw new Error(
+        'RFQ extraction validation failed: Manufacturer name must be 255 characters or fewer',
+      );
+    }
+    return { ...item, manufacturerName };
+  });
+  return { isRfq: true, confidence, reason, rfq: { ...parsed.value, items } };
 };

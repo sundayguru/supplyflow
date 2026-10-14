@@ -33,6 +33,7 @@ import { logCreatedActivity } from '~/db/activityLogs';
 import { createRfq, getRfqs } from '~/db/rfqs';
 import { listProductPrices } from '~/db/productPrices';
 import { listManufacturers } from '~/db/manufacturers';
+import { resolveExtractedRfqManufacturers } from '~/utils/rfqManufacturers.server';
 import { listEmailSourcesForRfqs } from '~/db/emailIngestion';
 import { getUserFromRequest } from '~/utils/session.server';
 import type { RfqRecord, RfqStatus } from '~/types/rfq';
@@ -209,7 +210,11 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
           organization.id,
           user.id,
           extracted.rfq.currency,
-          extracted.rfq.items,
+          await resolveExtractedRfqManufacturers(
+            organization.id,
+            user.id,
+            extracted.rfq.items,
+          ),
         ),
         sourcePdfKey: await uploadRfqSourcePdf(
           organization.id,

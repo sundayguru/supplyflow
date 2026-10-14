@@ -1,5 +1,6 @@
 import { formatAutoResponseDate } from '~/utils/autoResponseDate';
 import { renderAutoResponse } from '~/utils/autoResponses';
+import { resolveExtractedRfqManufacturers } from '~/utils/rfqManufacturers.server';
 import { markConnectedEmailAccountNeedsReconnect } from '~/db/connectedEmailAccounts';
 import {
   claimEmail,
@@ -318,7 +319,15 @@ const processAccount = async (
       const rfq = await createRfq(
         organization.id,
         account.userId,
-        { ...extraction.result.rfq, sourcePdfKey },
+        {
+          ...extraction.result.rfq,
+          items: await resolveExtractedRfqManufacturers(
+            organization.id,
+            account.userId,
+            extraction.result.rfq.items,
+          ),
+          sourcePdfKey,
+        },
         organization.vat,
         organization.priceMarkup,
       );
