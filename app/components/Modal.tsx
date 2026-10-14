@@ -16,6 +16,7 @@ type ModalProps = {
   children: ReactNode;
   className?: string;
   showCloseButton?: boolean;
+  scrollable?: boolean;
 };
 
 const sizeMaxWidth: Record<ModalSize, string> = {
@@ -36,6 +37,7 @@ export const Modal = ({
   children,
   className = '',
   showCloseButton = true,
+  scrollable = false,
 }: ModalProps) => {
   return (
     <AnimatePresence>
@@ -52,16 +54,16 @@ export const Modal = ({
             initial={{ opacity: 0, scale: 0.96, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 16 }}
-            className={`relative w-full ${sizeMaxWidth[size]} rounded-[32px] bg-white p-8 shadow-2xl ${className}`}
+            className={`relative w-full ${sizeMaxWidth[size]} rounded-[32px] bg-white p-5 shadow-2xl sm:p-8 ${scrollable ? 'flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden md:max-h-[calc(100dvh-4rem)]' : ''} ${className}`}
           >
-            <div className='mb-6 flex items-start justify-between gap-4'>
-              <div className='flex items-center gap-4'>
+            <div className='mb-6 flex shrink-0 items-start justify-between gap-3 sm:gap-4'>
+              <div className='flex min-w-0 items-center gap-3 sm:gap-4'>
                 {icon && (
-                  <div className='flex h-10 w-10 items-center justify-center rounded-xl bg-[#5A5A40]/10 text-[#5A5A40]'>
+                  <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#5A5A40]/10 text-[#5A5A40]'>
                     {icon}
                   </div>
                 )}
-                <div>
+                <div className='min-w-0'>
                   <h3 className='font-serif text-2xl text-[#1a1a1a]'>
                     {title}
                   </h3>

@@ -59,7 +59,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
   try {
     if (request.method === 'POST') {
       const body: unknown = await request.json();
-      const parsed = parseRfqInput(body, organization.priceMarkup);
+      const parsed = parseRfqInput(
+        body,
+        organization.priceMarkup,
+        organization.currency,
+      );
       if (!parsed.success) {
         return data({ error: parsed.error }, { status: 400 });
       }
@@ -156,7 +160,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
         );
         return data({ success: true, rfq });
       }
-      const parsed = parseRfqInput(body, organization.priceMarkup);
+      const parsed = parseRfqInput(
+        body,
+        organization.priceMarkup,
+        organization.currency,
+      );
       if (!parsed.success) {
         return data({ error: parsed.error }, { status: 400 });
       }

@@ -21,6 +21,7 @@ import {
   updateOrganization,
 } from '~/db/organizations';
 import { getUserFromRequest } from '~/utils/session.server';
+import { isSupportedCurrencyCode } from '~/utils/currencies';
 import {
   isOrganizationAiModel,
   organizationAiModels,
@@ -54,6 +55,12 @@ export const action = async ({ request }: Route.ActionArgs) => {
   const preferredModel = formData.get('preferredModel');
   const vat = Number(formData.get('vat'));
   const priceMarkup = Number(formData.get('priceMarkup'));
+  const currency = String(formData.get('currency') ?? '')
+    .trim()
+    .toUpperCase();
+  if (!isSupportedCurrencyCode(currency)) {
+    return data({ error: 'Select a supported currency' }, { status: 400 });
+  }
   const emailFolderRaw = formData.get('emailFolder');
   const emailFolder =
     typeof emailFolderRaw === 'string' && emailFolderRaw.trim()
@@ -89,6 +96,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
     preferredModel,
     vat,
     priceMarkup,
+    currency,
     emailFolder,
   };
 
@@ -243,7 +251,8 @@ export default function OrganizationPage({ loaderData }: Route.ComponentProps) {
                 <Percent size={14} /> Pricing defaults
               </dt>
               <dd className='mt-2 text-sm text-slate-700'>
-                {organization.vat}% VAT · {organization.priceMarkup}% markup
+                {organization.vat}% VAT · {organization.priceMarkup}% markup ·{' '}
+                {organization.currency}
               </dd>
             </div>
             <div>

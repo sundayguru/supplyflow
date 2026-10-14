@@ -27,7 +27,7 @@ Return exactly one JSON object with this shape:
     "dueDate": "YYYY-MM-DD" or null,
     "applyVat": false,
     "templateId": null,
-    "currency": three-letter ISO code, default "EUR",
+    "currency": three-letter ISO code only when explicitly specified in the source, otherwise null,
     "incoterms": string or null,
     "deliveryTerms": string or null,
     "items": [{
@@ -73,6 +73,7 @@ export const parseRfqExtractionResponse = (
   text: string,
   message: EmailMessage,
   defaultPriceMarkup: number,
+  defaultCurrency: string,
 ): RfqExtractionResult => {
   const value: unknown = parseLlmJson(text);
   if (typeof value !== 'object' || value === null) {
@@ -97,6 +98,11 @@ export const parseRfqExtractionResponse = (
               : isValidEmail(message.from.address)
                 ? message.from.address
                 : null,
+          currency:
+            'currency' in envelope.rfq &&
+            typeof envelope.rfq.currency === 'string'
+              ? envelope.rfq.currency
+              : defaultCurrency,
           status: 'new',
           items:
             'items' in envelope.rfq && Array.isArray(envelope.rfq.items)
@@ -123,7 +129,7 @@ export const parseRfqExtractionResponse = (
               : [],
         }
       : null;
-  const parsed = parseRfqInput(candidate, defaultPriceMarkup);
+  const parsed = parseRfqInput(candidate, defaultPriceMarkup, defaultCurrency);
   if (!parsed.success) {
     throw new Error(`RFQ extraction validation failed: ${parsed.error}`);
   }

@@ -1,0 +1,1 @@
+ALTER TABLE `organizations` ADD `currency` text(3) DEFAULT 'EUR' NOT NULL;

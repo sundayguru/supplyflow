@@ -109,6 +109,7 @@ type ClassificationOrganization = {
   id: string;
   preferredModel: string;
   priceMarkup: number;
+  currency: string;
 };
 
 const requireSetting = (name: string, value: string | undefined) => {
@@ -343,6 +344,7 @@ export const classifyMailboxMessages = async ({
   const rfqExtractor = createRfqExtractor({
     ...extractorConfig,
     defaultPriceMarkup: organization.priceMarkup,
+    defaultCurrency: organization.currency,
   });
   const purchaseOrderExtractor = createPurchaseOrderExtractor(extractorConfig);
   const vendorAcknowledgementExtractor =

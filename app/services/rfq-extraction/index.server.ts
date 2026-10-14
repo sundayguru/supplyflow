@@ -9,6 +9,7 @@ type SharedRfqExtractorConfig = {
   apiKey: string;
   model: string;
   defaultPriceMarkup: number;
+  defaultCurrency: string;
   usage?: LlmUsageContext;
 };
 

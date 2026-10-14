@@ -18,6 +18,7 @@ type RfqFormModalProps = {
   onClose: () => void;
   onSubmit: (value: RfqFormValue) => void;
   defaultPriceMarkup: number;
+  defaultCurrency: string;
   templates: RfqPdfTemplateOption[];
   productPrices: ProductPriceRecord[];
   manufacturers: ManufacturerRecord[];
@@ -42,6 +43,7 @@ export const RfqFormModal = ({
   onClose,
   onSubmit,
   defaultPriceMarkup,
+  defaultCurrency,
   templates,
   productPrices,
   manufacturers,
@@ -62,7 +64,9 @@ export const RfqFormModal = ({
   const [deliveryTerms, setDeliveryTerms] = useState(
     initialValue?.deliveryTerms ?? '',
   );
-  const [currency, setCurrency] = useState(initialValue?.currency ?? 'EUR');
+  const [currency, setCurrency] = useState(
+    initialValue?.currency ?? defaultCurrency,
+  );
   const [items, setItems] = useState<RfqItemFormValue[]>(
     initialValue?.items ?? [emptyItem(defaultPriceMarkup)],
   );

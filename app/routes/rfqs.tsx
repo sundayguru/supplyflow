@@ -104,6 +104,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
         sourceEmail: emailSources.get(rfq.id) ?? null,
       })),
       defaultPriceMarkup: organization.priceMarkup,
+      defaultCurrency: organization.currency,
       vatRate: organization.vat,
       templates: templates.map(({ id, name }) => ({ id, name })),
       productPrices,
@@ -115,6 +116,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     return data({
       rfqs: [],
       defaultPriceMarkup: organization.priceMarkup,
+      defaultCurrency: organization.currency,
       vatRate: organization.vat,
       templates: [],
       productPrices: [],
@@ -171,6 +173,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       apiKey: requireSetting(providerApiKey.name, providerApiKey.value),
       model: model.value,
       defaultPriceMarkup: organization.priceMarkup,
+      defaultCurrency: organization.currency,
       usage: {
         organizationId: organization.id,
         userId: user.id,
@@ -571,6 +574,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
           key={formRfq === 'new' ? 'new' : formRfq.id}
           initialValue={formRfq === 'new' ? undefined : formRfq}
           defaultPriceMarkup={loaderData.defaultPriceMarkup}
+          defaultCurrency={loaderData.defaultCurrency}
           templates={loaderData.templates}
           productPrices={loaderData.productPrices}
           manufacturers={loaderData.manufacturers}

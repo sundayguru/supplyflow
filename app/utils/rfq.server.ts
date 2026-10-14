@@ -103,6 +103,7 @@ export const parseRfqItemInput = (
 export const parseRfqInput = (
   value: unknown,
   defaultPriceMarkup = 0,
+  defaultCurrency = 'EUR',
 ): ParseResult => {
   if (!isRecord(value)) {
     return { success: false, error: 'Invalid request body' };
@@ -127,7 +128,9 @@ export const parseRfqInput = (
       ? value.sourcePdfKey.trim()
       : null;
   const currency =
-    typeof value.currency === 'string' ? value.currency.toUpperCase() : 'EUR';
+    typeof value.currency === 'string'
+      ? value.currency.toUpperCase()
+      : defaultCurrency;
   const incoterms =
     typeof value.incoterms === 'string' && value.incoterms.trim()
       ? value.incoterms.trim()

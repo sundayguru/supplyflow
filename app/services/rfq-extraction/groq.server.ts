@@ -10,6 +10,7 @@ type GroqRfqExtractorConfig = {
   apiKey: string;
   model: string;
   defaultPriceMarkup: number;
+  defaultCurrency: string;
   usage?: import('~/utils/llmUsage.server').LlmUsageContext;
 };
 
@@ -30,6 +31,7 @@ export const createGroqRfqExtractor = (
       response.text,
       message,
       config.defaultPriceMarkup,
+      config.defaultCurrency,
     );
   },
 });

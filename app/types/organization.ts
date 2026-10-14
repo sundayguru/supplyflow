@@ -76,6 +76,7 @@ export type OrganizationDetails = {
   preferredModel: OrganizationAiModel;
   vat: number;
   priceMarkup: number;
+  currency: string;
   emailFolder: string;
 };
 
