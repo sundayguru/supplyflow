@@ -1,0 +1,2 @@
+ALTER TABLE `vendor_purchase_order_items` ADD `discount_type` text DEFAULT 'percentage' NOT NULL;--> statement-breakpoint
+ALTER TABLE `vendor_purchase_order_items` ADD `discount_value` real DEFAULT 0 NOT NULL;

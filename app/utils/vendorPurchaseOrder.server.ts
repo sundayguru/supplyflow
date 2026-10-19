@@ -28,6 +28,9 @@ const parseItem = (value: unknown): ParseItemResult => {
 
   const quantity = Number(value.quantity);
   const price = value.price === undefined ? 0 : Number(value.price);
+  const discountType = value.discountType === 'fixed' ? 'fixed' : 'percentage';
+  const discountValue =
+    value.discountValue === undefined ? 0 : Number(value.discountValue);
   const unit = typeof value.unit === 'string' ? value.unit.trim() : '';
   const description =
     typeof value.description === 'string' ? value.description.trim() : '';
@@ -43,6 +46,13 @@ const parseItem = (value: unknown): ParseItemResult => {
     return { success: false, error: 'Item price must be zero or more' };
   }
   if (
+    !Number.isFinite(discountValue) ||
+    discountValue < 0 ||
+    (discountType === 'percentage' && discountValue > 100)
+  ) {
+    return { success: false, error: 'Enter a valid item discount' };
+  }
+  if (
     typeof status !== 'string' ||
     !purchaseOrderItemStatuses.includes(status as PurchaseOrderItemStatus)
   ) {
@@ -54,6 +64,8 @@ const parseItem = (value: unknown): ParseItemResult => {
     value: {
       quantity,
       price,
+      discountType,
+      discountValue,
       unit,
       description,
       status: status as PurchaseOrderItemStatus,

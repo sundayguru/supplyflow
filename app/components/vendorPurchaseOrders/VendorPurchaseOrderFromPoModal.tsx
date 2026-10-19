@@ -43,6 +43,9 @@ export const VendorPurchaseOrderFromPoModal = ({
   const [selectedItemIds, setSelectedItemIds] = useState(
     new Set(purchaseOrder.items.map((item) => item.id)),
   );
+  const [itemDiscounts, setItemDiscounts] = useState<
+    Record<string, { type: 'percentage' | 'fixed'; value: number }>
+  >({});
   const updateVendorManufacturer = (manufacturerName: string) => {
     const normalizedName = manufacturerName.trim();
     const manufacturer = manufacturers.find(
@@ -97,6 +100,8 @@ export const VendorPurchaseOrderFromPoModal = ({
           unit: item.unit,
           description: item.description,
           status: 'pending',
+          discountType: itemDiscounts[item.id]?.type ?? 'percentage',
+          discountValue: itemDiscounts[item.id]?.value ?? 0,
           manufacturerId: item.manufacturerId,
           manufacturerPartNumber: item.manufacturerPartNumber,
           specifications: item.specifications,
@@ -246,12 +251,13 @@ export const VendorPurchaseOrderFromPoModal = ({
                   index,
                 );
                 return (
-                  <label
+                  <div
                     key={item.id}
                     className='flex gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4'
                   >
                     <input
                       type='checkbox'
+                      aria-label={`Include ${item.description}`}
                       checked={selectedItemIds.has(item.id)}
                       onChange={() => toggleItem(item.id)}
                       className='mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600'
@@ -277,8 +283,64 @@ export const VendorPurchaseOrderFromPoModal = ({
                           {item.manufacturerPartNumber}
                         </span>
                       )}
+                      <span className='mt-3 grid grid-cols-2 gap-2'>
+                        <select
+                          aria-label={`Discount type for ${item.description}`}
+                          value={itemDiscounts[item.id]?.type ?? 'percentage'}
+                          onChange={(event) =>
+                            setItemDiscounts((current) => ({
+                              ...current,
+                              [item.id]: {
+                                type: event.target.value as
+                                  | 'percentage'
+                                  | 'fixed',
+                                value: current[item.id]?.value ?? 0,
+                              },
+                            }))
+                          }
+                          className='rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs'
+                        >
+                          <option value='percentage'>Discount %</option>
+                          <option value='fixed'>Discount amount</option>
+                        </select>
+                        <input
+                          aria-label={`Discount for ${item.description}`}
+                          type='number'
+                          min='0'
+                          max={
+                            itemDiscounts[item.id]?.type === 'fixed'
+                              ? undefined
+                              : 100
+                          }
+                          step='0.01'
+                          value={
+                            itemDiscounts[item.id]?.type === 'fixed'
+                              ? itemDiscounts[item.id]?.value
+                                ? (itemDiscounts[item.id]?.value ?? 0) / 100
+                                : ''
+                              : itemDiscounts[item.id]?.value || ''
+                          }
+                          onChange={(event) => {
+                            const type =
+                              itemDiscounts[item.id]?.type ?? 'percentage';
+                            setItemDiscounts((current) => ({
+                              ...current,
+                              [item.id]: {
+                                type,
+                                value:
+                                  type === 'fixed'
+                                    ? Math.round(
+                                        Number(event.target.value || 0) * 100,
+                                      )
+                                    : Number(event.target.value || 0),
+                              },
+                            }));
+                          }}
+                          className='rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs'
+                        />
+                      </span>
                     </span>
-                  </label>
+                  </div>
                 );
               })}
             </div>

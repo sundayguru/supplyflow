@@ -13,7 +13,10 @@ export const vendorPurchaseOrderStatuses = [
 export type VendorPurchaseOrderStatus =
   (typeof vendorPurchaseOrderStatuses)[number];
 
-export type VendorPurchaseOrderItemInput = PurchaseOrderItemInput;
+export type VendorPurchaseOrderItemInput = PurchaseOrderItemInput & {
+  discountType?: 'percentage' | 'fixed';
+  discountValue?: number;
+};
 
 export type VendorPurchaseOrderInput = {
   purchaseOrderId: string;

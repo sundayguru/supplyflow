@@ -827,7 +827,7 @@ export const generateVendorPurchaseOrderPdf = async (
   }
   y -= 30;
 
-  const columns = [SIDE_MARGIN, 70, 154, 318, 374, 462];
+  const columns = [SIDE_MARGIN, 65, 142, 286, 350, 418, 500];
   const drawTableHeader = () => {
     page.drawRectangle({
       x: SIDE_MARGIN,
@@ -836,15 +836,22 @@ export const generateVendorPurchaseOrderPdf = async (
       height: 24,
       color: rgb(0.91, 0.96, 0.94),
     });
-    ['#', 'Part no.', 'Description', 'Qty', 'Unit price', 'Line total'].forEach(
-      (label, index) =>
-        page.drawText(label, {
-          x: columns[index],
-          y,
-          font: bold,
-          size: 8,
-          color: rgb(0.1, 0.28, 0.22),
-        }),
+    [
+      '#',
+      'Part no.',
+      'Description',
+      'Qty',
+      'Unit price',
+      'Discount',
+      'Line total',
+    ].forEach((label, index) =>
+      page.drawText(label, {
+        x: columns[index],
+        y,
+        font: bold,
+        size: 8,
+        color: rgb(0.1, 0.28, 0.22),
+      }),
     );
     y -= 30;
   };
@@ -855,13 +862,20 @@ export const generateVendorPurchaseOrderPdf = async (
       y = PAGE_HEIGHT - (headerBanner ? 112 : 80);
       drawTableHeader();
     }
-    const lineTotal = item.quantity * item.price;
+    const grossLineTotal = Math.round(item.quantity * item.price);
+    const discountValue =
+      item.discountType === 'fixed'
+        ? (item.discountValue ?? 0)
+        : Math.round((grossLineTotal * (item.discountValue ?? 0)) / 100);
+    const discount = Math.min(grossLineTotal, discountValue);
+    const lineTotal = grossLineTotal - discount;
     const values = [
       String(index + 1),
       safePdfText(item.manufacturerPartNumber ?? '-').slice(0, 18),
-      safePdfText(item.description).slice(0, 28),
+      safePdfText(item.description).slice(0, 24),
       `${item.quantity} ${safePdfText(item.unit)}`,
       formatMoney(item.price, vendorPurchaseOrder.currency),
+      discount > 0 ? formatMoney(discount, vendorPurchaseOrder.currency) : '-',
       formatMoney(lineTotal, vendorPurchaseOrder.currency),
     ];
     values.forEach((value, columnIndex) =>
@@ -869,7 +883,7 @@ export const generateVendorPurchaseOrderPdf = async (
         x: columns[columnIndex],
         y,
         font: regular,
-        size: columnIndex === 2 ? 7.5 : 8,
+        size: columnIndex === 2 ? 7 : 7.5,
       }),
     );
     page.drawLine({

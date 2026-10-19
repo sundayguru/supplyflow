@@ -8,6 +8,8 @@ export const formatPurchaseOrderMoney = (value: number, currency: string) =>
 type PricedPurchaseOrderItem = {
   quantity: number;
   price: number;
+  discountType?: 'percentage' | 'fixed';
+  discountValue?: number;
 };
 
 export const calculatePurchaseOrderTotals = (
@@ -15,10 +17,14 @@ export const calculatePurchaseOrderTotals = (
   vatRate: number,
   applyVat: boolean,
 ) => {
-  const subtotal = items.reduce(
-    (total, item) => total + Math.round(item.price * item.quantity),
-    0,
-  );
+  const subtotal = items.reduce((total, item) => {
+    const gross = Math.round(item.price * item.quantity);
+    const discount =
+      item.discountType === 'fixed'
+        ? (item.discountValue ?? 0)
+        : Math.round((gross * (item.discountValue ?? 0)) / 100);
+    return total + Math.max(0, gross - discount);
+  }, 0);
   const vatValue = applyVat ? Math.round((subtotal * vatRate) / 100) : 0;
   return {
     subtotal,

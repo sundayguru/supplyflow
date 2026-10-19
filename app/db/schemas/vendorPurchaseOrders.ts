@@ -88,6 +88,10 @@ export const vendorPurchaseOrderItems = sqliteTable(
     position: integer('position').notNull().default(0),
     quantity: real('quantity').notNull(),
     price: integer('price').notNull().default(0),
+    discountType: text('discount_type', { enum: ['percentage', 'fixed'] })
+      .notNull()
+      .default('percentage'),
+    discountValue: real('discount_value').notNull().default(0),
     unit: text('unit', { length: 32 }).notNull(),
     description: text('description').notNull(),
     status: text('status', { enum: purchaseOrderItemStatuses })

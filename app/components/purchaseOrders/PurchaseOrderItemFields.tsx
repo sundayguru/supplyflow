@@ -10,6 +10,8 @@ import { purchaseOrderItemStatusLabels } from './PurchaseOrderStatusBadge';
 
 export type PurchaseOrderItemFormValue = PurchaseOrderItemInput & {
   manufacturerName?: string;
+  discountType?: 'percentage' | 'fixed';
+  discountValue?: number;
 };
 
 type PurchaseOrderItemFieldsProps = {
@@ -19,6 +21,7 @@ type PurchaseOrderItemFieldsProps = {
   manufacturers: ManufacturerRecord[];
   onChange: (value: PurchaseOrderItemFormValue) => void;
   onRemove: () => void;
+  showDiscount?: boolean;
 };
 
 export const PurchaseOrderItemFields = ({
@@ -28,6 +31,7 @@ export const PurchaseOrderItemFields = ({
   manufacturers,
   onChange,
   onRemove,
+  showDiscount = false,
 }: PurchaseOrderItemFieldsProps) => {
   const inputClass =
     'mt-2 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10';
@@ -132,6 +136,53 @@ export const PurchaseOrderItemFields = ({
           </select>
         </label>
       </div>
+
+      {showDiscount && (
+        <div className='mt-4 grid gap-4 sm:grid-cols-2'>
+          <label className='text-sm font-semibold text-slate-700'>
+            Discount type
+            <select
+              value={value.discountType ?? 'percentage'}
+              onChange={(event) =>
+                update(
+                  'discountType',
+                  event.target.value as 'percentage' | 'fixed',
+                )
+              }
+              className={inputClass}
+            >
+              <option value='percentage'>Percentage</option>
+              <option value='fixed'>Line amount</option>
+            </select>
+          </label>
+          <label className='text-sm font-semibold text-slate-700'>
+            Discount {value.discountType === 'fixed' ? '(amount)' : '(%)'}
+            <input
+              type='number'
+              min='0'
+              max={value.discountType === 'fixed' ? undefined : '100'}
+              step='0.01'
+              value={
+                value.discountType === 'fixed'
+                  ? value.discountValue
+                    ? value.discountValue / 100
+                    : ''
+                  : value.discountValue || ''
+              }
+              onChange={(event) =>
+                update(
+                  'discountValue',
+                  value.discountType === 'fixed'
+                    ? Math.round(Number(event.target.value || 0) * 100)
+                    : Number(event.target.value || 0),
+                )
+              }
+              className={inputClass}
+              placeholder='0'
+            />
+          </label>
+        </div>
+      )}
 
       <label className='mt-4 block text-sm font-semibold text-slate-700'>
         Item description

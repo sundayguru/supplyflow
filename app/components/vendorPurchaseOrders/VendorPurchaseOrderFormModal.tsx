@@ -38,6 +38,8 @@ const emptyItem = (): PurchaseOrderItemFormValue => ({
   unit: 'unit',
   description: '',
   status: 'pending',
+  discountType: 'percentage',
+  discountValue: 0,
   manufacturerId: null,
   manufacturerPartNumber: null,
   specifications: null,
@@ -270,6 +272,7 @@ export const VendorPurchaseOrderFormModal = ({
                 <PurchaseOrderItemFields
                   key={index}
                   index={index}
+                  showDiscount
                   value={item}
                   canRemove={items.length > 1}
                   manufacturers={manufacturers}
