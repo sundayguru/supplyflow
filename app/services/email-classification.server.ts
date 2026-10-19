@@ -126,6 +126,11 @@ const isPdfAttachment = (attachment: EmailAttachment) =>
   attachment.contentType === 'application/pdf' ||
   attachment.filename.toLowerCase().endsWith('.pdf');
 
+const hasPurchaseOrderSubject = (message: EmailMessage) =>
+  /\b(?:purchase\s+order|p\.?\s*o\.?|po\s*(?:#|number|no\.?))\b/i.test(
+    message.subject,
+  );
+
 export const emptyMailboxClassification = (): MailboxClassification => ({
   rfqs: [],
   purchaseOrders: [],
@@ -161,8 +166,9 @@ const buildPdfContextMessage = (
 ): EmailMessage => ({
   ...message,
   id: `${message.id}:${attachment.id}`,
-  subject: `PDF attachment: ${attachment.filename}`,
+  subject: message.subject,
   text: [
+    `PDF attachment: ${attachment.filename}`,
     `Email subject: ${message.subject}`,
     `Email body:`,
     message.text,
@@ -381,20 +387,31 @@ export const classifyMailboxMessages = async ({
         continue;
       }
 
+      const purchaseOrderFirst = hasPurchaseOrderSubject(message);
+      const purchaseOrderExtraction = purchaseOrderFirst
+        ? await extractMessagePurchaseOrder(message, purchaseOrderExtractor)
+        : null;
+      if (purchaseOrderExtraction) {
+        classification.purchaseOrders.push({
+          message,
+          extraction: purchaseOrderExtraction,
+        });
+        continue;
+      }
+
       const rfqExtraction = await extractMessageRfq(message, rfqExtractor);
       if (rfqExtraction) {
         classification.rfqs.push({ message, extraction: rfqExtraction });
         continue;
       }
 
-      const purchaseOrderExtraction = await extractMessagePurchaseOrder(
-        message,
-        purchaseOrderExtractor,
-      );
-      if (purchaseOrderExtraction) {
+      const fallbackPurchaseOrderExtraction = purchaseOrderFirst
+        ? null
+        : await extractMessagePurchaseOrder(message, purchaseOrderExtractor);
+      if (fallbackPurchaseOrderExtraction) {
         classification.purchaseOrders.push({
           message,
-          extraction: purchaseOrderExtraction,
+          extraction: fallbackPurchaseOrderExtraction,
         });
         continue;
       }
