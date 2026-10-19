@@ -158,9 +158,9 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
   const connectedProviderMetadata = getEmailProviderMetadata(connectedProvider);
   const actionError =
     fetcher.data &&
-      typeof fetcher.data === 'object' &&
-      'error' in fetcher.data &&
-      typeof fetcher.data.error === 'string'
+    typeof fetcher.data === 'object' &&
+    'error' in fetcher.data &&
+    typeof fetcher.data.error === 'string'
       ? fetcher.data.error
       : null;
 

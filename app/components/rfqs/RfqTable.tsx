@@ -88,6 +88,12 @@ export const RfqTable = ({ rfqs, onEdit, onDelete }: RfqTableProps) => {
       cell: (rfq) => <RfqStatusMenu rfqId={rfq.id} status={rfq.status} />,
     },
     {
+      id: 'createdAt',
+      header: 'Created',
+      className: 'text-slate-600',
+      cell: (rfq) => new Date(rfq.createdAt).toLocaleDateString(),
+    },
+    {
       id: 'actions',
       header: 'Actions',
       headerClassName: 'text-right',
@@ -102,20 +108,24 @@ export const RfqTable = ({ rfqs, onEdit, onDelete }: RfqTableProps) => {
       items={rfqs}
       columns={columns}
       getId={(rfq) => rfq.id}
-      minWidthClassName='min-w-[860px]'
+      minWidthClassName='min-w-[940px]'
       renderMobileCard={(rfq) => ({
         primary: <Link to={detailHref(rfq)}>{rfq.reference}</Link>,
         secondary: rfq.customerName,
         status: <RfqStatusMenu rfqId={rfq.id} status={rfq.status} />,
         description: rfq.items[0]?.description ?? 'No item description',
         value: formatRfqMoney(rfq.totalValue, rfq.currency),
-        meta: rfq.dueDate ? (
+        meta: (
           <>
-            <CalendarDays size={13} /> Due{' '}
-            {new Date(`${rfq.dueDate}T00:00:00`).toLocaleDateString()}
+            <CalendarDays size={13} /> Created{' '}
+            {new Date(rfq.createdAt).toLocaleDateString()}
+            {rfq.dueDate && (
+              <>
+                {' · '}Due{' '}
+                {new Date(`${rfq.dueDate}T00:00:00`).toLocaleDateString()}
+              </>
+            )}
           </>
-        ) : (
-          `${rfq.items.length} ${rfq.items.length === 1 ? 'item' : 'items'}`
         ),
         actions: actions(rfq),
       })}

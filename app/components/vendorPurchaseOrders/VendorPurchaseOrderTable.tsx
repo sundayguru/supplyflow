@@ -93,6 +93,12 @@ export const VendorPurchaseOrderTable = ({
         formatPurchaseOrderMoney(record.totalValue, record.currency),
     },
     {
+      id: 'createdAt',
+      header: 'Created',
+      className: 'text-slate-600',
+      cell: (record) => new Date(record.createdAt).toLocaleDateString(),
+    },
+    {
       id: 'status',
       header: 'Status',
       cell: (record) => (
@@ -124,7 +130,7 @@ export const VendorPurchaseOrderTable = ({
         status: <VendorPurchaseOrderStatusBadge status={record.status} />,
         description: record.items[0]?.description ?? 'No item description',
         value: formatPurchaseOrderMoney(record.totalValue, record.currency),
-        meta: `${record.items.length} ${record.items.length === 1 ? 'item' : 'items'} · ${record.linkedPurchaseOrder.reference}`,
+        meta: `${new Date(record.createdAt).toLocaleDateString()} · ${record.items.length} ${record.items.length === 1 ? 'item' : 'items'} · ${record.linkedPurchaseOrder.reference}`,
         actions: actions(record),
       })}
     />

@@ -119,6 +119,12 @@ export const PurchaseOrderTable = ({
       ),
     },
     {
+      id: 'createdAt',
+      header: 'Created',
+      className: 'text-slate-600',
+      cell: (order) => new Date(order.createdAt).toLocaleDateString(),
+    },
+    {
       id: 'actions',
       header: 'Actions',
       headerClassName: 'text-right',
@@ -133,7 +139,7 @@ export const PurchaseOrderTable = ({
       items={purchaseOrders}
       columns={columns}
       getId={(order) => order.id}
-      minWidthClassName='min-w-[1020px]'
+      minWidthClassName='min-w-[1100px]'
       renderMobileCard={(order) => ({
         primary: <Link to={detailHref(order)}>{order.reference}</Link>,
         secondary: order.supplierName,
@@ -145,13 +151,19 @@ export const PurchaseOrderTable = ({
         ),
         description: order.items[0]?.description ?? 'No item description',
         value: formatPurchaseOrderMoney(order.totalValue, order.currency),
-        meta: order.expectedDate ? (
+        meta: (
           <>
-            <CalendarDays size={13} /> Expected{' '}
-            {new Date(`${order.expectedDate}T00:00:00`).toLocaleDateString()}
+            <CalendarDays size={13} /> Created{' '}
+            {new Date(order.createdAt).toLocaleDateString()}
+            {order.expectedDate && (
+              <>
+                {' · '}Expected{' '}
+                {new Date(
+                  `${order.expectedDate}T00:00:00`,
+                ).toLocaleDateString()}
+              </>
+            )}
           </>
-        ) : (
-          `${order.items.length} ${order.items.length === 1 ? 'item' : 'items'}`
         ),
         actions: actions(order),
       })}

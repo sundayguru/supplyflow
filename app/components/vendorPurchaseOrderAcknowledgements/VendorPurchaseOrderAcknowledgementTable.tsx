@@ -90,6 +90,12 @@ export const VendorPurchaseOrderAcknowledgementTable = ({
         cell: (record) => formatDate(record.acknowledgedAt),
       },
       {
+        id: 'createdAt',
+        header: 'Created',
+        className: 'text-slate-600',
+        cell: (record) => new Date(record.createdAt).toLocaleDateString(),
+      },
+      {
         id: 'status',
         header: 'Status',
         cell: (record) => (
@@ -123,7 +129,7 @@ export const VendorPurchaseOrderAcknowledgementTable = ({
         ),
         description: record.items[0]?.description ?? 'No item description',
         value: record.acknowledgementReference ?? undefined,
-        meta: `${formatDate(record.acknowledgedAt)} · ${record.items.length} ${record.items.length === 1 ? 'item' : 'items'}`,
+        meta: `${new Date(record.createdAt).toLocaleDateString()} · ${formatDate(record.acknowledgedAt)} · ${record.items.length} ${record.items.length === 1 ? 'item' : 'items'}`,
         actions: actions(record),
       })}
     />

@@ -398,11 +398,11 @@ const getMessage = async (
     const attachmentId = part.body?.attachmentId;
     const data = attachmentId
       ? (
-        await gmailRequest<GmailAttachmentResponse>(
-          `/messages/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachmentId)}`,
-          accessToken,
-        )
-      ).data
+          await gmailRequest<GmailAttachmentResponse>(
+            `/messages/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachmentId)}`,
+            accessToken,
+          )
+        ).data
       : part.body?.data;
     if (!data) {
       continue;

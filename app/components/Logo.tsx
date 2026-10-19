@@ -8,19 +8,14 @@ type LogoProps = {
   className?: string;
 };
 
-
-export const Logo = ({
-  to = '/',
-  children,
-  className = '',
-}: LogoProps) => {
+export const Logo = ({ to = '/', children, className = '' }: LogoProps) => {
   return (
     <Link
       to={to}
       aria-label={children ? undefined : 'Suploop home'}
       className={`group flex items-center gap-3 ${className}`}
     >
-      <img src="/logo.svg" alt="Suploop" className="w-40" />
+      <img src='/logo.svg' alt='Suploop' className='w-40' />
     </Link>
   );
 };
