@@ -54,6 +54,9 @@ export const VendorPurchaseOrderFormModal = ({
   const [purchaseOrderId, setPurchaseOrderId] = useState(
     initialValue?.purchaseOrderId ?? purchaseOrders[0]?.id ?? '',
   );
+  const [vendorReference, setVendorReference] = useState(
+    initialValue?.vendorReference ?? '',
+  );
   const [templateId, setTemplateId] = useState(initialValue?.templateId ?? '');
   const [vendorManufacturerId, setVendorManufacturerId] = useState(
     initialValue?.vendorManufacturerId ?? '',
@@ -96,6 +99,7 @@ export const VendorPurchaseOrderFormModal = ({
     onSubmit({
       id: initialValue?.id,
       purchaseOrderId,
+      vendorReference: vendorReference || null,
       templateId: templateId || null,
       vendorManufacturerId: vendorManufacturerId || null,
       vendorName,
@@ -204,6 +208,16 @@ export const VendorPurchaseOrderFormModal = ({
               />
             </label>
           </div>
+
+          <label className='block text-sm font-semibold text-slate-700'>
+            Vendor reference (optional)
+            <input
+              value={vendorReference}
+              onChange={(event) => setVendorReference(event.target.value)}
+              className={inputClass}
+              placeholder='Vendor’s order reference'
+            />
+          </label>
 
           <div className='grid gap-5 sm:grid-cols-2'>
             <label className='text-sm font-semibold text-slate-700'>

@@ -17,6 +17,7 @@ export type VendorPurchaseOrderItemInput = PurchaseOrderItemInput;
 
 export type VendorPurchaseOrderInput = {
   purchaseOrderId: string;
+  vendorReference: string | null;
   templateId: string | null;
   vendorManufacturerId: string | null;
   vendorName: string;

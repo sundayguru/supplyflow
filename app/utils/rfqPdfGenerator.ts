@@ -128,6 +128,8 @@ type VendorPurchaseOrderPdfData = Omit<
   Pick<
     VendorPurchaseOrderRecord,
     | 'reference'
+    | 'vendorReference'
+    | 'notes'
     | 'orderDate'
     | 'expectedDate'
     | 'vendorName'
@@ -758,6 +760,18 @@ export const generateVendorPurchaseOrderPdf = async (
       size: 10,
     },
   );
+  if (vendorPurchaseOrder.vendorReference) {
+    y -= 16;
+    page.drawText(
+      `Vendor reference: ${safePdfText(vendorPurchaseOrder.vendorReference)}`,
+      {
+        x: SIDE_MARGIN,
+        y,
+        font: regular,
+        size: 10,
+      },
+    );
+  }
   y -= 16;
   page.drawText(
     `Order date: ${vendorPurchaseOrder.orderDate ?? 'Not specified'}`,
@@ -801,6 +815,15 @@ export const generateVendorPurchaseOrderPdf = async (
         size: 10,
       },
     );
+  }
+  if (vendorPurchaseOrder.notes) {
+    y -= 16;
+    page.drawText(`Notes: ${safePdfText(vendorPurchaseOrder.notes)}`, {
+      x: SIDE_MARGIN,
+      y,
+      font: regular,
+      size: 9,
+    });
   }
   y -= 30;
 

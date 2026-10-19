@@ -35,6 +35,7 @@ export const VendorPurchaseOrderFromPoModal = ({
   const [vendorName, setVendorName] = useState('');
   const [vendorEmail, setVendorEmail] = useState('');
   const [vendorContactName, setVendorContactName] = useState('');
+  const [vendorReference, setVendorReference] = useState('');
   const [currency, setCurrency] = useState(purchaseOrder.currency);
   const orderDate = new Date().toISOString().slice(0, 10);
   const [expectedDate, setExpectedDate] = useState('');
@@ -72,6 +73,7 @@ export const VendorPurchaseOrderFromPoModal = ({
     event.preventDefault();
     onSubmit({
       purchaseOrderId: purchaseOrder.id,
+      vendorReference: vendorReference || null,
       templateId: templateId || null,
       vendorManufacturerId: vendorManufacturerId || null,
       vendorName,
@@ -203,6 +205,16 @@ export const VendorPurchaseOrderFromPoModal = ({
               />
             </label>
           </div>
+
+          <label className='block text-sm font-semibold text-slate-700'>
+            Vendor reference (optional)
+            <input
+              value={vendorReference}
+              onChange={(event) => setVendorReference(event.target.value)}
+              className={inputClass}
+              placeholder='Vendor’s order reference'
+            />
+          </label>
 
           <label className='block text-sm font-semibold text-slate-700'>
             PDF template

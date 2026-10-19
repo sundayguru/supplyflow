@@ -1,0 +1,1 @@
+ALTER TABLE `vendor_purchase_orders` ADD `vendor_reference` text(255);

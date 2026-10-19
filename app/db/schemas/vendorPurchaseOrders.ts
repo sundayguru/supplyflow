@@ -38,6 +38,7 @@ export const vendorPurchaseOrders = sqliteTable(
       { onDelete: 'set null' },
     ),
     reference: text('reference', { length: 32 }).notNull().unique(),
+    vendorReference: text('vendor_reference', { length: 255 }),
     vendorName: text('vendor_name', { length: 255 }).notNull(),
     vendorEmail: text('vendor_email', { length: 255 }),
     vendorContactName: text('vendor_contact_name', { length: 255 }),
