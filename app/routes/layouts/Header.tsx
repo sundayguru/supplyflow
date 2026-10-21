@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import {
   Bell,
+  MapPin,
   ClipboardList,
   FileText,
   Factory,
@@ -52,6 +53,7 @@ export const Header = () => {
     },
     { to: '/activities', label: 'Activity logs', icon: History },
     { to: '/manufacturers', label: 'Manufacturers', icon: Factory },
+    { to: '/addresses', label: 'Addresses', icon: MapPin },
     { to: '/product-prices', label: 'Product prices', icon: Package },
     { to: '/rfq-pdf-templates', label: 'PDF templates', icon: FileText },
     { to: '/connected-accounts', label: 'Connected accounts', icon: MailCheck },

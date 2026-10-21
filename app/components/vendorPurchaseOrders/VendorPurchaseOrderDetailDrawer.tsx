@@ -256,6 +256,12 @@ export const VendorPurchaseOrderDetailDrawer = ({
                 {vendorPurchaseOrder.notes}
               </p>
             )}
+            {vendorPurchaseOrder.shipTo && (
+              <p className='mt-4 border-t border-slate-100 pt-4 text-sm leading-6 whitespace-pre-wrap text-slate-600'>
+                <span className='font-semibold text-slate-800'>Ship to:</span>{' '}
+                {vendorPurchaseOrder.shipTo}
+              </p>
+            )}
           </section>
 
           <section className='mt-7'>

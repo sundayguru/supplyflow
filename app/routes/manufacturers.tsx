@@ -44,6 +44,7 @@ const parseManufacturerFormData = (
   const name = optionalString(formData.get('name'));
   const email = optionalString(formData.get('email'));
   const contactName = optionalString(formData.get('contactName'));
+  const address = optionalString(formData.get('address'));
 
   if (!name) {
     return { success: false, error: 'Manufacturer name is required' };
@@ -51,7 +52,7 @@ const parseManufacturerFormData = (
   if (email && !/^\S+@\S+\.\S+$/.test(email)) {
     return { success: false, error: 'Enter a valid vendor email' };
   }
-  return { success: true, value: { name, email, contactName } };
+  return { success: true, value: { name, email, contactName, address } };
 };
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
@@ -246,6 +247,11 @@ const ManufacturersPage = ({ loaderData }: Route.ComponentProps) => {
                       <p className='font-semibold text-slate-900'>
                         {manufacturer.name}
                       </p>
+                      {manufacturer.address && (
+                        <p className='mt-1 max-w-sm text-xs font-normal whitespace-pre-line text-slate-500'>
+                          {manufacturer.address}
+                        </p>
+                      )}
                     </td>
                     <td className='px-5 py-4 text-slate-600'>
                       <span className='flex items-center gap-1.5'>

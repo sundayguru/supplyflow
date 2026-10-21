@@ -32,6 +32,7 @@ export default [
     route('activities', 'routes/activities.tsx'),
     route('llm-usage', 'routes/llm-usage.tsx'),
     route('manufacturers', 'routes/manufacturers.tsx'),
+    route('addresses', 'routes/addresses.tsx'),
     route('product-prices', 'routes/product-prices.tsx'),
     route('rfq-pdf-templates', 'routes/rfq-pdf-templates.tsx'),
     route('connected-accounts', 'routes/connected-accounts.tsx'),

@@ -16,6 +16,7 @@ export const manufacturers = sqliteTable(
     name: text('name', { length: 255 }).notNull(),
     email: text('email', { length: 255 }),
     contactName: text('contact_name', { length: 255 }),
+    address: text('address'),
     createdAt: text('created_at')
       .notNull()
       .default(sql`(CURRENT_TIMESTAMP)`),

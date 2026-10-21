@@ -14,6 +14,7 @@ import { VendorPurchaseOrderPipeline } from '~/components/vendorPurchaseOrders/V
 import { VendorPurchaseOrderTable } from '~/components/vendorPurchaseOrders/VendorPurchaseOrderTable';
 import { PipelineViewToggle } from '~/components/pipeline/PipelineViewToggle';
 import { listManufacturers } from '~/db/manufacturers';
+import { listAddresses } from '~/db/addresses';
 import { getOrganizationForUser } from '~/db/organizations';
 import { getPurchaseOrders } from '~/db/purchaseOrders';
 import { listRfqPdfTemplates } from '~/db/rfqPdfTemplates';
@@ -44,17 +45,24 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   }
 
   try {
-    const [vendorPurchaseOrders, purchaseOrders, manufacturers, templates] =
-      await Promise.all([
-        getVendorPurchaseOrders(organization.id),
-        getPurchaseOrders(organization.id, organization.vat),
-        listManufacturers(organization.id),
-        listRfqPdfTemplates(organization.id),
-      ]);
+    const [
+      vendorPurchaseOrders,
+      purchaseOrders,
+      manufacturers,
+      templates,
+      addresses,
+    ] = await Promise.all([
+      getVendorPurchaseOrders(organization.id),
+      getPurchaseOrders(organization.id, organization.vat),
+      listManufacturers(organization.id),
+      listRfqPdfTemplates(organization.id),
+      listAddresses(organization.id),
+    ]);
     return data({
       vendorPurchaseOrders,
       purchaseOrders,
       manufacturers,
+      addresses,
       templates: templates.map(({ id, name }) => ({ id, name })),
       vatRate: organization.vat,
       loadError: null,
@@ -65,6 +73,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       vendorPurchaseOrders: [],
       purchaseOrders: [],
       manufacturers: [],
+      addresses: [],
       templates: [],
       vatRate: organization.vat,
       loadError: 'Unable to load vendor POs',
@@ -316,6 +325,7 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
           purchaseOrder={selectedPurchaseOrder}
           vatRate={loaderData.vatRate}
           manufacturers={loaderData.manufacturers}
+          addresses={loaderData.addresses}
           templates={loaderData.templates}
           onClose={closePurchaseOrderDetails}
           onEdit={() => {
@@ -330,6 +340,7 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
           initialValue={formTarget === 'new' ? undefined : formTarget}
           purchaseOrders={loaderData.purchaseOrders}
           manufacturers={loaderData.manufacturers}
+          addresses={loaderData.addresses}
           templates={loaderData.templates}
           onClose={() => setFormTarget(null)}
           onSubmit={submitVendorPurchaseOrder}

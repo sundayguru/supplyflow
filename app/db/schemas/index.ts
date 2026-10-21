@@ -1,4 +1,5 @@
 export * from './users';
+export * from './addresses';
 export * from './profile';
 export * from './accounts';
 export * from './sessions';

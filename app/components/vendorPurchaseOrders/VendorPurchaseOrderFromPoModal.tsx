@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { X } from 'lucide-react';
 import type { ManufacturerRecord } from '~/types/manufacturer';
+import type { AddressRecord } from '~/types/address';
 import type { PurchaseOrderRecord } from '~/types/purchaseOrder';
 import type { RfqPdfTemplateOption } from '~/types/rfqPdfTemplate';
 import type { VendorPurchaseOrderInput } from '~/types/vendorPurchaseOrder';
@@ -13,6 +14,7 @@ export type VendorPurchaseOrderFromPoValue = VendorPurchaseOrderInput;
 type VendorPurchaseOrderFromPoModalProps = {
   purchaseOrder: PurchaseOrderRecord;
   manufacturers: ManufacturerRecord[];
+  addresses: AddressRecord[];
   templates: RfqPdfTemplateOption[];
   onClose: () => void;
   onSubmit: (value: VendorPurchaseOrderFromPoValue) => void;
@@ -21,6 +23,7 @@ type VendorPurchaseOrderFromPoModalProps = {
 export const VendorPurchaseOrderFromPoModal = ({
   purchaseOrder,
   manufacturers,
+  addresses,
   templates,
   onClose,
   onSubmit,
@@ -36,6 +39,7 @@ export const VendorPurchaseOrderFromPoModal = ({
   const [vendorEmail, setVendorEmail] = useState('');
   const [vendorContactName, setVendorContactName] = useState('');
   const [vendorReference, setVendorReference] = useState('');
+  const [shipTo, setShipTo] = useState('');
   const [currency, setCurrency] = useState(purchaseOrder.currency);
   const orderDate = new Date().toISOString().slice(0, 10);
   const [expectedDate, setExpectedDate] = useState('');
@@ -77,6 +81,7 @@ export const VendorPurchaseOrderFromPoModal = ({
     onSubmit({
       purchaseOrderId: purchaseOrder.id,
       vendorReference: vendorReference || null,
+      shipTo: shipTo || null,
       templateId: templateId || null,
       vendorManufacturerId: vendorManufacturerId || null,
       vendorName,
@@ -218,6 +223,33 @@ export const VendorPurchaseOrderFromPoModal = ({
               onChange={(event) => setVendorReference(event.target.value)}
               className={inputClass}
               placeholder='Vendor’s order reference'
+            />
+          </label>
+
+          <label className='block text-sm font-semibold text-slate-700'>
+            Ship to
+            <select
+              value={
+                addresses.find((address) => address.address === shipTo)
+                  ?.address ?? ''
+              }
+              onChange={(event) => setShipTo(event.target.value)}
+              className={inputClass}
+            >
+              <option value=''>No shipping address</option>
+              {addresses.map((address) => (
+                <option key={address.id} value={address.address}>
+                  {address.name}
+                </option>
+              ))}
+            </select>
+            <textarea
+              rows={3}
+              value={shipTo}
+              onChange={(event) => setShipTo(event.target.value)}
+              className={inputClass}
+              aria-label='Ship-to address'
+              placeholder='Choose a saved address or enter a custom address'
             />
           </label>
 

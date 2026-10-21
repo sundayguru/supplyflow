@@ -74,6 +74,16 @@ export const ManufacturerFormModal = ({
           name='contactName'
           defaultValue={manufacturer?.contactName ?? ''}
         />
+        <label className='block text-sm font-semibold text-slate-700'>
+          Address
+          <textarea
+            name='address'
+            rows={3}
+            defaultValue={manufacturer?.address ?? ''}
+            className='mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-3 text-sm font-normal text-slate-900 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10'
+            placeholder='Street, city, postal code, country'
+          />
+        </label>
 
         <div className='flex justify-end gap-3 border-t border-slate-100 pt-5'>
           <Button

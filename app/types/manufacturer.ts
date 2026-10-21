@@ -5,6 +5,7 @@ export type ManufacturerRecord = {
   name: string;
   email: string | null;
   contactName: string | null;
+  address: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -13,4 +14,5 @@ export type ManufacturerInput = {
   name: string;
   email: string | null;
   contactName: string | null;
+  address?: string | null;
 };

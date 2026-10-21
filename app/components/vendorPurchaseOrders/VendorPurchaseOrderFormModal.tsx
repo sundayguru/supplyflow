@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Plus, X } from 'lucide-react';
 import type { ManufacturerRecord } from '~/types/manufacturer';
+import type { AddressRecord } from '~/types/address';
 import type { RfqPdfTemplateOption } from '~/types/rfqPdfTemplate';
 import {
   vendorPurchaseOrderStatuses,
@@ -27,6 +28,7 @@ type VendorPurchaseOrderFormModalProps = {
   initialValue?: VendorPurchaseOrderFormValue;
   purchaseOrders: LinkedPurchaseOrderSummary[];
   manufacturers: ManufacturerRecord[];
+  addresses: AddressRecord[];
   templates: RfqPdfTemplateOption[];
   onClose: () => void;
   onSubmit: (value: VendorPurchaseOrderFormValue) => void;
@@ -49,6 +51,7 @@ export const VendorPurchaseOrderFormModal = ({
   initialValue,
   purchaseOrders,
   manufacturers,
+  addresses,
   templates,
   onClose,
   onSubmit,
@@ -59,6 +62,7 @@ export const VendorPurchaseOrderFormModal = ({
   const [vendorReference, setVendorReference] = useState(
     initialValue?.vendorReference ?? '',
   );
+  const [shipTo, setShipTo] = useState(initialValue?.shipTo ?? '');
   const [templateId, setTemplateId] = useState(initialValue?.templateId ?? '');
   const [vendorManufacturerId, setVendorManufacturerId] = useState(
     initialValue?.vendorManufacturerId ?? '',
@@ -102,6 +106,7 @@ export const VendorPurchaseOrderFormModal = ({
       id: initialValue?.id,
       purchaseOrderId,
       vendorReference: vendorReference || null,
+      shipTo: shipTo || null,
       templateId: templateId || null,
       vendorManufacturerId: vendorManufacturerId || null,
       vendorName,
@@ -218,6 +223,33 @@ export const VendorPurchaseOrderFormModal = ({
               onChange={(event) => setVendorReference(event.target.value)}
               className={inputClass}
               placeholder='Vendor’s order reference'
+            />
+          </label>
+
+          <label className='block text-sm font-semibold text-slate-700'>
+            Ship to
+            <select
+              value={
+                addresses.find((address) => address.address === shipTo)
+                  ?.address ?? ''
+              }
+              onChange={(event) => setShipTo(event.target.value)}
+              className={inputClass}
+            >
+              <option value=''>No shipping address</option>
+              {addresses.map((address) => (
+                <option key={address.id} value={address.address}>
+                  {address.name}
+                </option>
+              ))}
+            </select>
+            <textarea
+              rows={3}
+              value={shipTo}
+              onChange={(event) => setShipTo(event.target.value)}
+              className={inputClass}
+              aria-label='Ship-to address'
+              placeholder='Choose a saved address or enter a custom address'
             />
           </label>
 

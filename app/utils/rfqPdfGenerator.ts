@@ -129,6 +129,7 @@ type VendorPurchaseOrderPdfData = Omit<
     VendorPurchaseOrderRecord,
     | 'reference'
     | 'vendorReference'
+    | 'shipTo'
     | 'notes'
     | 'orderDate'
     | 'expectedDate'
@@ -815,6 +816,26 @@ export const generateVendorPurchaseOrderPdf = async (
         size: 10,
       },
     );
+  }
+  if (vendorPurchaseOrder.shipTo) {
+    y -= 30;
+    page.drawText('SHIP TO', {
+      x: SIDE_MARGIN,
+      y,
+      font: bold,
+      size: 9,
+      color: rgb(0.1, 0.28, 0.22),
+    });
+    y -= 14;
+    for (const line of wrapText(
+      vendorPurchaseOrder.shipTo,
+      regular,
+      9,
+      PAGE_WIDTH - SIDE_MARGIN * 2,
+    )) {
+      page.drawText(line, { x: SIDE_MARGIN, y, font: regular, size: 9 });
+      y -= 13;
+    }
   }
   if (vendorPurchaseOrder.notes) {
     y -= 16;

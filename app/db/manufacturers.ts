@@ -88,6 +88,7 @@ export const createManufacturer = async (
       name: normalizeName(input.name),
       email: input.email,
       contactName: input.contactName,
+      address: input.address ?? null,
     })
     .returning();
   return manufacturer;
@@ -105,6 +106,7 @@ export const updateManufacturer = async (
       name: normalizeName(input.name),
       email: input.email,
       contactName: input.contactName,
+      ...(input.address !== undefined ? { address: input.address } : {}),
       updatedAt: new Date().toISOString(),
     })
     .where(

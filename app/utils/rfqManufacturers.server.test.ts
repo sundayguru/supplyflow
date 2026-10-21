@@ -27,6 +27,7 @@ it('resolves manufacturer names within the organization and reuses repeated name
     organizationId: 'org',
     createdBy: 'user',
     name: 'Siemens',
+    address: null,
     email: null,
     contactName: null,
     createdAt: '',

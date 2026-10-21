@@ -24,6 +24,7 @@ import {
   X,
 } from 'lucide-react';
 import type { ManufacturerRecord } from '~/types/manufacturer';
+import type { AddressRecord } from '~/types/address';
 import type {
   PurchaseOrderItemRecord,
   PurchaseOrderRecord,
@@ -49,6 +50,7 @@ type PurchaseOrderDetailDrawerProps = {
   purchaseOrder: PurchaseOrderRecord;
   vatRate: number;
   manufacturers: ManufacturerRecord[];
+  addresses: AddressRecord[];
   templates: RfqPdfTemplateOption[];
   onClose: () => void;
   onEdit: () => void;
@@ -85,6 +87,7 @@ export const PurchaseOrderDetailDrawer = ({
   purchaseOrder,
   vatRate,
   manufacturers,
+  addresses,
   templates,
   onClose,
   onEdit,
@@ -852,6 +855,7 @@ export const PurchaseOrderDetailDrawer = ({
         <VendorPurchaseOrderFromPoModal
           purchaseOrder={currentPurchaseOrder}
           manufacturers={manufacturers}
+          addresses={addresses}
           templates={templates}
           onClose={() => setIsVendorPoModalOpen(false)}
           onSubmit={submitVendorPurchaseOrder}

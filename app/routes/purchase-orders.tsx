@@ -13,6 +13,7 @@ import { PurchaseOrderPipeline } from '~/components/purchaseOrders/PurchaseOrder
 import { PurchaseOrderTable } from '~/components/purchaseOrders/PurchaseOrderTable';
 import { PipelineViewToggle } from '~/components/pipeline/PipelineViewToggle';
 import { listEmailSourcesForPurchaseOrders } from '~/db/emailIngestion';
+import { listAddresses } from '~/db/addresses';
 import { listManufacturers } from '~/db/manufacturers';
 import { getOrganizationForUser } from '~/db/organizations';
 import { getPurchaseOrders } from '~/db/purchaseOrders';
@@ -72,14 +73,21 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   }
 
   try {
-    const [purchaseOrders, rfqs, manufacturers, templates, productPrices] =
-      await Promise.all([
-        getPurchaseOrders(organization.id, organization.vat),
-        getRfqs(organization.id, organization.vat),
-        listManufacturers(organization.id),
-        listRfqPdfTemplates(organization.id),
-        listProductPrices(organization.id),
-      ]);
+    const [
+      purchaseOrders,
+      rfqs,
+      manufacturers,
+      templates,
+      productPrices,
+      addresses,
+    ] = await Promise.all([
+      getPurchaseOrders(organization.id, organization.vat),
+      getRfqs(organization.id, organization.vat),
+      listManufacturers(organization.id),
+      listRfqPdfTemplates(organization.id),
+      listProductPrices(organization.id),
+      listAddresses(organization.id),
+    ]);
     const emailSources = await listEmailSourcesForPurchaseOrders(
       organization.id,
       purchaseOrders.map((purchaseOrder) => purchaseOrder.id),
@@ -92,6 +100,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       rfqs,
       productPrices,
       manufacturers,
+      addresses,
       templates: templates.map(({ id, name }) => ({ id, name })),
       vatRate: organization.vat,
       loadError: null,
@@ -103,6 +112,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       rfqs: [],
       productPrices: [],
       manufacturers: [],
+      addresses: [],
       templates: [],
       vatRate: organization.vat,
       loadError: 'Unable to load purchase orders',
@@ -352,6 +362,7 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
           purchaseOrder={selectedPurchaseOrder}
           vatRate={loaderData.vatRate}
           manufacturers={loaderData.manufacturers}
+          addresses={loaderData.addresses}
           templates={loaderData.templates}
           onClose={closeDetails}
           onEdit={editFromDetails}
