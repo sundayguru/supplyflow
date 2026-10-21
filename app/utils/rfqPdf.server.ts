@@ -10,6 +10,7 @@ import {
 } from './rfqPdfGenerator';
 import type { PurchaseOrderRecord } from '~/types/purchaseOrder';
 import type { VendorPurchaseOrderRecord } from '~/types/vendorPurchaseOrder';
+import { getManufacturer } from '~/db/manufacturers';
 
 const loadAsset = async (
   key: string | null,
@@ -76,12 +77,21 @@ export const generateVendorPurchaseOrderPdf = async (
   template: SelectRfqPdfTemplate | null,
   organization: SelectOrganization,
 ) => {
-  const [header, footer] = await Promise.all([
+  const [header, footer, vendorManufacturer] = await Promise.all([
     loadAsset(template?.headerBannerKey ?? null),
     loadAsset(template?.footerBannerKey ?? null),
+    vendorPurchaseOrder.vendorManufacturerId
+      ? getManufacturer(
+          vendorPurchaseOrder.vendorManufacturerId,
+          organization.id,
+        )
+      : Promise.resolve(null),
   ]);
   return generateCurrentVendorPurchaseOrderPdf(
-    vendorPurchaseOrder,
+    {
+      ...vendorPurchaseOrder,
+      vendorAddress: vendorManufacturer?.address ?? null,
+    },
     template,
     organization,
     {

@@ -136,6 +136,7 @@ type VendorPurchaseOrderPdfData = Omit<
     | 'vendorName'
     | 'vendorEmail'
     | 'vendorContactName'
+    | 'createdAt'
     | 'items'
     | 'currency'
     | 'subtotal'
@@ -145,7 +146,13 @@ type VendorPurchaseOrderPdfData = Omit<
   'items'
 > & {
   items: VendorPurchaseOrderItemInput[];
+  vendorAddress: string | null;
 };
+
+type VendorPurchaseOrderPdfSource = Omit<
+  VendorPurchaseOrderPdfData,
+  'vendorAddress'
+>;
 
 const loadBanner = async (
   document: PDFDocument,
@@ -203,14 +210,6 @@ export const generateRfqPdf = async (
         PAGE_HEIGHT - HEADER_HEIGHT,
         HEADER_HEIGHT,
       );
-    } else {
-      page.drawText(safePdfText(organization.name), {
-        x: SIDE_MARGIN,
-        y: PAGE_HEIGHT - 48,
-        font: bold,
-        size: 18,
-        color: rgb(0.06, 0.36, 0.27),
-      });
     }
     if (footerBanner) {
       drawFullWidthBanner(page, footerBanner, 0, FOOTER_HEIGHT);
@@ -688,7 +687,9 @@ export const generateProformaInvoicePdf = async (
 };
 
 export const generateVendorPurchaseOrderPdf = async (
-  vendorPurchaseOrder: VendorPurchaseOrderPdfData,
+  vendorPurchaseOrder: VendorPurchaseOrderPdfSource & {
+    vendorAddress?: string | null;
+  },
   template: RfqPdfTemplateContent | null,
   organization: SelectOrganization,
   banners: {
@@ -737,98 +738,144 @@ export const generateVendorPurchaseOrderPdf = async (
   };
 
   let page = addPage();
-  let y = PAGE_HEIGHT - (headerBanner ? 112 : 80);
+  const titleY = PAGE_HEIGHT - (headerBanner ? 82 : 54);
   page.drawText('PURCHASE ORDER', {
-    x: SIDE_MARGIN,
-    y,
-    font: bold,
-    size: 22,
-    color: rgb(0.08, 0.11, 0.15),
-  });
-  y -= 30;
-  page.drawText(`PO: ${vendorPurchaseOrder.reference}`, {
-    x: SIDE_MARGIN,
-    y,
-    font: bold,
-    size: 10,
-  });
-  page.drawText(
-    `Customer PO: ${vendorPurchaseOrder.linkedPurchaseOrder.reference}`,
-    {
-      x: 390,
-      y,
-      font: regular,
-      size: 10,
-    },
-  );
-  if (vendorPurchaseOrder.vendorReference) {
-    y -= 16;
-    page.drawText(
-      `Vendor reference: ${safePdfText(vendorPurchaseOrder.vendorReference)}`,
-      {
-        x: SIDE_MARGIN,
-        y,
-        font: regular,
-        size: 10,
-      },
-    );
-  }
-  y -= 16;
-  page.drawText(
-    `Order date: ${vendorPurchaseOrder.orderDate ?? 'Not specified'}`,
-    {
-      x: SIDE_MARGIN,
-      y,
-      font: regular,
-      size: 10,
-    },
-  );
-  page.drawText(
-    `Expected: ${vendorPurchaseOrder.expectedDate ?? 'Not specified'}`,
-    {
-      x: 390,
-      y,
-      font: regular,
-      size: 10,
-    },
-  );
-  y -= 24;
-  page.drawText(`Vendor: ${safePdfText(vendorPurchaseOrder.vendorName)}`, {
-    x: SIDE_MARGIN,
-    y,
+    x:
+      PAGE_WIDTH -
+      SIDE_MARGIN -
+      regular.widthOfTextAtSize('PURCHASE ORDER', 24),
+    y: titleY,
     font: regular,
-    size: 10,
+    size: 24,
+    color: rgb(0.43, 0.45, 0.47),
   });
-  y -= 16;
-  page.drawText(`Email: ${vendorPurchaseOrder.vendorEmail ?? 'Not provided'}`, {
-    x: SIDE_MARGIN,
-    y,
-    font: regular,
-    size: 10,
-  });
-  if (vendorPurchaseOrder.vendorContactName) {
-    page.drawText(
-      `Contact: ${safePdfText(vendorPurchaseOrder.vendorContactName)}`,
-      {
-        x: 390,
-        y,
-        font: regular,
-        size: 10,
-      },
-    );
-  }
-  if (vendorPurchaseOrder.shipTo) {
-    y -= 30;
-    page.drawText('SHIP TO', {
+  let organizationAddressY = titleY - 29;
+  for (const line of wrapText(
+    organization.address ?? '',
+    regular,
+    9,
+    260,
+  ).slice(0, 3)) {
+    page.drawText(line, {
       x: SIDE_MARGIN,
-      y,
-      font: bold,
+      y: organizationAddressY,
+      font: regular,
       size: 9,
-      color: rgb(0.1, 0.28, 0.22),
+      color: rgb(0.22, 0.24, 0.26),
     });
-    y -= 14;
+    organizationAddressY -= 13;
+  }
+
+  const metadataX = 390;
+  const metadataY = titleY - 30;
+  page.drawText('PO No:', {
+    x: metadataX,
+    y: metadataY,
+    font: bold,
+    size: 9,
+  });
+  page.drawText(safePdfText(vendorPurchaseOrder.reference), {
+    x: metadataX + 58,
+    y: metadataY,
+    font: regular,
+    size: 9,
+  });
+  page.drawText('PO Date:', {
+    x: metadataX,
+    y: metadataY - 16,
+    font: bold,
+    size: 9,
+  });
+  const orderDate = vendorPurchaseOrder.orderDate
+    ? new Date(`${vendorPurchaseOrder.orderDate}T00:00:00`).toLocaleDateString()
+    : new Date(vendorPurchaseOrder.createdAt).toLocaleDateString();
+  page.drawText(orderDate, {
+    x: metadataX + 58,
+    y: metadataY - 16,
+    font: regular,
+    size: 9,
+  });
+
+  const panelGap = 24;
+  const panelWidth = (PAGE_WIDTH - SIDE_MARGIN * 2 - panelGap) / 2;
+  const panelTop = titleY - 92;
+  const panelRows = (
+    rows: { label: string; value: string | null | undefined }[],
+  ) =>
+    rows
+      .filter((row) => row.value?.trim())
+      .map((row) =>
+        wrapText(
+          `${row.label ? `${row.label}: ` : ''}${row.value}`,
+          regular,
+          9,
+          panelWidth - 24,
+        ),
+      );
+  const vendorRows = panelRows([
+    { label: 'Supplier Name', value: vendorPurchaseOrder.vendorName },
+    { label: 'Address', value: vendorPurchaseOrder.vendorAddress },
+    { label: 'Vendor Reference', value: vendorPurchaseOrder.vendorReference },
+    { label: 'Contact', value: vendorPurchaseOrder.vendorContactName },
+    { label: 'Email', value: vendorPurchaseOrder.vendorEmail },
+  ]);
+  const shipToRows = panelRows([
+    { label: '', value: organization.name },
+    { label: '', value: vendorPurchaseOrder.shipTo ?? organization.address },
+    { label: 'Contact', value: organization.phone },
+  ]);
+  const panelContentHeight = (rows: string[][]) =>
+    rows.reduce((height, lines) => height + lines.length * 15 + 3, 0);
+  const panelHeight =
+    24 +
+    Math.max(panelContentHeight(vendorRows), panelContentHeight(shipToRows)) +
+    16;
+  const drawPanel = (x: number, title: string, rows: string[][]) => {
+    page.drawRectangle({
+      x,
+      y: panelTop - panelHeight,
+      width: panelWidth,
+      height: panelHeight,
+      color: rgb(1, 1, 1),
+      borderColor: rgb(0.82, 0.83, 0.84),
+      borderWidth: 0.7,
+    });
+    page.drawRectangle({
+      x,
+      y: panelTop - 22,
+      width: panelWidth,
+      height: 22,
+      color: rgb(0.91, 0.96, 0.94),
+    });
+    page.drawText(title, {
+      x: x + 12,
+      y: panelTop - 15,
+      font: bold,
+      size: 10,
+      color: rgb(0.1, 0.11, 0.12),
+    });
+    let rowY = panelTop - 39;
+    for (const lines of rows) {
+      for (const line of lines) {
+        page.drawText(line, {
+          x: x + 12,
+          y: rowY,
+          font: regular,
+          size: 9,
+          color: rgb(0.1, 0.11, 0.12),
+        });
+        rowY -= 15;
+      }
+      rowY -= 3;
+    }
+  };
+  drawPanel(SIDE_MARGIN, 'Vendor', vendorRows);
+  drawPanel(SIDE_MARGIN + panelWidth + panelGap, 'Ship To:', shipToRows);
+
+  let y = panelTop - panelHeight - 26;
+  if (vendorPurchaseOrder.notes) {
     for (const line of wrapText(
-      vendorPurchaseOrder.shipTo,
+      `Notes: ${vendorPurchaseOrder.notes}`,
       regular,
       9,
       PAGE_WIDTH - SIDE_MARGIN * 2,
@@ -836,17 +883,8 @@ export const generateVendorPurchaseOrderPdf = async (
       page.drawText(line, { x: SIDE_MARGIN, y, font: regular, size: 9 });
       y -= 13;
     }
+    y -= 8;
   }
-  if (vendorPurchaseOrder.notes) {
-    y -= 16;
-    page.drawText(`Notes: ${safePdfText(vendorPurchaseOrder.notes)}`, {
-      x: SIDE_MARGIN,
-      y,
-      font: regular,
-      size: 9,
-    });
-  }
-  y -= 30;
 
   const columns = [SIDE_MARGIN, 65, 142, 286, 350, 418, 500];
   const drawTableHeader = () => {
@@ -942,9 +980,7 @@ export const generateVendorPurchaseOrderPdf = async (
     y -= 18;
   });
 
-  const terms =
-    richTextToPlainText(template?.termsHtml ?? '') ||
-    'No terms and conditions have been added to this template.';
+  const terms = richTextToPlainText(template?.termsHtml ?? '') || '';
   if (terms) {
     page = addPage();
     y = PAGE_HEIGHT - (headerBanner ? 112 : 80);
