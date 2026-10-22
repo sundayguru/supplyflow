@@ -50,6 +50,12 @@ const parseItem = (value: unknown): ParseItemResult => {
   ) {
     return { success: false, error: 'Select a valid item status' };
   }
+  if (
+    typeof value.statusReason === 'string' &&
+    value.statusReason.length > 2000
+  ) {
+    return { success: false, error: 'Status change reason is too long' };
+  }
 
   return {
     success: true,
@@ -64,6 +70,7 @@ const parseItem = (value: unknown): ParseItemResult => {
       manufacturerPartNumber: parseOptionalString(value.manufacturerPartNumber),
       deliveryDate: parseOptionalString(value.deliveryDate),
       status: status as VendorPurchaseOrderAcknowledgementItemStatus,
+      statusReason: parseOptionalString(value.statusReason),
       notes: parseOptionalString(value.notes),
     },
   };

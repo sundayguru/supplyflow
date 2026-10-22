@@ -23,6 +23,7 @@ import {
 import type { ManufacturerRecord } from '~/types/manufacturer';
 import type { ProductPriceRecord } from '~/types/productPrice';
 import type { RfqItemRecord, RfqRecord } from '~/types/rfq';
+import { StatusChangeReasonDetails } from '~/components/status/StatusChangeReasonDetails';
 import { findManufacturerName } from '~/utils/manufacturers';
 import { calculateRfqItemAmounts, formatRfqMoney } from '~/utils/rfq';
 import { ConfirmModal } from '../ConfirmModal';
@@ -455,6 +456,10 @@ export const RfqDetailDrawer = ({
               </div>
             </dl>
           </section>
+          <StatusChangeReasonDetails
+            reason={rfq.statusReason}
+            className='mt-5'
+          />
         </div>
 
         <footer className='border-t border-slate-200 bg-white px-5 py-4 sm:px-7'>

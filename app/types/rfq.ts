@@ -67,6 +67,7 @@ export type RfqRecord = Omit<RfqInput, 'items'> & {
   reference: string;
   createdAt: string;
   updatedAt: string;
+  statusReason: string | null;
   items: RfqItemRecord[];
   generatedReply: string | null;
   generatedReplyDraftId: string | null;

@@ -201,25 +201,27 @@ export const VendorPurchaseOrderAcknowledgementFormModal = ({
                 placeholder='ACK-12345'
               />
             </label>
-            <label className='text-sm font-semibold text-slate-700'>
-              Status
-              <select
-                value={status}
-                onChange={(event) =>
-                  setStatus(
-                    event.target
-                      .value as VendorPurchaseOrderAcknowledgementStatus,
-                  )
-                }
-                className={inputClass}
-              >
-                {vendorPurchaseOrderAcknowledgementStatuses.map((value) => (
-                  <option key={value} value={value}>
-                    {vendorPurchaseOrderAcknowledgementStatusLabels[value]}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {!initialValue && (
+              <label className='text-sm font-semibold text-slate-700'>
+                Status
+                <select
+                  value={status}
+                  onChange={(event) =>
+                    setStatus(
+                      event.target
+                        .value as VendorPurchaseOrderAcknowledgementStatus,
+                    )
+                  }
+                  className={inputClass}
+                >
+                  {vendorPurchaseOrderAcknowledgementStatuses.map((value) => (
+                    <option key={value} value={value}>
+                      {vendorPurchaseOrderAcknowledgementStatusLabels[value]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label className='text-sm font-semibold text-slate-700'>
               Acknowledged date
               <input
@@ -387,6 +389,7 @@ export const VendorPurchaseOrderAcknowledgementFormModal = ({
                           updateItem(index, {
                             status: event.target
                               .value as VendorPurchaseOrderAcknowledgementItemStatus,
+                            statusReason: '',
                           })
                         }
                         className={inputClass}
@@ -404,6 +407,24 @@ export const VendorPurchaseOrderAcknowledgementFormModal = ({
                         )}
                       </select>
                     </label>
+                    {initialValue?.items[index]?.status !== item.status && (
+                      <label className='text-sm font-semibold text-slate-700'>
+                        Status change reason
+                        <textarea
+                          required
+                          value={item.statusReason ?? ''}
+                          onChange={(event) =>
+                            updateItem(index, {
+                              statusReason: event.target.value,
+                            })
+                          }
+                          rows={2}
+                          maxLength={2000}
+                          className={inputClass}
+                          placeholder='Enter why this item status is changing'
+                        />
+                      </label>
+                    )}
                   </div>
 
                   <label className='mt-4 block text-sm font-semibold text-slate-700'>

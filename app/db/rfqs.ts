@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { RfqInput, RfqItemInput, RfqRecord, RfqStatus } from '~/types/rfq';
 import { getDb } from './connection';
+import { appendStatusChange } from '~/utils/statusHistory';
 import { purchaseOrders, rfqItems, rfqs } from './schemas';
 import { calculateRfqTotals } from '~/utils/rfq';
 
@@ -204,6 +205,7 @@ export const updateRfqStatus = async (
   id: string,
   organizationId: string,
   status: RfqStatus,
+  statusReason: string | null,
   vatRate: number,
 ) => {
   const db = getDb();
@@ -222,7 +224,21 @@ export const updateRfqStatus = async (
       : existing.quoteReminderSentAt;
   const [updated] = await db
     .update(rfqs)
-    .set({ status, quotationSentAt, quoteReminderSentAt, updatedAt })
+    .set({
+      status,
+      statusReason:
+        statusReason?.trim() && existing.status !== status
+          ? appendStatusChange(existing.statusReason, {
+              fromStatus: existing.status,
+              toStatus: status,
+              reason: statusReason.trim(),
+              changedAt: updatedAt,
+            })
+          : existing.statusReason,
+      quotationSentAt,
+      quoteReminderSentAt,
+      updatedAt,
+    })
     .where(and(eq(rfqs.id, id), eq(rfqs.organizationId, organizationId)))
     .returning({ id: rfqs.id });
   return updated ? getRfq(updated.id, organizationId, vatRate) : null;

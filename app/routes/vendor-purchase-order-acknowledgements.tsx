@@ -164,9 +164,10 @@ const VendorPurchaseOrderAcknowledgementsPage = ({
   const updateStatus = (
     id: string,
     nextStatus: VendorPurchaseOrderAcknowledgementStatus,
+    statusReason: string,
   ) => {
     mutation.submit(
-      { id, status: nextStatus, intent: 'updateStatus' },
+      { id, status: nextStatus, statusReason, intent: 'updateStatus' },
       {
         method: 'patch',
         action: '/api/vendor-purchase-order-acknowledgements',

@@ -215,9 +215,13 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
     setDeleteTarget(null);
   };
 
-  const updateStatus = (id: string, nextStatus: PurchaseOrderStatus) => {
+  const updateStatus = (
+    id: string,
+    nextStatus: PurchaseOrderStatus,
+    statusReason: string,
+  ) => {
     mutation.submit(
-      { id, status: nextStatus, intent: 'updateStatus' },
+      { id, status: nextStatus, statusReason, intent: 'updateStatus' },
       {
         method: 'patch',
         action: '/api/purchase-orders',

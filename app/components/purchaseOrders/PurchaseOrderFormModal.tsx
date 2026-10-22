@@ -204,6 +204,7 @@ export const PurchaseOrderFormModal = ({
                   index={index}
                   value={item}
                   canRemove={items.length > 1}
+                  showStatus={!initialValue}
                   manufacturers={manufacturers}
                   onChange={(nextItem) =>
                     setItems((current) =>
@@ -246,22 +247,24 @@ export const PurchaseOrderFormModal = ({
           </div>
 
           <div className='grid gap-5 sm:grid-cols-2'>
-            <label className='text-sm font-semibold text-slate-700'>
-              Status
-              <select
-                value={status}
-                onChange={(event) =>
-                  setStatus(event.target.value as PurchaseOrderStatus)
-                }
-                className={inputClass}
-              >
-                {purchaseOrderStatuses.map((value) => (
-                  <option key={value} value={value}>
-                    {purchaseOrderStatusLabels[value]}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {!initialValue && (
+              <label className='text-sm font-semibold text-slate-700'>
+                Status
+                <select
+                  value={status}
+                  onChange={(event) =>
+                    setStatus(event.target.value as PurchaseOrderStatus)
+                  }
+                  className={inputClass}
+                >
+                  {purchaseOrderStatuses.map((value) => (
+                    <option key={value} value={value}>
+                      {purchaseOrderStatusLabels[value]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label className='text-sm font-semibold text-slate-700'>
               Currency
               <select

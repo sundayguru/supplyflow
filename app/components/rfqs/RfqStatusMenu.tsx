@@ -3,6 +3,7 @@ import { Check, ChevronDown } from 'lucide-react';
 import { useFetcher } from 'react-router';
 import { createPortal } from 'react-dom';
 import { rfqStatuses, type RfqStatus } from '~/types/rfq';
+import { StatusChangeReasonDialog } from '~/components/status/StatusChangeReasonDialog';
 import { getRfqStatusBadgeClassName, rfqStatusLabels } from './RfqStatusBadge';
 
 type RfqStatusMenuProps = {
@@ -17,6 +18,7 @@ export const RfqStatusMenu = ({ rfqId, status }: RfqStatusMenuProps) => {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const [pendingStatus, setPendingStatus] = useState<RfqStatus | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -62,14 +64,28 @@ export const RfqStatusMenu = ({ rfqId, status }: RfqStatusMenuProps) => {
   };
 
   const selectStatus = (nextStatus: RfqStatus) => {
-    setIsOpen(false);
     if (nextStatus === status) {
+      setIsOpen(false);
+      return;
+    }
+    setIsOpen(false);
+    setPendingStatus(nextStatus);
+  };
+
+  const confirmStatus = (reason: string) => {
+    if (!pendingStatus) {
       return;
     }
     fetcher.submit(
-      { id: rfqId, status: nextStatus, intent: 'updateStatus' },
+      {
+        id: rfqId,
+        status: pendingStatus,
+        statusReason: reason,
+        intent: 'updateStatus',
+      },
       { method: 'patch', action: '/api/rfqs', encType: 'application/json' },
     );
+    setPendingStatus(null);
   };
 
   return (
@@ -111,6 +127,13 @@ export const RfqStatusMenu = ({ rfqId, status }: RfqStatusMenuProps) => {
           </div>,
           document.body,
         )}
+      {pendingStatus && (
+        <StatusChangeReasonDialog
+          statusLabel={rfqStatusLabels[pendingStatus]}
+          onCancel={() => setPendingStatus(null)}
+          onConfirm={confirmStatus}
+        />
+      )}
     </div>
   );
 };

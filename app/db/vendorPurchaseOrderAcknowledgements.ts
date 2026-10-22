@@ -6,6 +6,7 @@ import type {
   VendorPurchaseOrderAcknowledgementStatus,
 } from '~/types/vendorPurchaseOrderAcknowledgement';
 import { getDb } from './connection';
+import { appendStatusChange } from '~/utils/statusHistory';
 import {
   vendorPurchaseOrderAcknowledgementItems,
   vendorPurchaseOrderAcknowledgements,
@@ -184,6 +185,18 @@ export const updateVendorPurchaseOrderAcknowledgement = async (
     db.insert(vendorPurchaseOrderAcknowledgementItems).values(
       createItemValues(id, items).map((item) => ({
         ...item,
+        statusReason:
+          existing.items[item.position]?.status !== item.status &&
+          item.statusReason?.trim()
+            ? appendStatusChange(existing.items[item.position]?.statusReason, {
+                fromStatus: existing.items[item.position]?.status ?? null,
+                toStatus: item.status,
+                reason: item.statusReason.trim(),
+                changedAt: updatedAt,
+              })
+            : (item.statusReason ??
+              existing.items[item.position]?.statusReason ??
+              null),
         updatedAt,
       })),
     ),
@@ -213,11 +226,32 @@ export const updateVendorPurchaseOrderAcknowledgementStatus = async (
   id: string,
   organizationId: string,
   status: VendorPurchaseOrderAcknowledgementStatus,
+  statusReason: string | null,
 ) => {
   const db = getDb();
+  const existing = await getVendorPurchaseOrderAcknowledgement(
+    id,
+    organizationId,
+  );
+  if (!existing) {
+    return null;
+  }
+  const updatedAt = new Date().toISOString();
   const [record] = await db
     .update(vendorPurchaseOrderAcknowledgements)
-    .set({ status, updatedAt: new Date().toISOString() })
+    .set({
+      status,
+      statusReason:
+        statusReason?.trim() && existing.status !== status
+          ? appendStatusChange(existing.statusReason, {
+              fromStatus: existing.status,
+              toStatus: status,
+              reason: statusReason.trim(),
+              changedAt: updatedAt,
+            })
+          : existing.statusReason,
+      updatedAt,
+    })
     .where(
       and(
         eq(vendorPurchaseOrderAcknowledgements.id, id),

@@ -23,6 +23,7 @@ import type { VendorPurchaseOrderRecord } from '~/types/vendorPurchaseOrder';
 import { findManufacturerName } from '~/utils/manufacturers';
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
 import { PurchaseOrderItemStatusBadge } from '../purchaseOrders/PurchaseOrderStatusBadge';
+import { StatusChangeReasonDetails } from '~/components/status/StatusChangeReasonDetails';
 import { VendorPurchaseOrderStatusBadge } from './VendorPurchaseOrderStatusBadge';
 
 type VendorPurchaseOrderDetailDrawerProps = {
@@ -345,6 +346,10 @@ export const VendorPurchaseOrderDetailDrawer = ({
                           </div>
                         ) : null;
                       })()}
+                      <StatusChangeReasonDetails
+                        reason={item.statusReason}
+                        className='mt-4'
+                      />
                     </div>
                   </div>
                 </article>
@@ -377,6 +382,10 @@ export const VendorPurchaseOrderDetailDrawer = ({
               </div>
             </dl>
           </section>
+          <StatusChangeReasonDetails
+            reason={currentVendorPurchaseOrder.statusReason}
+            className='mt-5'
+          />
         </div>
 
         <footer className='space-y-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-7'>

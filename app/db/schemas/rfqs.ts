@@ -35,6 +35,7 @@ export const rfqs = sqliteTable(
     customerName: text('customer_name', { length: 255 }).notNull(),
     customerEmail: text('customer_email', { length: 255 }),
     status: text('status', { enum: rfqStatuses }).notNull().default('new'),
+    statusReason: text('status_reason'),
     dueDate: text('due_date'),
     applyVat: integer('apply_vat', { mode: 'boolean' })
       .notNull()

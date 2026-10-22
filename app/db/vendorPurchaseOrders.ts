@@ -7,6 +7,7 @@ import type {
 } from '~/types/vendorPurchaseOrder';
 import { calculatePurchaseOrderTotals } from '~/utils/purchaseOrder';
 import { getDb } from './connection';
+import { appendStatusChange } from '~/utils/statusHistory';
 import {
   purchaseOrders,
   vendorPurchaseOrderAcknowledgements,
@@ -217,6 +218,11 @@ export const updateVendorPurchaseOrder = async (
     db.insert(vendorPurchaseOrderItems).values(
       createItemValues(id, items).map((item) => ({
         ...item,
+        statusReason:
+          item.statusReason ??
+          (existing.items[item.position]?.status === item.status
+            ? existing.items[item.position].statusReason
+            : null),
         updatedAt,
       })),
     ),
@@ -246,11 +252,29 @@ export const updateVendorPurchaseOrderStatus = async (
   id: string,
   organizationId: string,
   status: VendorPurchaseOrderStatus,
+  statusReason: string | null,
 ) => {
   const db = getDb();
+  const existing = await getVendorPurchaseOrder(id, organizationId);
+  if (!existing) {
+    return null;
+  }
+  const updatedAt = new Date().toISOString();
   const [record] = await db
     .update(vendorPurchaseOrders)
-    .set({ status, updatedAt: new Date().toISOString() })
+    .set({
+      status,
+      statusReason:
+        statusReason?.trim() && existing.status !== status
+          ? appendStatusChange(existing.statusReason, {
+              fromStatus: existing.status,
+              toStatus: status,
+              reason: statusReason.trim(),
+              changedAt: updatedAt,
+            })
+          : existing.statusReason,
+      updatedAt,
+    })
     .where(
       and(
         eq(vendorPurchaseOrders.id, id),

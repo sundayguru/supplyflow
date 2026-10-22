@@ -118,6 +118,17 @@ export const action = async ({ request }: Route.ActionArgs) => {
       }
       if ('intent' in body && body.intent === 'updateStatus') {
         if (
+          !('statusReason' in body) ||
+          typeof body.statusReason !== 'string' ||
+          !body.statusReason.trim() ||
+          body.statusReason.length > 2000
+        ) {
+          return data(
+            { error: 'Enter a status change reason' },
+            { status: 400 },
+          );
+        }
+        if (
           !('status' in body) ||
           typeof body.status !== 'string' ||
           !vendorPurchaseOrderAcknowledgementStatuses.includes(
@@ -144,6 +155,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
             body.id,
             organization.id,
             body.status as VendorPurchaseOrderAcknowledgementStatus,
+            body.statusReason.trim(),
           );
         if (!vendorPurchaseOrderAcknowledgement) {
           return data(
@@ -187,6 +199,21 @@ export const action = async ({ request }: Route.ActionArgs) => {
         return data(
           { error: 'Vendor PO acknowledgement not found' },
           { status: 404 },
+        );
+      }
+      if (
+        parsed.value.items.some(
+          (item, index) =>
+            existing.items[index]?.status !== undefined &&
+            existing.items[index].status !== item.status &&
+            !item.statusReason?.trim(),
+        )
+      ) {
+        return data(
+          {
+            error: 'Enter a reason for each acknowledgement item status change',
+          },
+          { status: 400 },
         );
       }
       const vendorPurchaseOrderAcknowledgement =

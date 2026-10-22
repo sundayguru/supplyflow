@@ -16,6 +16,7 @@ export type VendorPurchaseOrderStatus =
 export type VendorPurchaseOrderItemInput = PurchaseOrderItemInput & {
   discountType?: 'percentage' | 'fixed';
   discountValue?: number;
+  statusReason?: string | null;
 };
 
 export type VendorPurchaseOrderInput = {
@@ -41,6 +42,7 @@ export type VendorPurchaseOrderItemRecord = VendorPurchaseOrderItemInput & {
   position: number;
   createdAt: string;
   updatedAt: string;
+  statusReason: string | null;
 };
 
 export type LinkedPurchaseOrderSummary = {
@@ -69,6 +71,7 @@ export type VendorPurchaseOrderRecord = Omit<
   generatedEmailDraftAccountId: string | null;
   createdAt: string;
   updatedAt: string;
+  statusReason: string | null;
   items: VendorPurchaseOrderItemRecord[];
   linkedPurchaseOrder: LinkedPurchaseOrderSummary;
   linkedAcknowledgements: LinkedVendorPurchaseOrderAcknowledgementSummary[];

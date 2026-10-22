@@ -33,6 +33,7 @@ export type PurchaseOrderItemInput = {
   unit: string;
   description: string;
   status: PurchaseOrderItemStatus;
+  statusReason?: string | null;
   manufacturerId: string | null;
   manufacturerPartNumber: string | null;
   specifications: string | null;
@@ -60,6 +61,7 @@ export type PurchaseOrderItemRecord = PurchaseOrderItemInput & {
   position: number;
   createdAt: string;
   updatedAt: string;
+  statusReason: string | null;
 };
 
 export type LinkedRfqSummary = {
@@ -108,6 +110,7 @@ export type PurchaseOrderRecord = Omit<PurchaseOrderInput, 'items'> & {
   reference: string;
   createdAt: string;
   updatedAt: string;
+  statusReason: string | null;
   items: PurchaseOrderItemRecord[];
   linkedRfq: LinkedPurchaseOrderRfq | null;
   linkedVendorPurchaseOrders: LinkedPurchaseOrderVendorPurchaseOrderSummary[];

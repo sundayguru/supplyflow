@@ -263,22 +263,24 @@ export const VendorPurchaseOrderFormModal = ({
                 placeholder='Jordan Lee'
               />
             </label>
-            <label className='text-sm font-semibold text-slate-700'>
-              Status
-              <select
-                value={status}
-                onChange={(event) =>
-                  setStatus(event.target.value as VendorPurchaseOrderStatus)
-                }
-                className={inputClass}
-              >
-                {vendorPurchaseOrderStatuses.map((value) => (
-                  <option key={value} value={value}>
-                    {vendorPurchaseOrderStatusLabels[value]}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {!initialValue && (
+              <label className='text-sm font-semibold text-slate-700'>
+                Status
+                <select
+                  value={status}
+                  onChange={(event) =>
+                    setStatus(event.target.value as VendorPurchaseOrderStatus)
+                  }
+                  className={inputClass}
+                >
+                  {vendorPurchaseOrderStatuses.map((value) => (
+                    <option key={value} value={value}>
+                      {vendorPurchaseOrderStatusLabels[value]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
           </div>
 
           <div>

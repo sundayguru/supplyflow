@@ -20,7 +20,11 @@ import {
 type VendorPurchaseOrderPipelineProps = {
   vendorPurchaseOrders: VendorPurchaseOrderRecord[];
   onOpen: (vendorPurchaseOrder: VendorPurchaseOrderRecord) => void;
-  onStatusChange: (id: string, status: VendorPurchaseOrderStatus) => void;
+  onStatusChange: (
+    id: string,
+    status: VendorPurchaseOrderStatus,
+    reason: string,
+  ) => void;
 };
 
 const statusStyles: Record<VendorPurchaseOrderStatus, PipelineStatusStyle> = {

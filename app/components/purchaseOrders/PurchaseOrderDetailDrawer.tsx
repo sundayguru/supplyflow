@@ -35,6 +35,7 @@ import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
 import { ConfirmModal } from '../ConfirmModal';
 import { PurchaseOrderItemEditModal } from './PurchaseOrderItemEditModal';
 import { PurchaseOrderItemStatusMenu } from './PurchaseOrderItemStatusMenu';
+import { StatusChangeReasonDetails } from '~/components/status/StatusChangeReasonDetails';
 import {
   PurchaseOrderPaymentModal,
   type PurchaseOrderPaymentFormValue,
@@ -736,6 +737,10 @@ export const PurchaseOrderDetailDrawer = ({
                           </div>
                         ) : null;
                       })()}
+                      <StatusChangeReasonDetails
+                        reason={item.statusReason}
+                        className='mt-4'
+                      />
                     </div>
                   </div>
                 </article>
@@ -779,6 +784,10 @@ export const PurchaseOrderDetailDrawer = ({
               </div>
             </dl>
           </section>
+          <StatusChangeReasonDetails
+            reason={purchaseOrder.statusReason}
+            className='mt-5'
+          />
         </div>
 
         <footer className='space-y-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-7'>

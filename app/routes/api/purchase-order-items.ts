@@ -68,6 +68,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
         body.intent === 'updateStatus'
       ) {
         if (
+          !('statusReason' in body) ||
+          typeof body.statusReason !== 'string' ||
+          !body.statusReason.trim() ||
+          body.statusReason.length > 2000 ||
           !('status' in body) ||
           typeof body.status !== 'string' ||
           !purchaseOrderItemStatuses.includes(
@@ -80,6 +84,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
           id,
           organization.id,
           body.status as PurchaseOrderItemStatus,
+          body.statusReason.trim(),
           organization.vat,
         );
         if (!purchaseOrder) {

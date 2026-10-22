@@ -335,9 +335,13 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
     setDeleteTarget(null);
   };
 
-  const updateStatus = (rfqId: string, nextStatus: RfqStatus) => {
+  const updateStatus = (
+    rfqId: string,
+    nextStatus: RfqStatus,
+    statusReason: string,
+  ) => {
     mutation.submit(
-      { id: rfqId, status: nextStatus, intent: 'updateStatus' },
+      { id: rfqId, status: nextStatus, statusReason, intent: 'updateStatus' },
       { method: 'patch', action: '/api/rfqs', encType: 'application/json' },
     );
   };

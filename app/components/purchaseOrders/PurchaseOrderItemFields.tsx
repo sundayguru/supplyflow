@@ -22,6 +22,7 @@ type PurchaseOrderItemFieldsProps = {
   onChange: (value: PurchaseOrderItemFormValue) => void;
   onRemove: () => void;
   showDiscount?: boolean;
+  showStatus?: boolean;
 };
 
 export const PurchaseOrderItemFields = ({
@@ -32,6 +33,7 @@ export const PurchaseOrderItemFields = ({
   onChange,
   onRemove,
   showDiscount = false,
+  showStatus = true,
 }: PurchaseOrderItemFieldsProps) => {
   const inputClass =
     'mt-2 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10';
@@ -119,22 +121,24 @@ export const PurchaseOrderItemFields = ({
             placeholder='0.00'
           />
         </label>
-        <label className='text-sm font-semibold text-slate-700'>
-          Item status
-          <select
-            value={value.status}
-            onChange={(event) =>
-              update('status', event.target.value as PurchaseOrderItemStatus)
-            }
-            className={inputClass}
-          >
-            {purchaseOrderItemStatuses.map((status) => (
-              <option key={status} value={status}>
-                {purchaseOrderItemStatusLabels[status]}
-              </option>
-            ))}
-          </select>
-        </label>
+        {showStatus && (
+          <label className='text-sm font-semibold text-slate-700'>
+            Item status
+            <select
+              value={value.status}
+              onChange={(event) =>
+                update('status', event.target.value as PurchaseOrderItemStatus)
+              }
+              className={inputClass}
+            >
+              {purchaseOrderItemStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {purchaseOrderItemStatusLabels[status]}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
 
       {showDiscount && (

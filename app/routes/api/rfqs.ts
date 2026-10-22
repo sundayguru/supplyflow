@@ -124,6 +124,17 @@ export const action = async ({ request }: Route.ActionArgs) => {
       }
       if ('intent' in body && body.intent === 'updateStatus') {
         if (
+          !('statusReason' in body) ||
+          typeof body.statusReason !== 'string' ||
+          !body.statusReason.trim() ||
+          body.statusReason.length > 2000
+        ) {
+          return data(
+            { error: 'Enter a status change reason' },
+            { status: 400 },
+          );
+        }
+        if (
           !('status' in body) ||
           typeof body.status !== 'string' ||
           !rfqStatuses.includes(body.status as RfqStatus)
@@ -142,6 +153,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
           body.id,
           organization.id,
           body.status as RfqStatus,
+          body.statusReason.trim(),
           organization.vat,
         );
         if (!rfq) {

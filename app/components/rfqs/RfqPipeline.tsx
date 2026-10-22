@@ -15,7 +15,7 @@ import { rfqStatusLabels } from './RfqStatusBadge';
 
 type RfqPipelineProps = {
   rfqs: RfqRecord[];
-  onStatusChange: (rfqId: string, status: RfqStatus) => void;
+  onStatusChange: (rfqId: string, status: RfqStatus, reason: string) => void;
 };
 
 const statusStyles: Record<RfqStatus, PipelineStatusStyle> = {

@@ -255,7 +255,13 @@ const processAccount = async (
         throw new Error('Purchase order could not be created');
       }
       if (rfqId) {
-        await updateRfqStatus(rfqId, organization.id, 'won', organization.vat);
+        await updateRfqStatus(
+          rfqId,
+          organization.id,
+          'won',
+          null,
+          organization.vat,
+        );
       }
       try {
         await sendPurchaseOrderAcknowledgement({

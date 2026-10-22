@@ -37,6 +37,7 @@ export const vendorPurchaseOrderAcknowledgements = sqliteTable(
     status: text('status', { enum: vendorPurchaseOrderAcknowledgementStatuses })
       .notNull()
       .default('received'),
+    statusReason: text('status_reason'),
     acknowledgedAt: text('acknowledged_at'),
     notes: text('notes'),
     sourceEmailIngestionId: text('source_email_ingestion_id').unique(),
@@ -80,6 +81,7 @@ export const vendorPurchaseOrderAcknowledgementItems = sqliteTable(
     })
       .notNull()
       .default('acknowledged'),
+    statusReason: text('status_reason'),
     notes: text('notes'),
     createdAt: text('created_at')
       .notNull()

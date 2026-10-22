@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, ChevronDown } from 'lucide-react';
 import { useFetcher } from 'react-router';
+import { StatusChangeReasonDialog } from '~/components/status/StatusChangeReasonDialog';
 import {
   purchaseOrderItemStatuses,
   type PurchaseOrderItemStatus,
@@ -26,6 +27,8 @@ export const PurchaseOrderItemStatusMenu = ({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const [pendingStatus, setPendingStatus] =
+    useState<PurchaseOrderItemStatus | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -71,18 +74,32 @@ export const PurchaseOrderItemStatusMenu = ({
   };
 
   const selectStatus = (nextStatus: PurchaseOrderItemStatus) => {
-    setIsOpen(false);
     if (nextStatus === status) {
+      setIsOpen(false);
+      return;
+    }
+    setIsOpen(false);
+    setPendingStatus(nextStatus);
+  };
+
+  const confirmStatus = (reason: string) => {
+    if (!pendingStatus) {
       return;
     }
     fetcher.submit(
-      { id: itemId, status: nextStatus, intent: 'updateStatus' },
+      {
+        id: itemId,
+        status: pendingStatus,
+        statusReason: reason,
+        intent: 'updateStatus',
+      },
       {
         method: 'patch',
         action: '/api/purchase-order-items',
         encType: 'application/json',
       },
     );
+    setPendingStatus(null);
   };
 
   return (
@@ -124,6 +141,13 @@ export const PurchaseOrderItemStatusMenu = ({
           </div>,
           document.body,
         )}
+      {pendingStatus && (
+        <StatusChangeReasonDialog
+          statusLabel={purchaseOrderItemStatusLabels[pendingStatus]}
+          onCancel={() => setPendingStatus(null)}
+          onConfirm={confirmStatus}
+        />
+      )}
     </div>
   );
 };

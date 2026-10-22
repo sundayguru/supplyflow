@@ -26,6 +26,7 @@ export type VendorPurchaseOrderAcknowledgementItemInput = {
   manufacturerPartNumber: string | null;
   deliveryDate: string | null;
   status: VendorPurchaseOrderAcknowledgementItemStatus;
+  statusReason?: string | null;
   notes: string | null;
 };
 
@@ -45,6 +46,7 @@ export type VendorPurchaseOrderAcknowledgementItemRecord =
     position: number;
     createdAt: string;
     updatedAt: string;
+    statusReason: string | null;
   };
 
 export type LinkedVendorPurchaseOrderSummary = {
@@ -66,6 +68,7 @@ export type VendorPurchaseOrderAcknowledgementRecord = Omit<
   sourceEmailIngestionId: string | null;
   createdAt: string;
   updatedAt: string;
+  statusReason: string | null;
   items: VendorPurchaseOrderAcknowledgementItemRecord[];
   linkedVendorPurchaseOrder: LinkedVendorPurchaseOrderSummary;
 };

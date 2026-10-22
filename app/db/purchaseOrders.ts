@@ -9,6 +9,7 @@ import type {
 import type { RfqItemRecord } from '~/types/rfq';
 import { calculatePurchaseOrderTotals } from '~/utils/purchaseOrder';
 import { getDb } from './connection';
+import { appendStatusChange } from '~/utils/statusHistory';
 import {
   emailIngestions,
   purchaseOrderItems,
@@ -298,6 +299,11 @@ export const updatePurchaseOrder = async (
     db.insert(purchaseOrderItems).values(
       createItemValues(id, items).map((item) => ({
         ...item,
+        statusReason:
+          item.statusReason ??
+          (existing.items[item.position]?.status === item.status
+            ? existing.items[item.position].statusReason
+            : null),
         updatedAt,
       })),
     ),
@@ -310,12 +316,30 @@ export const updatePurchaseOrderStatus = async (
   id: string,
   organizationId: string,
   status: PurchaseOrderStatus,
+  statusReason: string | null,
   vatRate: number,
 ) => {
   const db = getDb();
+  const existing = await getPurchaseOrder(id, organizationId, vatRate);
+  if (!existing) {
+    return null;
+  }
+  const updatedAt = new Date().toISOString();
   const [updated] = await db
     .update(purchaseOrders)
-    .set({ status, updatedAt: new Date().toISOString() })
+    .set({
+      status,
+      statusReason:
+        statusReason?.trim() && existing.status !== status
+          ? appendStatusChange(existing.statusReason, {
+              fromStatus: existing.status,
+              toStatus: status,
+              reason: statusReason.trim(),
+              changedAt: updatedAt,
+            })
+          : existing.statusReason,
+      updatedAt,
+    })
     .where(
       and(
         eq(purchaseOrders.id, id),
@@ -501,6 +525,8 @@ export const getOrganizationPurchaseOrderItem = async (
     .select({
       id: purchaseOrderItems.id,
       purchaseOrderId: purchaseOrderItems.purchaseOrderId,
+      status: purchaseOrderItems.status,
+      statusReason: purchaseOrderItems.statusReason,
     })
     .from(purchaseOrderItems)
     .innerJoin(
@@ -552,6 +578,7 @@ export const updatePurchaseOrderItemStatus = async (
   id: string,
   organizationId: string,
   status: PurchaseOrderItemStatus,
+  statusReason: string | null,
   vatRate: number,
 ) => {
   const existing = await getOrganizationPurchaseOrderItem(id, organizationId);
@@ -561,10 +588,19 @@ export const updatePurchaseOrderItemStatus = async (
 
   const db = getDb();
   const updatedAt = new Date().toISOString();
+  const nextStatusReason =
+    statusReason?.trim() && existing.status !== status
+      ? appendStatusChange(existing.statusReason, {
+          fromStatus: existing.status,
+          toStatus: status,
+          reason: statusReason.trim(),
+          changedAt: updatedAt,
+        })
+      : existing.statusReason;
   await db.batch([
     db
       .update(purchaseOrderItems)
-      .set({ status, updatedAt })
+      .set({ status, statusReason: nextStatusReason, updatedAt })
       .where(eq(purchaseOrderItems.id, id)),
     db
       .update(purchaseOrders)

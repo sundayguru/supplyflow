@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import type { VendorPurchaseOrderAcknowledgementRecord } from '~/types/vendorPurchaseOrderAcknowledgement';
+import { StatusChangeReasonDetails } from '~/components/status/StatusChangeReasonDetails';
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
 import {
   VendorPurchaseOrderAcknowledgementItemStatusBadge,
@@ -242,6 +243,10 @@ export const VendorPurchaseOrderAcknowledgementDetailDrawer = ({
                           {item.notes}
                         </p>
                       )}
+                      <StatusChangeReasonDetails
+                        reason={item.statusReason}
+                        className='mt-4'
+                      />
                     </div>
                   </div>
                 </article>
@@ -272,6 +277,10 @@ export const VendorPurchaseOrderAcknowledgementDetailDrawer = ({
               </div>
             </dl>
           </section>
+          <StatusChangeReasonDetails
+            reason={acknowledgement.statusReason}
+            className='mt-5'
+          />
         </div>
 
         <footer className='flex flex-col-reverse gap-3 border-t border-slate-200 bg-white px-5 py-4 sm:flex-row sm:justify-end sm:px-7'>

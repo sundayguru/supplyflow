@@ -188,6 +188,17 @@ export const action = async ({ request }: Route.ActionArgs) => {
       }
       if ('intent' in body && body.intent === 'updateStatus') {
         if (
+          !('statusReason' in body) ||
+          typeof body.statusReason !== 'string' ||
+          !body.statusReason.trim() ||
+          body.statusReason.length > 2000
+        ) {
+          return data(
+            { error: 'Enter a status change reason' },
+            { status: 400 },
+          );
+        }
+        if (
           !('status' in body) ||
           typeof body.status !== 'string' ||
           !vendorPurchaseOrderStatuses.includes(
@@ -207,6 +218,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
           body.id,
           organization.id,
           body.status as VendorPurchaseOrderStatus,
+          body.statusReason.trim(),
         );
         if (!vendorPurchaseOrder) {
           return data({ error: 'Vendor PO not found' }, { status: 404 });

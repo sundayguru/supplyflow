@@ -198,9 +198,13 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
     setDeleteTarget(null);
   };
 
-  const updateStatus = (id: string, nextStatus: VendorPurchaseOrderStatus) => {
+  const updateStatus = (
+    id: string,
+    nextStatus: VendorPurchaseOrderStatus,
+    statusReason: string,
+  ) => {
     mutation.submit(
-      { id, status: nextStatus, intent: 'updateStatus' },
+      { id, status: nextStatus, statusReason, intent: 'updateStatus' },
       {
         method: 'patch',
         action: '/api/vendor-purchase-orders',

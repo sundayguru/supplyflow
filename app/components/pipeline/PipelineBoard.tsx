@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { GripVertical } from 'lucide-react';
+import { StatusChangeReasonDialog } from '~/components/status/StatusChangeReasonDialog';
 
 export type PipelineStatusStyle = {
   column: string;
@@ -21,7 +22,7 @@ type PipelineBoardProps<Item, Status extends string> = {
   renderCard: (item: Item, props: PipelineCardRenderProps) => ReactNode;
   renderDragPreview: (item: Item, overStatus: Status) => ReactNode;
   onItemClick: (item: Item) => void;
-  onStatusChange: (itemId: string, status: Status) => void;
+  onStatusChange: (itemId: string, status: Status, reason: string) => void;
   emptyLabel?: string;
 };
 
@@ -55,6 +56,10 @@ export const PipelineBoard = <Item, Status extends string>({
   emptyLabel = 'No records in this stage',
 }: PipelineBoardProps<Item, Status>) => {
   const [drag, setDrag] = useState<DragState<Status> | null>(null);
+  const [pendingStatusChange, setPendingStatusChange] = useState<{
+    itemId: string;
+    status: Status;
+  } | null>(null);
   const itemsByStatus = useMemo(
     () =>
       Object.fromEntries(
@@ -73,7 +78,7 @@ export const PipelineBoard = <Item, Status extends string>({
     const finishDrag = (event: PointerEvent) => {
       const status = getStatusAtPoint<Status>(event.clientX, event.clientY);
       if (status && status !== drag.sourceStatus) {
-        onStatusChange(drag.itemId, status);
+        setPendingStatusChange({ itemId: drag.itemId, status });
       }
       setDrag(null);
     };
@@ -211,6 +216,20 @@ export const PipelineBoard = <Item, Status extends string>({
         >
           {renderDragPreview(draggedItem, drag.overStatus)}
         </div>
+      )}
+      {pendingStatusChange && (
+        <StatusChangeReasonDialog
+          statusLabel={statusLabels[pendingStatusChange.status]}
+          onCancel={() => setPendingStatusChange(null)}
+          onConfirm={(reason) => {
+            onStatusChange(
+              pendingStatusChange.itemId,
+              pendingStatusChange.status,
+              reason,
+            );
+            setPendingStatusChange(null);
+          }}
+        />
       )}
     </div>
   );

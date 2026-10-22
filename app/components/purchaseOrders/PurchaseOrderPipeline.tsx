@@ -18,7 +18,11 @@ import { purchaseOrderStatusLabels } from './PurchaseOrderStatusBadge';
 
 type PurchaseOrderPipelineProps = {
   purchaseOrders: PurchaseOrderRecord[];
-  onStatusChange: (id: string, status: PurchaseOrderStatus) => void;
+  onStatusChange: (
+    id: string,
+    status: PurchaseOrderStatus,
+    reason: string,
+  ) => void;
 };
 
 const statusStyles: Record<PurchaseOrderStatus, PipelineStatusStyle> = {

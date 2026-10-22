@@ -22,6 +22,7 @@ type AcknowledgementPipelineProps = {
   onStatusChange: (
     id: string,
     status: VendorPurchaseOrderAcknowledgementStatus,
+    reason: string,
   ) => void;
 };
 

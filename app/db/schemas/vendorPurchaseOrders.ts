@@ -46,6 +46,7 @@ export const vendorPurchaseOrders = sqliteTable(
     status: text('status', { enum: vendorPurchaseOrderStatuses })
       .notNull()
       .default('draft'),
+    statusReason: text('status_reason'),
     orderDate: text('order_date'),
     expectedDate: text('expected_date'),
     currency: text('currency', { length: 3 }).notNull().default('EUR'),
@@ -98,6 +99,7 @@ export const vendorPurchaseOrderItems = sqliteTable(
     status: text('status', { enum: purchaseOrderItemStatuses })
       .notNull()
       .default('pending'),
+    statusReason: text('status_reason'),
     manufacturerId: text('manufacturer_id').references(() => manufacturers.id, {
       onDelete: 'set null',
     }),

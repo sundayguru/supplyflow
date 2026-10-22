@@ -61,6 +61,10 @@ export const parsePurchaseOrderItemInput = (
       unit,
       description,
       status: status as PurchaseOrderItemStatus,
+      statusReason:
+        typeof value.statusReason === 'string'
+          ? value.statusReason.trim() || null
+          : undefined,
       manufacturerId:
         typeof value.manufacturerId === 'string' && value.manufacturerId.trim()
           ? value.manufacturerId.trim()
