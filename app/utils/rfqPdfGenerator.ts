@@ -105,6 +105,7 @@ type ProformaInvoiceData = Omit<
   Pick<
     PurchaseOrderRecord,
     | 'reference'
+    | 'status'
     | 'orderDate'
     | 'expectedDate'
     | 'supplierName'
@@ -425,7 +426,9 @@ export const generateProformaInvoicePdf = async (
     header: RfqPdfBannerAsset | null;
     footer: RfqPdfBannerAsset | null;
   } = { header: null, footer: null },
+  options: { statusReport?: boolean; includeTermsPage?: boolean } = {},
 ) => {
+  const isStatusReport = options.statusReport ?? false;
   const document = await PDFDocument.create();
   const regular = await document.embedFont(StandardFonts.Helvetica);
   const bold = await document.embedFont(StandardFonts.HelveticaBold);
@@ -455,39 +458,57 @@ export const generateProformaInvoicePdf = async (
     if (footerBanner) {
       drawFullWidthBanner(page, footerBanner, 0, FOOTER_HEIGHT);
     } else {
-      page.drawText('Suploop proforma invoice', {
-        x: SIDE_MARGIN,
-        y: 24,
-        font: regular,
-        size: 8,
-        color: rgb(0.45, 0.48, 0.52),
-      });
+      page.drawText(
+        isStatusReport
+          ? 'Suploop purchase order status report'
+          : 'Suploop proforma invoice',
+        {
+          x: SIDE_MARGIN,
+          y: 24,
+          font: regular,
+          size: 8,
+          color: rgb(0.45, 0.48, 0.52),
+        },
+      );
     }
     return page;
   };
 
   let page = addPage();
   let y = PAGE_HEIGHT - (headerBanner ? 112 : 80);
-  page.drawText('PROFORMA INVOICE', {
-    x: SIDE_MARGIN,
-    y,
-    font: bold,
-    size: 22,
-    color: rgb(0.08, 0.11, 0.15),
-  });
+  page.drawText(
+    isStatusReport ? 'PURCHASE ORDER STATUS REPORT' : 'PROFORMA INVOICE',
+    {
+      x: SIDE_MARGIN,
+      y,
+      font: bold,
+      size: 22,
+      color: rgb(0.08, 0.11, 0.15),
+    },
+  );
   y -= 30;
-  page.drawText(`Invoice reference: PI-${purchaseOrder.reference}`, {
-    x: SIDE_MARGIN,
-    y,
-    font: bold,
-    size: 10,
-  });
-  page.drawText(`PO: ${purchaseOrder.reference}`, {
-    x: 410,
-    y,
-    font: regular,
-    size: 10,
-  });
+  page.drawText(
+    isStatusReport
+      ? `Purchase order: ${purchaseOrder.reference}`
+      : `Invoice reference: PI-${purchaseOrder.reference}`,
+    {
+      x: SIDE_MARGIN,
+      y,
+      font: bold,
+      size: 10,
+    },
+  );
+  page.drawText(
+    isStatusReport
+      ? `Status: ${purchaseOrder.status.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())}`
+      : `PO: ${purchaseOrder.reference}`,
+    {
+      x: 410,
+      y,
+      font: regular,
+      size: 10,
+    },
+  );
   y -= 16;
   page.drawText(`Order date: ${purchaseOrder.orderDate ?? 'Not specified'}`, {
     x: SIDE_MARGIN,
@@ -646,31 +667,33 @@ export const generateProformaInvoicePdf = async (
     y -= 18;
   });
 
-  page = addPage();
-  y = PAGE_HEIGHT - (headerBanner ? 112 : 80);
-  page.drawText('TERMS AND CONDITIONS', {
-    x: SIDE_MARGIN,
-    y,
-    font: bold,
-    size: 18,
-    color: rgb(0.08, 0.11, 0.15),
-  });
-  y -= 28;
-  const terms =
-    richTextToPlainText(template?.termsHtml ?? '') ||
-    'No terms and conditions have been added to this template.';
-  for (const line of wrapText(
-    terms,
-    regular,
-    10,
-    PAGE_WIDTH - SIDE_MARGIN * 2,
-  )) {
-    if (y < 75) {
-      page = addPage();
-      y = PAGE_HEIGHT - (headerBanner ? 112 : 80);
+  if (options.includeTermsPage ?? true) {
+    page = addPage();
+    y = PAGE_HEIGHT - (headerBanner ? 112 : 80);
+    page.drawText('TERMS AND CONDITIONS', {
+      x: SIDE_MARGIN,
+      y,
+      font: bold,
+      size: 18,
+      color: rgb(0.08, 0.11, 0.15),
+    });
+    y -= 28;
+    const terms =
+      richTextToPlainText(template?.termsHtml ?? '') ||
+      'No terms and conditions have been added to this template.';
+    for (const line of wrapText(
+      terms,
+      regular,
+      10,
+      PAGE_WIDTH - SIDE_MARGIN * 2,
+    )) {
+      if (y < 75) {
+        page = addPage();
+        y = PAGE_HEIGHT - (headerBanner ? 112 : 80);
+      }
+      page.drawText(line, { x: SIDE_MARGIN, y, font: regular, size: 10 });
+      y -= 15;
     }
-    page.drawText(line, { x: SIDE_MARGIN, y, font: regular, size: 10 });
-    y -= 15;
   }
 
   document.getPages().forEach((pdfPage, index, pages) => {

@@ -73,6 +73,10 @@ export default [
       'routes/api/purchase-order-proforma-invoice.ts',
     ),
     route(
+      'api/purchase-orders/:purchaseOrderId/status-report',
+      'routes/api/purchase-order-status-report.ts',
+    ),
+    route(
       'api/purchase-orders/:purchaseOrderId/proforma-draft',
       'routes/api/purchase-order-proforma-draft.ts',
     ),

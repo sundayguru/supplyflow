@@ -185,6 +185,7 @@ export const PurchaseOrderDetailDrawer = ({
   const downloadInvoiceUrl = `${invoiceUrl}${
     invoiceUrl.includes('?') ? '&' : '?'
   }download=1`;
+  const statusReportUrl = `/api/purchase-orders/${encodeURIComponent(purchaseOrder.id)}/status-report`;
   const draftUrl =
     proformaDraft.data && 'success' in proformaDraft.data
       ? proformaDraft.data.draft.url
@@ -791,6 +792,12 @@ export const PurchaseOrderDetailDrawer = ({
         </div>
 
         <footer className='space-y-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-7'>
+          <a
+            href={statusReportUrl}
+            className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
+          >
+            <Download size={17} /> Generate status report
+          </a>
           <Link
             to={`/activities?sourceType=purchase_order&sourceId=${encodeURIComponent(currentPurchaseOrder.id)}`}
             className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'

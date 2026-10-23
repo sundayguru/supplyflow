@@ -56,6 +56,7 @@ export const generateProformaInvoicePdf = async (
   purchaseOrder: PurchaseOrderRecord,
   template: SelectRfqPdfTemplate | null,
   organization: SelectOrganization,
+  options: { statusReport?: boolean; includeTermsPage?: boolean } = {},
 ) => {
   const [header, footer] = await Promise.all([
     loadAsset(template?.headerBannerKey ?? null),
@@ -69,8 +70,19 @@ export const generateProformaInvoicePdf = async (
       header,
       footer,
     },
+    options,
   );
 };
+
+export const generatePurchaseOrderStatusReportPdf = (
+  purchaseOrder: PurchaseOrderRecord,
+  template: SelectRfqPdfTemplate | null,
+  organization: SelectOrganization,
+) =>
+  generateProformaInvoicePdf(purchaseOrder, template, organization, {
+    statusReport: true,
+    includeTermsPage: false,
+  });
 
 export const generateVendorPurchaseOrderPdf = async (
   vendorPurchaseOrder: VendorPurchaseOrderRecord,
