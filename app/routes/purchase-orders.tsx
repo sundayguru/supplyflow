@@ -146,6 +146,13 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
     setSearchParams(next, { replace: true });
   };
 
+  const openPurchaseOrderDetails = (purchaseOrder: PurchaseOrderRecord) => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('rfq');
+    next.set('po', purchaseOrder.id);
+    setSearchParams(next);
+  };
+
   const closeRfqDetails = () => {
     const next = new URLSearchParams(searchParams);
     next.delete('rfq');
@@ -354,6 +361,7 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
         ) : (
           <PurchaseOrderTable
             purchaseOrders={filteredPurchaseOrders}
+            onOpen={openPurchaseOrderDetails}
             onOpenRfq={openRfqDetails}
             onEdit={setFormPurchaseOrder}
             onDelete={setDeleteTarget}

@@ -119,6 +119,7 @@ export const VendorPurchaseOrderAcknowledgementTable = ({
       items={acknowledgements}
       columns={columns}
       getId={(record) => record.id}
+      onRowClick={onOpen}
       renderMobileCard={(record) => ({
         primary: record.reference,
         secondary: record.linkedVendorPurchaseOrder.vendorName,

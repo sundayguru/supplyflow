@@ -284,6 +284,12 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
     setSearchParams(next, { replace: true });
   };
 
+  const openDetails = (rfq: RfqRecord) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('rfq', rfq.id);
+    setSearchParams(next);
+  };
+
   const editFromDetails = () => {
     if (!selectedRfq) {
       return;
@@ -560,6 +566,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
             </div>
             <RfqTable
               rfqs={filteredRfqs}
+              onOpen={openDetails}
               onEdit={setFormRfq}
               onDelete={setDeleteTarget}
             />

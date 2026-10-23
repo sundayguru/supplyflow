@@ -11,6 +11,7 @@ import { PurchaseOrderStatusMenu } from './PurchaseOrderStatusMenu';
 
 type PurchaseOrderTableProps = {
   purchaseOrders: PurchaseOrderRecord[];
+  onOpen: (purchaseOrder: PurchaseOrderRecord) => void;
   onOpenRfq: (rfqId: string) => void;
   onEdit: (purchaseOrder: PurchaseOrderRecord) => void;
   onDelete: (purchaseOrder: PurchaseOrderRecord) => void;
@@ -21,6 +22,7 @@ const detailHref = (purchaseOrder: PurchaseOrderRecord) =>
 
 export const PurchaseOrderTable = ({
   purchaseOrders,
+  onOpen,
   onOpenRfq,
   onEdit,
   onDelete,
@@ -139,6 +141,7 @@ export const PurchaseOrderTable = ({
       items={purchaseOrders}
       columns={columns}
       getId={(order) => order.id}
+      onRowClick={onOpen}
       minWidthClassName='min-w-[1100px]'
       renderMobileCard={(order) => ({
         primary: <Link to={detailHref(order)}>{order.reference}</Link>,

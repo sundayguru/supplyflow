@@ -120,6 +120,7 @@ export const VendorPurchaseOrderTable = ({
       items={vendorPurchaseOrders}
       columns={columns}
       getId={(record) => record.id}
+      onRowClick={onOpen}
       renderMobileCard={(record) => ({
         primary: (
           <button type='button' onClick={() => onOpen(record)}>

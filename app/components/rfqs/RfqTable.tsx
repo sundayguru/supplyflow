@@ -11,13 +11,14 @@ import { RfqStatusMenu } from './RfqStatusMenu';
 
 type RfqTableProps = {
   rfqs: RfqRecord[];
+  onOpen: (rfq: RfqRecord) => void;
   onEdit: (rfq: RfqRecord) => void;
   onDelete: (rfq: RfqRecord) => void;
 };
 
 const detailHref = (rfq: RfqRecord) => `?rfq=${encodeURIComponent(rfq.id)}`;
 
-export const RfqTable = ({ rfqs, onEdit, onDelete }: RfqTableProps) => {
+export const RfqTable = ({ rfqs, onOpen, onEdit, onDelete }: RfqTableProps) => {
   const actions = (rfq: RfqRecord) => (
     <ManagementRowActions
       label={rfq.reference}
@@ -108,6 +109,7 @@ export const RfqTable = ({ rfqs, onEdit, onDelete }: RfqTableProps) => {
       items={rfqs}
       columns={columns}
       getId={(rfq) => rfq.id}
+      onRowClick={onOpen}
       minWidthClassName='min-w-[940px]'
       renderMobileCard={(rfq) => ({
         primary: <Link to={detailHref(rfq)}>{rfq.reference}</Link>,

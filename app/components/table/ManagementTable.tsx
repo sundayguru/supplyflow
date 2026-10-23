@@ -24,6 +24,7 @@ type ManagementTableProps<Item> = {
   getId: (item: Item) => string;
   renderMobileCard: (item: Item) => ManagementMobileCard;
   minWidthClassName?: string;
+  onRowClick?: (item: Item) => void;
 };
 
 export const ManagementTable = <Item,>({
@@ -32,13 +33,34 @@ export const ManagementTable = <Item,>({
   getId,
   renderMobileCard,
   minWidthClassName = 'min-w-[900px]',
+  onRowClick,
 }: ManagementTableProps<Item>) => (
   <div>
     <div className='divide-y divide-slate-100 md:hidden'>
       {items.map((item) => {
         const card = renderMobileCard(item);
         return (
-          <article key={getId(item)} className='p-4'>
+          <article
+            key={getId(item)}
+            className={`p-4 ${onRowClick ? 'cursor-pointer transition hover:bg-slate-50/60' : ''}`}
+            tabIndex={onRowClick ? 0 : undefined}
+            onClick={(event) => {
+              if (
+                onRowClick &&
+                !(event.target as HTMLElement).closest(
+                  'a,button,input,select,textarea,[role="button"]',
+                )
+              ) {
+                onRowClick(item);
+              }
+            }}
+            onKeyDown={(event) => {
+              if (onRowClick && (event.key === 'Enter' || event.key === ' ')) {
+                event.preventDefault();
+                onRowClick(item);
+              }
+            }}
+          >
             <div className='flex items-start justify-between gap-3'>
               <div className='min-w-0'>
                 <div className='font-semibold text-slate-900'>
@@ -92,7 +114,30 @@ export const ManagementTable = <Item,>({
         </thead>
         <tbody className='divide-y divide-slate-100'>
           {items.map((item) => (
-            <tr key={getId(item)} className='transition hover:bg-slate-50/60'>
+            <tr
+              key={getId(item)}
+              className={`transition hover:bg-slate-50/60 ${onRowClick ? 'cursor-pointer' : ''}`}
+              tabIndex={onRowClick ? 0 : undefined}
+              onClick={(event) => {
+                if (
+                  onRowClick &&
+                  !(event.target as HTMLElement).closest(
+                    'a,button,input,select,textarea,[role="button"]',
+                  )
+                ) {
+                  onRowClick(item);
+                }
+              }}
+              onKeyDown={(event) => {
+                if (
+                  onRowClick &&
+                  (event.key === 'Enter' || event.key === ' ')
+                ) {
+                  event.preventDefault();
+                  onRowClick(item);
+                }
+              }}
+            >
               {columns.map((column) => (
                 <td
                   key={column.id}
