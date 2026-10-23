@@ -215,7 +215,7 @@ export const generateRfqPdf = async (
     if (footerBanner) {
       drawFullWidthBanner(page, footerBanner, 0, FOOTER_HEIGHT);
     } else {
-      page.drawText('Suploop quotation sample', {
+      page.drawText(`${safePdfText(organization.name)} quotation sample`, {
         x: SIDE_MARGIN,
         y: 24,
         font: regular,
@@ -459,9 +459,7 @@ export const generateProformaInvoicePdf = async (
       drawFullWidthBanner(page, footerBanner, 0, FOOTER_HEIGHT);
     } else {
       page.drawText(
-        isStatusReport
-          ? 'Suploop purchase order status report'
-          : 'Suploop proforma invoice',
+        `${safePdfText(organization.name)} ${isStatusReport ? 'purchase order status report' : 'proforma invoice'}`,
         {
           x: SIDE_MARGIN,
           y: 24,
@@ -572,7 +570,9 @@ export const generateProformaInvoicePdf = async (
     y -= 12;
   }
 
-  const columns = [SIDE_MARGIN, 70, 154, 318, 364, 436, 504];
+  const columns = isStatusReport
+    ? [SIDE_MARGIN, 70, 154, 355, 445]
+    : [SIDE_MARGIN, 70, 154, 318, 364, 436, 504];
   const drawTableHeader = () => {
     page.drawRectangle({
       x: SIDE_MARGIN,
@@ -581,15 +581,18 @@ export const generateProformaInvoicePdf = async (
       height: 24,
       color: rgb(0.91, 0.96, 0.94),
     });
-    [
-      '#',
-      'Part no.',
-      'Description',
-      'Qty',
-      'Unit price',
-      'VAT',
-      'Line total',
-    ].forEach((label, index) =>
+    (isStatusReport
+      ? ['#', 'Part no.', 'Description', 'Qty', 'Item status']
+      : [
+          '#',
+          'Part no.',
+          'Description',
+          'Qty',
+          'Unit price',
+          'VAT',
+          'Line total',
+        ]
+    ).forEach((label, index) =>
       page.drawText(label, {
         x: columns[index],
         y,
@@ -609,15 +612,26 @@ export const generateProformaInvoicePdf = async (
     }
     const lineTotal = item.quantity * item.price;
     const vatLabel = purchaseOrder.applyVat ? `${organization.vat}%` : '-';
-    const values = [
-      String(index + 1),
-      safePdfText(item.manufacturerPartNumber ?? '-').slice(0, 18),
-      safePdfText(item.description).slice(0, 26),
-      `${item.quantity} ${safePdfText(item.unit)}`,
-      formatMoney(item.price, purchaseOrder.currency),
-      vatLabel,
-      formatMoney(lineTotal, purchaseOrder.currency),
-    ];
+    const itemStatus = item.status
+      .replaceAll('_', ' ')
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    const values = isStatusReport
+      ? [
+          String(index + 1),
+          safePdfText(item.manufacturerPartNumber ?? '-').slice(0, 18),
+          safePdfText(item.description).slice(0, 26),
+          `${item.quantity} ${safePdfText(item.unit)}`,
+          itemStatus,
+        ]
+      : [
+          String(index + 1),
+          safePdfText(item.manufacturerPartNumber ?? '-').slice(0, 18),
+          safePdfText(item.description).slice(0, 26),
+          `${item.quantity} ${safePdfText(item.unit)}`,
+          formatMoney(item.price, purchaseOrder.currency),
+          vatLabel,
+          formatMoney(lineTotal, purchaseOrder.currency),
+        ];
     values.forEach((value, columnIndex) =>
       page.drawText(value, {
         x: columns[columnIndex],
@@ -635,37 +649,39 @@ export const generateProformaInvoicePdf = async (
     y -= 27;
   });
 
-  y -= 15;
-  const summary = [
-    ['Subtotal', formatMoney(purchaseOrder.subtotal, purchaseOrder.currency)],
-    ...(purchaseOrder.applyVat
-      ? [
-          [
-            `VAT (${organization.vat}%)`,
-            formatMoney(purchaseOrder.vatValue, purchaseOrder.currency),
-          ],
-        ]
-      : []),
-    [
-      'Total due',
-      formatMoney(purchaseOrder.totalValue, purchaseOrder.currency),
-    ],
-  ];
-  summary.forEach(([label, value], index) => {
-    page.drawText(label, {
-      x: 350,
-      y,
-      font: index === summary.length - 1 ? bold : regular,
-      size: index === summary.length - 1 ? 11 : 9,
+  if (!isStatusReport) {
+    y -= 15;
+    const summary = [
+      ['Subtotal', formatMoney(purchaseOrder.subtotal, purchaseOrder.currency)],
+      ...(purchaseOrder.applyVat
+        ? [
+            [
+              `VAT (${organization.vat}%)`,
+              formatMoney(purchaseOrder.vatValue, purchaseOrder.currency),
+            ],
+          ]
+        : []),
+      [
+        'Total due',
+        formatMoney(purchaseOrder.totalValue, purchaseOrder.currency),
+      ],
+    ];
+    summary.forEach(([label, value], index) => {
+      page.drawText(label, {
+        x: 350,
+        y,
+        font: index === summary.length - 1 ? bold : regular,
+        size: index === summary.length - 1 ? 11 : 9,
+      });
+      page.drawText(value, {
+        x: 445,
+        y,
+        font: index === summary.length - 1 ? bold : regular,
+        size: index === summary.length - 1 ? 11 : 9,
+      });
+      y -= 18;
     });
-    page.drawText(value, {
-      x: 445,
-      y,
-      font: index === summary.length - 1 ? bold : regular,
-      size: index === summary.length - 1 ? 11 : 9,
-    });
-    y -= 18;
-  });
+  }
 
   if (options.includeTermsPage ?? true) {
     page = addPage();
@@ -738,7 +754,7 @@ export const generateVendorPurchaseOrderPdf = async (
         HEADER_HEIGHT,
       );
     } else {
-      page.drawText(safePdfText(organization.name), {
+      page.drawText(`${safePdfText(organization.name)} purchase order`, {
         x: SIDE_MARGIN,
         y: PAGE_HEIGHT - 48,
         font: bold,
@@ -749,7 +765,7 @@ export const generateVendorPurchaseOrderPdf = async (
     if (footerBanner) {
       drawFullWidthBanner(page, footerBanner, 0, FOOTER_HEIGHT);
     } else {
-      page.drawText('Suploop purchase order', {
+      page.drawText(safePdfText(organization.name), {
         x: SIDE_MARGIN,
         y: 24,
         font: regular,
