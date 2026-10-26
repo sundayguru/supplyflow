@@ -12,6 +12,8 @@ import {
   LayoutDashboard,
   Menu,
   Package,
+  PanelLeftClose,
+  PanelLeftOpen,
   ShoppingCart,
   ShieldCheck,
   X,
@@ -35,11 +37,23 @@ const getInitials = (name: string) =>
     .toUpperCase()
     .slice(0, 2);
 
-export const Header = () => {
+type HeaderProps = {
+  isSidebarCollapsed: boolean;
+  onSidebarCollapseToggle: () => void;
+};
+
+export const Header = ({
+  isSidebarCollapsed,
+  onSidebarCollapseToggle,
+}: HeaderProps) => {
   const { user } = useUser();
   const location = useLocation();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [hoveredNavItem, setHoveredNavItem] = useState<{
+    label: string;
+    top: number;
+  } | null>(null);
 
   const navItems: NavItem[] = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -124,21 +138,40 @@ export const Header = () => {
       )}
 
       <aside
-        className={`fixed top-16 left-0 z-40 flex h-[calc(100dvh-4rem)] min-h-0 w-72 flex-col overflow-hidden border-r border-slate-200 bg-white px-4 shadow-xl shadow-slate-950/5 transition-transform duration-300 lg:translate-x-0 lg:shadow-none ${
+        className={`fixed top-16 left-0 z-40 flex h-[calc(100dvh-4rem)] min-h-0 w-72 flex-col overflow-hidden border-r border-slate-200 bg-white px-4 shadow-xl shadow-slate-950/5 transition-[width,transform,padding] duration-300 lg:translate-x-0 lg:shadow-none ${
           showSidebar ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        } ${isSidebarCollapsed ? 'lg:w-20 lg:px-2' : 'lg:w-72'}`}
       >
-        <div className='shrink-0 px-3 pt-5 pb-4'>
-          <p className='text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase'>
-            Workspace
-          </p>
-          <p className='mt-1 text-sm font-semibold text-slate-900'>
-            Quotation desk
-          </p>
+        <div
+          className={`flex shrink-0 items-center pt-5 pb-4 ${isSidebarCollapsed ? 'justify-center px-0' : 'justify-between px-3'}`}
+        >
+          <div className={isSidebarCollapsed ? 'hidden' : ''}>
+            <p className='text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase'>
+              Workspace
+            </p>
+            <p className='mt-1 text-sm font-semibold text-slate-900'>
+              Quotation desk
+            </p>
+          </div>
+          <button
+            type='button'
+            onClick={onSidebarCollapseToggle}
+            className='hidden h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 lg:flex'
+            aria-label={
+              isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'
+            }
+            title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {isSidebarCollapsed ? (
+              <PanelLeftOpen size={18} />
+            ) : (
+              <PanelLeftClose size={18} />
+            )}
+          </button>
         </div>
 
         <nav
-          className='min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1 pb-4 [scrollbar-color:rgb(203_213_225)_transparent] [scrollbar-width:thin]'
+          className={`min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pb-4 [scrollbar-color:rgb(203_213_225)_transparent] [scrollbar-width:thin] ${isSidebarCollapsed ? 'pr-0' : 'pr-1'}`}
           aria-label='Workspace navigation'
         >
           {navItems.map(({ to, label, icon: Icon, badge }) => {
@@ -149,7 +182,29 @@ export const Header = () => {
                 key={to}
                 to={to}
                 onClick={() => setShowSidebar(false)}
-                className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${
+                title={isSidebarCollapsed ? label : undefined}
+                aria-label={isSidebarCollapsed ? label : undefined}
+                onMouseEnter={(event) => {
+                  if (isSidebarCollapsed) {
+                    setHoveredNavItem({
+                      label,
+                      top: event.currentTarget.getBoundingClientRect().top + 8,
+                    });
+                  }
+                }}
+                onMouseLeave={() => setHoveredNavItem(null)}
+                onFocus={(event) => {
+                  if (isSidebarCollapsed) {
+                    setHoveredNavItem({
+                      label,
+                      top: event.currentTarget.getBoundingClientRect().top + 8,
+                    });
+                  }
+                }}
+                onBlur={() => setHoveredNavItem(null)}
+                className={`flex items-center gap-3 rounded-xl py-3 text-sm font-medium transition ${
+                  isSidebarCollapsed ? 'justify-center px-0' : 'px-3'
+                } ${
                   active
                     ? 'bg-emerald-50 text-emerald-800'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'
@@ -164,8 +219,10 @@ export const Header = () => {
                 >
                   <Icon size={17} aria-hidden='true' />
                 </span>
-                <span className='flex-1'>{label}</span>
-                {!!badge && badge > 0 && (
+                <span className={isSidebarCollapsed ? 'hidden' : 'flex-1'}>
+                  {label}
+                </span>
+                {!isSidebarCollapsed && !!badge && badge > 0 && (
                   <span className='rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700'>
                     {badge > 9 ? '9+' : badge}
                   </span>
@@ -179,7 +236,9 @@ export const Header = () => {
           <button
             type='button'
             onClick={() => setShowProfileMenu((open) => !open)}
-            className='flex w-full items-center gap-3 rounded-xl p-2 text-left transition hover:bg-slate-50'
+            className={`flex w-full items-center rounded-xl p-2 text-left transition hover:bg-slate-50 ${isSidebarCollapsed ? 'justify-center' : 'gap-3'}`}
+            title={isSidebarCollapsed ? user?.name : undefined}
+            aria-label='Open user menu'
             aria-expanded={showProfileMenu}
           >
             {user?.avatarUrl ? (
@@ -193,7 +252,9 @@ export const Header = () => {
                 {user?.name ? getInitials(user.name) : 'U'}
               </span>
             )}
-            <span className='min-w-0 flex-1'>
+            <span
+              className={`min-w-0 flex-1 ${isSidebarCollapsed ? 'hidden' : ''}`}
+            >
               <span className='block truncate text-sm font-semibold text-slate-900'>
                 {user?.name ?? 'User'}
               </span>
@@ -215,6 +276,15 @@ export const Header = () => {
           )}
         </div>
       </aside>
+      {isSidebarCollapsed && hoveredNavItem && (
+        <div
+          role='tooltip'
+          className='fixed left-20 z-[60] rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white shadow-lg'
+          style={{ top: hoveredNavItem.top }}
+        >
+          {hoveredNavItem.label}
+        </div>
+      )}
     </>
   );
 };
