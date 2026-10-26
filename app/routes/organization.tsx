@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 import {
-  Bot,
   Building2,
   ExternalLink,
   Inbox,
@@ -26,10 +25,6 @@ import {
   autoResponseDefinitions,
   validateAutoResponseTemplate,
 } from '~/utils/autoResponses';
-import {
-  isOrganizationAiModel,
-  organizationAiModels,
-} from '~/types/organization';
 
 const optionalField = (formData: FormData, name: string) => {
   const value = formData.get(name);
@@ -69,7 +64,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
     }
   }
   const name = optionalField(formData, 'name');
-  const preferredModel = formData.get('preferredModel');
   const vat = Number(formData.get('vat'));
   const priceMarkup = Number(formData.get('priceMarkup'));
   const currency = String(formData.get('currency') ?? '')
@@ -85,9 +79,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
       : 'INBOX';
   if (!name) {
     return data({ error: 'Organization name is required' }, { status: 400 });
-  }
-  if (!isOrganizationAiModel(preferredModel)) {
-    return data({ error: 'Select a supported AI model' }, { status: 400 });
   }
   if (!Number.isFinite(vat) || vat < 0 || vat > 100) {
     return data({ error: 'VAT must be between 0 and 100' }, { status: 400 });
@@ -110,7 +101,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
     website: optionalField(formData, 'website'),
     phone: optionalField(formData, 'phone'),
     address: optionalField(formData, 'address'),
-    preferredModel,
     vat,
     priceMarkup,
     currency,
@@ -198,11 +188,6 @@ export default function OrganizationPage({ loaderData }: Route.ComponentProps) {
   }
 
   const isOwner = organization.role === 'owner';
-  const preferredModelLabel =
-    organizationAiModels.find(
-      (model) => model.value === organization.preferredModel,
-    )?.label ?? organization.preferredModel;
-
   return (
     <div className='mx-auto max-w-5xl space-y-6'>
       <div className='flex flex-col justify-between gap-4 sm:flex-row sm:items-center'>
@@ -262,14 +247,6 @@ export default function OrganizationPage({ loaderData }: Route.ComponentProps) {
               </dt>
               <dd className='mt-2 text-sm text-slate-700'>
                 {organization.address || 'Not provided'}
-              </dd>
-            </div>
-            <div>
-              <dt className='flex items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase'>
-                <Bot size={14} /> Preferred AI model
-              </dt>
-              <dd className='mt-2 text-sm text-slate-700'>
-                {preferredModelLabel}
               </dd>
             </div>
             <div>

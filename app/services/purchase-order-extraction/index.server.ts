@@ -1,12 +1,11 @@
 import type { OrganizationAiProvider } from '~/types/organization';
-import { createGeminiPurchaseOrderExtractor } from './gemini.server';
-import { createGroqPurchaseOrderExtractor } from './groq.server';
-import { createOllamaPurchaseOrderExtractor } from './ollama.server';
+import { createOpenAICompatiblePurchaseOrderExtractor } from './openaiCompatible.server';
 import type { PurchaseOrderExtractor } from './types';
 import type { LlmUsageContext } from '~/utils/llmUsage.server';
 
 type SharedPurchaseOrderExtractorConfig = {
   apiKey: string;
+  apiUrl: string;
   model: string;
 };
 
@@ -19,12 +18,5 @@ export type PurchaseOrderExtractorConfig =
 export const createPurchaseOrderExtractor = (
   config: PurchaseOrderExtractorConfig,
 ): PurchaseOrderExtractor => {
-  switch (config.provider) {
-    case 'groq':
-      return createGroqPurchaseOrderExtractor(config);
-    case 'google':
-      return createGeminiPurchaseOrderExtractor(config);
-    case 'ollama':
-      return createOllamaPurchaseOrderExtractor(config);
-  }
+  return createOpenAICompatiblePurchaseOrderExtractor(config);
 };

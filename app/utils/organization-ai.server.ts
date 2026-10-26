@@ -1,21 +1,35 @@
-import type { OrganizationAiProvider } from '~/types/organization';
-
-type ProviderApiKeyEnv = {
-  GEMINI_API_KEY?: string;
-  GROQ_API_KEY?: string;
-  OLLAMA_API_KEY?: string;
+export type OpenAICompatibleAiConfig = {
+  provider: 'openai-compatible';
+  apiUrl: string;
+  apiKey: string;
+  model: string;
 };
 
-export const getProviderApiKey = (
-  provider: OrganizationAiProvider,
-  env: ProviderApiKeyEnv,
-) => {
-  switch (provider) {
-    case 'google':
-      return { name: 'GEMINI_API_KEY', value: env.GEMINI_API_KEY };
-    case 'ollama':
-      return { name: 'OLLAMA_API_KEY', value: env.OLLAMA_API_KEY };
-    case 'groq':
-      return { name: 'GROQ_API_KEY', value: env.GROQ_API_KEY };
+type OpenAICompatibleAiEnv = {
+  AI_API_URL?: string;
+  AI_API_KEY?: string;
+  AI_MODEL?: string;
+};
+
+export const getOpenAICompatibleAiConfig = (
+  env: OpenAICompatibleAiEnv,
+): OpenAICompatibleAiConfig => {
+  const { AI_API_URL: apiUrl, AI_API_KEY: apiKey, AI_MODEL: model } = env;
+  if (!apiUrl || !apiKey || !model) {
+    const missing = [
+      !apiUrl && 'AI_API_URL',
+      !apiKey && 'AI_API_KEY',
+      !model && 'AI_MODEL',
+    ].filter(Boolean);
+    throw new Error(`Missing required AI setting: ${missing.join(', ')}`);
   }
+
+  return {
+    provider: 'openai-compatible',
+    apiUrl: apiUrl.endsWith('/chat/completions')
+      ? apiUrl
+      : `${apiUrl.replace(/\/+$/, '')}/chat/completions`,
+    apiKey,
+    model,
+  };
 };

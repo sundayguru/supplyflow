@@ -41,9 +41,8 @@ import { formatRfqMoney } from '~/utils/rfq';
 import { getOrganizationForUser } from '~/db/organizations';
 import { listRfqPdfTemplates } from '~/db/rfqPdfTemplates';
 import { cloudflareContext } from '~/contexts.server/cloudflareContext.server';
-import { organizationAiModels } from '~/types/organization';
 import { createRfqExtractor } from '~/services/rfq-extraction/index.server';
-import { getProviderApiKey } from '~/utils/organization-ai.server';
+import { getOpenAICompatibleAiConfig } from '~/utils/organization-ai.server';
 import { extractRfqPdfText } from '~/utils/rfqPdfExtraction.server';
 import { uploadRfqSourcePdf } from '~/utils/rfqSourcePdf.server';
 import type { EmailMessage } from '~/services/email/types';
@@ -61,13 +60,6 @@ const pendingStatuses: RfqStatus[] = [
   'quoted',
   'sent',
 ];
-
-const requireSetting = (name: string, value: string | undefined) => {
-  if (!value) {
-    throw new Error(`Missing required AI setting: ${name}`);
-  }
-  return value;
-};
 
 const formatCombinedValue = (records: RfqRecord[]) => {
   const totals = records.reduce<Record<string, number>>((byCurrency, rfq) => {
@@ -156,23 +148,10 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       );
     }
 
-    const model = organizationAiModels.find(
-      (candidate) => candidate.value === organization.preferredModel,
-    );
-    if (!model) {
-      return data(
-        { error: 'Organization AI model is not supported' },
-        { status: 400 },
-      );
-    }
-
     const bytes = await pdf.arrayBuffer();
     const text = await extractRfqPdfText(pdf, bytes);
-    const providerApiKey = getProviderApiKey(model.provider, env as Env);
     const extractor = createRfqExtractor({
-      provider: model.provider,
-      apiKey: requireSetting(providerApiKey.name, providerApiKey.value),
-      model: model.value,
+      ...getOpenAICompatibleAiConfig(env as Env),
       defaultPriceMarkup: organization.priceMarkup,
       defaultCurrency: organization.currency,
       usage: {

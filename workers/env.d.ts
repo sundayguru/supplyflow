@@ -5,6 +5,8 @@ interface Env {
   YAHOO_CLIENT_SECRET: string;
   AOL_CLIENT_ID: string;
   AOL_CLIENT_SECRET: string;
-  GROQ_API_KEY: string;
+  AI_API_URL?: string;
+  AI_API_KEY?: string;
+  AI_MODEL?: string;
   TOKEN_ENCRYPTION_KEY: string;
 }

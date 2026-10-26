@@ -1,4 +1,4 @@
-import { GroqService } from '~/utils/groq.server';
+import { OpenAICompatibleService } from '~/utils/openaiCompatible.server';
 import type { PurchaseOrderExtractor } from './types';
 import {
   buildPurchaseOrderExtractionPrompt,
@@ -6,18 +6,20 @@ import {
   PURCHASE_ORDER_EXTRACTION_SYSTEM_PROMPT,
 } from './shared.server';
 
-type GroqPurchaseOrderExtractorConfig = {
+type OpenAICompatiblePurchaseOrderExtractorConfig = {
   apiKey: string;
+  apiUrl: string;
   model: string;
   usage?: import('~/utils/llmUsage.server').LlmUsageContext;
 };
 
-export const createGroqPurchaseOrderExtractor = (
-  config: GroqPurchaseOrderExtractorConfig,
+export const createOpenAICompatiblePurchaseOrderExtractor = (
+  config: OpenAICompatiblePurchaseOrderExtractorConfig,
 ): PurchaseOrderExtractor => ({
   async extract(message) {
-    const response = await GroqService.generate({
+    const response = await OpenAICompatibleService.generate({
       apiKey: config.apiKey,
+      apiUrl: config.apiUrl,
       model: config.model,
       systemPrompt: PURCHASE_ORDER_EXTRACTION_SYSTEM_PROMPT,
       userPrompt: buildPurchaseOrderExtractionPrompt(message),

@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import type {
   LlmGenerationRequest,
   LlmGenerationResponse,
-} from './groq.server';
+} from './openaiCompatible.server';
 import { saveLlmUsage } from './llmUsage.server';
 
 export const GeminiService = {

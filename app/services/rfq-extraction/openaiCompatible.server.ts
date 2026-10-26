@@ -1,4 +1,4 @@
-import { GroqService } from '~/utils/groq.server';
+import { OpenAICompatibleService } from '~/utils/openaiCompatible.server';
 import type { RfqExtractor } from './types';
 import {
   buildRfqExtractionPrompt,
@@ -6,20 +6,22 @@ import {
   RFQ_EXTRACTION_SYSTEM_PROMPT,
 } from './shared.server';
 
-type GroqRfqExtractorConfig = {
+type OpenAICompatibleRfqExtractorConfig = {
   apiKey: string;
+  apiUrl: string;
   model: string;
   defaultPriceMarkup: number;
   defaultCurrency: string;
   usage?: import('~/utils/llmUsage.server').LlmUsageContext;
 };
 
-export const createGroqRfqExtractor = (
-  config: GroqRfqExtractorConfig,
+export const createOpenAICompatibleRfqExtractor = (
+  config: OpenAICompatibleRfqExtractorConfig,
 ): RfqExtractor => ({
   async extract(message) {
-    const response = await GroqService.generate({
+    const response = await OpenAICompatibleService.generate({
       apiKey: config.apiKey,
+      apiUrl: config.apiUrl,
       model: config.model,
       systemPrompt: RFQ_EXTRACTION_SYSTEM_PROMPT,
       userPrompt: buildRfqExtractionPrompt(message),

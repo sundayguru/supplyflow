@@ -14,17 +14,7 @@ export type LlmGenerationResponse = {
   providerResponse?: unknown;
 };
 
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-
-const getGroqApiKey = (providedApiKey?: string) => {
-  const apiKey = providedApiKey ?? process.env.GROQ_API_KEY;
-  if (!apiKey) {
-    throw new Error('Missing GROQ_API_KEY');
-  }
-  return apiKey;
-};
-
-type GroqChatCompletionResponse = {
+type OpenAICompatibleChatCompletionResponse = {
   choices?: Array<{
     message?: {
       content?: string;
@@ -33,7 +23,7 @@ type GroqChatCompletionResponse = {
   usage?: { prompt_tokens?: number; completion_tokens?: number };
 };
 
-export const GroqService = {
+export const OpenAICompatibleService = {
   async generate({
     model,
     systemPrompt,
@@ -41,17 +31,17 @@ export const GroqService = {
     temperature,
     maxTokens,
     apiKey,
+    apiUrl,
     usage,
   }: LlmGenerationRequest & {
-    apiKey?: string;
+    apiKey: string;
+    apiUrl: string;
   }): Promise<LlmGenerationResponse> {
-    const resolvedApiKey = getGroqApiKey(apiKey);
-
-    const response = await fetch(GROQ_API_URL, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${resolvedApiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model,
@@ -69,12 +59,15 @@ export const GroqService = {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Groq request failed (${response.status}): ${errorText}`);
+      throw new Error(
+        `OpenAI-compatible AI request failed (${response.status}): ${errorText}`,
+      );
     }
 
-    const payload = (await response.json()) as GroqChatCompletionResponse;
+    const payload =
+      (await response.json()) as OpenAICompatibleChatCompletionResponse;
     await saveLlmUsage(usage, {
-      provider: 'groq',
+      provider: 'openai-compatible',
       model,
       inputTokens: payload.usage?.prompt_tokens,
       outputTokens: payload.usage?.completion_tokens,
@@ -82,7 +75,9 @@ export const GroqService = {
     const text = payload.choices?.[0]?.message?.content?.trim();
 
     if (!text) {
-      throw new Error('Groq returned an empty response');
+      throw new Error(
+        'OpenAI-compatible AI endpoint returned an empty response',
+      );
     }
 
     return {

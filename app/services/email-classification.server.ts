@@ -16,8 +16,7 @@ import type {
 } from '~/services/vendor-purchase-order-acknowledgement-extraction/types';
 import type { SelectConnectedEmailAccount } from '~/db/schemas';
 import type { EmailAttachment, EmailMessage } from '~/services/email/types';
-import { organizationAiModels } from '~/types/organization';
-import { getProviderApiKey } from '~/utils/organization-ai.server';
+import { getOpenAICompatibleAiConfig } from '~/utils/organization-ai.server';
 import { extractRfqPdfText } from '~/utils/rfqPdfExtraction.server';
 
 const STALE_PROCESSING_MS = 10 * 60 * 1000;
@@ -107,16 +106,8 @@ export type MailboxClassification = {
 
 type ClassificationOrganization = {
   id: string;
-  preferredModel: string;
   priceMarkup: number;
   currency: string;
-};
-
-const requireSetting = (name: string, value: string | undefined) => {
-  if (!value) {
-    throw new Error(`Missing required email classification setting: ${name}`);
-  }
-  return value;
 };
 
 const normalizeEmail = (value: string | null | undefined) =>
@@ -330,17 +321,9 @@ export const classifyMailboxMessages = async ({
   env: Env;
   awaitingVendorAcknowledgements: AwaitingVendorPurchaseOrderAcknowledgement[];
 }): Promise<MailboxClassification> => {
-  const model = organizationAiModels.find(
-    (candidate) => candidate.value === organization.preferredModel,
-  );
-  if (!model) {
-    throw new Error('Organization AI model is not supported');
-  }
-  const providerApiKey = getProviderApiKey(model.provider, env);
+  const aiConfig = getOpenAICompatibleAiConfig(env);
   const extractorConfig = {
-    provider: model.provider,
-    apiKey: requireSetting(providerApiKey.name, providerApiKey.value),
-    model: model.value,
+    ...aiConfig,
     usage: {
       organizationId: organization.id,
       userId: account.userId,

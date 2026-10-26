@@ -68,10 +68,13 @@ This template comes with [Tailwind CSS](https://tailwindcss.com/) already config
 
 ## Gmail RFQ ingestion
 
-The Worker checks Gmail every minute, classifies new messages with the
-organization's preferred Groq, Gemini, or Ollama Cloud model, and
-creates RFQs for customer quotation requests and purchase orders for
-customer orders. A separate scheduled process watches sent vendor PO
+The Worker checks Gmail every minute and classifies new messages using an
+OpenAI-compatible chat completions endpoint configured with `AI_API_URL`,
+`AI_API_KEY`, and `AI_MODEL`. The same endpoint is used for RFQ PDF extraction
+and RFQ reply drafting. Set `AI_API_URL` to the compatible API base URL (such as
+`https://api.example.com/v1`) or the full `/chat/completions` endpoint.
+The Worker creates RFQs for customer quotation requests and purchase orders
+for customer orders. A separate scheduled process watches sent vendor PO
 email threads for vendor replies and creates vendor PO acknowledgement
 records. Customer PO acknowledgements (outbound thank-you replies) are
 not treated as vendor PO acknowledgements.
@@ -85,9 +88,7 @@ npx wrangler secret put YAHOO_CLIENT_ID --env production
 npx wrangler secret put YAHOO_CLIENT_SECRET --env production
 npx wrangler secret put AOL_CLIENT_ID --env production
 npx wrangler secret put AOL_CLIENT_SECRET --env production
-npx wrangler secret put GROQ_API_KEY --env production
-npx wrangler secret put GEMINI_API_KEY --env production
-npx wrangler secret put OLLAMA_API_KEY --env production
+npx wrangler secret put AI_API_KEY --env production
 npx wrangler secret put TOKEN_ENCRYPTION_KEY --env production
 ```
 
@@ -96,7 +97,8 @@ Gmail from the Connected accounts page; refresh tokens are requested with the
 `https://www.googleapis.com/auth/gmail.readonly` scope and encrypted before
 being stored. Extracted RFQs belong to the connected inbox's organization. For
 local development, place the same secret names in the ignored `.dev.vars` file.
-Organization owners choose the preferred model on the organization page.
+Set `AI_API_URL` and `AI_MODEL` in the environment configuration for each
+deployment environment.
 
 Generate an encryption key with `openssl rand -base64 32`. In the Google OAuth
 client, register `https://suploop.com/api/email-accounts/google/callback`

@@ -7,8 +7,7 @@ import { getRfqPdfTemplate } from '~/db/rfqPdfTemplates';
 import { getRfq, updateRfqGeneratedReply } from '~/db/rfqs';
 import { createEmailClient } from '~/services/email/index.server';
 import { generateRfqReplyDraft } from '~/services/rfq-reply-draft.server';
-import { organizationAiModels } from '~/types/organization';
-import { getProviderApiKey } from '~/utils/organization-ai.server';
+import { getOpenAICompatibleAiConfig } from '~/utils/organization-ai.server';
 import { generateRfqPdf } from '~/utils/rfqPdf.server';
 import { getRfqPdfFilename } from '~/utils/rfqPdfFilename';
 import { getUserFromRequest } from '~/utils/session.server';
@@ -90,9 +89,9 @@ export const action = async ({
       !('GOOGLE_CLIENT_ID' in env) ||
       !('GOOGLE_CLIENT_SECRET' in env) ||
       !('TOKEN_ENCRYPTION_KEY' in env) ||
-      !('GEMINI_API_KEY' in env) ||
-      !('GROQ_API_KEY' in env) ||
-      !('OLLAMA_API_KEY' in env)
+      !('AI_API_URL' in env) ||
+      !('AI_API_KEY' in env) ||
+      !('AI_MODEL' in env)
     ) {
       return data(
         { error: 'Connected email or AI settings are not configured.' },
@@ -137,22 +136,10 @@ export const action = async ({
       intent === 'updatePdf' && rfq.generatedReply
         ? rfq.generatedReply
         : await (async () => {
-            const model = organizationAiModels.find(
-              (candidate) => candidate.value === organization.preferredModel,
-            );
-            if (!model) {
-              throw new Error('Organization AI model is not supported.');
-            }
             const originalMessage = await getOriginalMessage(source.externalId);
-            const providerApiKey = getProviderApiKey(model.provider, env);
             return await generateRfqReplyDraft({
               config: {
-                provider: model.provider,
-                apiKey: requireSetting(
-                  providerApiKey.name,
-                  providerApiKey.value,
-                ),
-                model: model.value,
+                ...getOpenAICompatibleAiConfig(env),
                 usage: {
                   organizationId: organization.id,
                   userId: user.id,

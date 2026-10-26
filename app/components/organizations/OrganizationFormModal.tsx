@@ -7,10 +7,6 @@ import { Modal } from '~/components/Modal';
 import type { AutoResponseTemplates } from '~/types/autoResponse';
 import { AutoResponseTemplateFields } from './AutoResponseTemplateFields';
 import { currencyOptionLabel, supportedCurrencies } from '~/utils/currencies';
-import {
-  organizationAiModels,
-  type OrganizationAiModel,
-} from '~/types/organization';
 
 type OrganizationFormValues = AutoResponseTemplates & {
   name: string;
@@ -18,7 +14,6 @@ type OrganizationFormValues = AutoResponseTemplates & {
   website: string | null;
   phone: string | null;
   address: string | null;
-  preferredModel: OrganizationAiModel;
   vat: number;
   priceMarkup: number;
   currency: string;
@@ -128,7 +123,7 @@ export const OrganizationFormModal = ({
               required
             />
           </div>
-          <div className='grid gap-4 sm:grid-cols-2'>
+          <div>
             <div className='min-w-0'>
               <label
                 htmlFor='organization-currency'
@@ -152,28 +147,6 @@ export const OrganizationFormModal = ({
               <p className='mt-2 text-xs text-black/45'>
                 Used for new RFQs. You can change the currency on each RFQ.
               </p>
-            </div>
-            <div className='min-w-0'>
-              <label
-                htmlFor='organization-preferred-model'
-                className='mb-2 block text-xs font-bold tracking-widest text-black/50 uppercase'
-              >
-                Preferred AI model
-              </label>
-              <select
-                id='organization-preferred-model'
-                name='preferredModel'
-                defaultValue={
-                  organization?.preferredModel ?? 'llama-3.3-70b-versatile'
-                }
-                className='w-full min-w-0 rounded-xl border border-black/10 bg-white px-4 py-3 text-sm font-medium text-[#1a1a1a] outline-none focus:border-[#5A5A40]'
-              >
-                {organizationAiModels.map((model) => (
-                  <option key={model.value} value={model.value}>
-                    {model.label}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
           <Input

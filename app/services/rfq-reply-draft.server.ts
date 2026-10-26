@@ -1,14 +1,16 @@
 import type { OrganizationAiProvider } from '~/types/organization';
 import type { RfqRecord } from '~/types/rfq';
-import { GeminiService } from '~/utils/gemini.server';
-import { GroqService, type LlmGenerationResponse } from '~/utils/groq.server';
+import {
+  OpenAICompatibleService,
+  type LlmGenerationResponse,
+} from '~/utils/openaiCompatible.server';
 import { parseLlmJson } from '~/utils/llmJson';
-import { OllamaService } from '~/utils/ollama.server';
 import type { LlmUsageContext } from '~/utils/llmUsage.server';
 
 type RfqReplyDraftConfig = {
   provider: OrganizationAiProvider;
   apiKey: string;
+  apiUrl: string;
   model: string;
   usage?: LlmUsageContext;
 };
@@ -87,6 +89,7 @@ const generate = async (
 ): Promise<LlmGenerationResponse> => {
   const request = {
     apiKey: config.apiKey,
+    apiUrl: config.apiUrl,
     model: config.model,
     systemPrompt: RFQ_REPLY_SYSTEM_PROMPT,
     userPrompt,
@@ -94,14 +97,7 @@ const generate = async (
     maxTokens: 1200,
     usage: config.usage,
   };
-  switch (config.provider) {
-    case 'google':
-      return await GeminiService.generate(request);
-    case 'ollama':
-      return await OllamaService.generate(request);
-    case 'groq':
-      return await GroqService.generate(request);
-  }
+  return await OpenAICompatibleService.generate(request);
 };
 
 export const generateRfqReplyDraft = async ({

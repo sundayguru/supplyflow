@@ -56,8 +56,7 @@ export const organizationAiModels = [
 export type OrganizationAiModel =
   (typeof organizationAiModels)[number]['value'];
 
-export type OrganizationAiProvider =
-  (typeof organizationAiModels)[number]['provider'];
+export type OrganizationAiProvider = 'openai-compatible';
 
 export const isOrganizationAiModel = (
   value: unknown,

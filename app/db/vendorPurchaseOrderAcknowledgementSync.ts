@@ -2,7 +2,6 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { getDb } from './connection';
 import {
   connectedEmailAccounts,
-  organizations,
   vendorPurchaseOrderAcknowledgements,
   vendorPurchaseOrders,
 } from './schemas';
@@ -19,17 +18,12 @@ export const listSentVendorPurchaseOrdersAwaitingAcknowledgement = (
       reference: vendorPurchaseOrders.reference,
       vendorEmail: vendorPurchaseOrders.vendorEmail,
       threadId: vendorPurchaseOrders.generatedEmailDraftThreadId,
-      preferredModel: organizations.preferredModel,
       accountId: connectedEmailAccounts.id,
       accountProvider: connectedEmailAccounts.provider,
       accountEmail: connectedEmailAccounts.email,
       encryptedRefreshToken: connectedEmailAccounts.encryptedRefreshToken,
     })
     .from(vendorPurchaseOrders)
-    .innerJoin(
-      organizations,
-      eq(vendorPurchaseOrders.organizationId, organizations.id),
-    )
     .innerJoin(
       connectedEmailAccounts,
       eq(
