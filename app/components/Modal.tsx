@@ -17,6 +17,7 @@ type ModalProps = {
   className?: string;
   showCloseButton?: boolean;
   scrollable?: boolean;
+  closeOnBackdrop?: boolean;
 };
 
 const sizeMaxWidth: Record<ModalSize, string> = {
@@ -38,6 +39,7 @@ export const Modal = ({
   className = '',
   showCloseButton = true,
   scrollable = false,
+  closeOnBackdrop = true,
 }: ModalProps) => {
   return (
     <AnimatePresence>
@@ -47,7 +49,7 @@ export const Modal = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={closeOnBackdrop ? onClose : undefined}
             className='absolute inset-0 bg-black/70 backdrop-blur-sm'
           />
           <motion.div

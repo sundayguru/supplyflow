@@ -52,6 +52,7 @@ export const OrganizationFormModal = ({
       isLoading={isSubmitting}
       size='lg'
       scrollable
+      closeOnBackdrop={false}
     >
       <fetcher.Form method='post' className='flex min-h-0 flex-col'>
         <input
