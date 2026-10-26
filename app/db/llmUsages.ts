@@ -40,3 +40,23 @@ export const getLlmUsageSummary = async (
     .orderBy(sql`substr(${llmUsages.createdAt}, 1, 10)`);
   return { totals, daily };
 };
+
+export const getCurrentMonthLlmUsage = async (organizationId: string) => {
+  const startOfMonth = `${new Date().toISOString().slice(0, 7)}-01 00:00:00`;
+  const [totals] = await getDb()
+    .select({
+      inputTokens: sql<number>`coalesce(sum(${llmUsages.inputTokens}), 0)`,
+      outputTokens: sql<number>`coalesce(sum(${llmUsages.outputTokens}), 0)`,
+    })
+    .from(llmUsages)
+    .where(
+      and(
+        eq(llmUsages.organizationId, organizationId),
+        gte(llmUsages.createdAt, startOfMonth),
+      ),
+    );
+  return {
+    inputTokens: Number(totals?.inputTokens ?? 0),
+    outputTokens: Number(totals?.outputTokens ?? 0),
+  };
+};

@@ -3,7 +3,7 @@ import type {
   LlmGenerationRequest,
   LlmGenerationResponse,
 } from './openaiCompatible.server';
-import { saveLlmUsage } from './llmUsage.server';
+import { checkLlmUsageAllowance, saveLlmUsage } from './llmUsage.server';
 
 export const GeminiService = {
   async generate({
@@ -20,13 +20,18 @@ export const GeminiService = {
     if (!apiKey) {
       throw new Error('Missing GEMINI_API_KEY');
     }
+    const allowedMaxTokens = await checkLlmUsageAllowance(usage, {
+      systemPrompt,
+      userPrompt,
+      requestedOutputTokens: maxTokens,
+    });
     const client = new GoogleGenerativeAI(apiKey);
     const generativeModel = client.getGenerativeModel({
       model,
       systemInstruction: systemPrompt,
       generationConfig: {
         temperature: temperature ?? 0.4,
-        maxOutputTokens: maxTokens,
+        maxOutputTokens: allowedMaxTokens,
         responseMimeType: 'application/json',
       },
     });

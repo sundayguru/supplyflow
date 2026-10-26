@@ -14,6 +14,7 @@ export * from './activityLogs';
 export * from './emailIngestion';
 export * from './connectedEmailAccounts';
 export * from './organizations';
+export * from './plans';
 export * from './rfqPdfTemplates';
 export * from './manufacturers';
 export * from './productPrices';

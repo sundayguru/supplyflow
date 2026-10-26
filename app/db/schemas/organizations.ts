@@ -8,6 +8,7 @@ import {
 } from 'drizzle-orm/sqlite-core';
 import { users } from './users';
 import { organizationAiModels } from '../../types/organization';
+import { plans } from './plans';
 
 const organizationAiModelValues = organizationAiModels.map(
   (model) => model.value,
@@ -21,6 +22,10 @@ export const organizations = sqliteTable(
   {
     id: text('id', { length: 36 }).primaryKey(),
     name: text('name', { length: 255 }).notNull(),
+    planId: text('plan_id')
+      .notNull()
+      .default('free')
+      .references(() => plans.id, { onDelete: 'restrict' }),
     description: text('description'),
     website: text('website', { length: 511 }),
     phone: text('phone', { length: 64 }),

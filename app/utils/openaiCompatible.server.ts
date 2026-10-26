@@ -1,4 +1,4 @@
-import { saveLlmUsage } from './llmUsage.server';
+import { checkLlmUsageAllowance, saveLlmUsage } from './llmUsage.server';
 
 export type LlmGenerationRequest = {
   model: string;
@@ -37,6 +37,11 @@ export const OpenAICompatibleService = {
     apiKey: string;
     apiUrl: string;
   }): Promise<LlmGenerationResponse> {
+    const allowedMaxTokens = await checkLlmUsageAllowance(usage, {
+      systemPrompt,
+      userPrompt,
+      requestedOutputTokens: maxTokens,
+    });
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
@@ -46,7 +51,7 @@ export const OpenAICompatibleService = {
       body: JSON.stringify({
         model,
         temperature: temperature ?? 0.4,
-        max_tokens: maxTokens,
+        max_tokens: allowedMaxTokens,
         response_format: {
           type: 'json_object',
         },

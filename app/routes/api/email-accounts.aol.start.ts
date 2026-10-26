@@ -17,6 +17,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   if (!user) {
     return redirect('/auth/login');
   }
+  if (!user.planFeatures.emailAutomation) {return redirect('/billing');}
   const organization = await getOrganizationForUser(user.id);
   if (!organization || organization.createdBy !== user.id) {
     throw new Response('Only the organization owner can connect accounts', {

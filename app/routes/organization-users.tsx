@@ -27,6 +27,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
+  if (!user.planFeatures.teamManagement) {return redirect('/billing');}
   const [members, invitations] = await Promise.all([
     getOrganizationUsers(organization.id),
     getOrganizationInvitations(organization.id),
@@ -53,6 +54,12 @@ export const action = async ({ request }: Route.ActionArgs) => {
   if (!organization || organization.createdBy !== currentUser.id) {
     return data(
       { error: 'Only the organization owner can manage users' },
+      { status: 403 },
+    );
+  }
+  if (!currentUser.planFeatures.teamManagement) {
+    return data(
+      { error: 'Your plan does not include team management' },
       { status: 403 },
     );
   }

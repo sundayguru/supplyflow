@@ -1,11 +1,19 @@
 import { Link, Form } from 'react-router';
 import { motion } from 'motion/react';
-import { BarChart3, Building2, LogOut, Settings } from 'lucide-react';
+import {
+  BarChart3,
+  Building2,
+  CreditCard,
+  LogOut,
+  Settings,
+  ShieldCheck,
+} from 'lucide-react';
 
 type ProfileMenuProps = {
   userName: string;
   userEmail: string;
   avatarUrl: string | null;
+  isAdmin: boolean;
   onClose: () => void;
   placement?: 'above' | 'below';
 };
@@ -14,6 +22,7 @@ export const ProfileMenu = ({
   userName,
   userEmail,
   avatarUrl,
+  isAdmin,
   onClose,
   placement = 'below',
 }: ProfileMenuProps) => {
@@ -59,6 +68,24 @@ export const ProfileMenu = ({
 
         {/* Menu Items */}
         <div className='py-1'>
+          <Link
+            to='/billing'
+            onClick={onClose}
+            className='flex items-center gap-3 px-4 py-2.5 text-sm text-black/70 transition-colors hover:bg-black/5'
+          >
+            <CreditCard size={16} />
+            Billing & plans
+          </Link>
+          {isAdmin && (
+            <Link
+              to='/admin/plans'
+              onClick={onClose}
+              className='flex items-center gap-3 px-4 py-2.5 text-sm text-black/70 transition-colors hover:bg-black/5'
+            >
+              <ShieldCheck size={16} />
+              Plan management
+            </Link>
+          )}
           <Link
             to='/organization'
             onClick={onClose}

@@ -10,3 +10,4 @@ export * from './organization';
 export * from './rfqPdfTemplate';
 export * from './manufacturer';
 export * from './productPrice';
+export * from './plan';

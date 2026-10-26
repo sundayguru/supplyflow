@@ -33,6 +33,7 @@
     "BASE_URL": "https://suploop.com",
     "AI_API_URL": "https://fal.run/openrouter/router/openai/v1",
     "AI_MODEL": "openai/gpt-6-luna",
+    "ADMIN_EMAILS": "sundayguru@gmail.com",
   },
   "routes": [
     {
@@ -70,6 +71,7 @@
         "BASE_URL": "https://suploop.com",
         "AI_API_URL": "https://fal.run/openrouter/router/openai/v1",
         "AI_MODEL": "openai/gpt-6-luna",
+        "ADMIN_EMAILS": "sundayguru@gmail.com",
       },
     },
     "dev": {
@@ -98,6 +100,7 @@
         "BASE_URL": "http://localhost:5173",
         "AI_API_URL": "https://fal.run/openrouter/router/openai/v1",
         "AI_MODEL": "openai/gpt-6-luna",
+        "ADMIN_EMAILS": "sundayguru@gmail.com",
       },
     },
   },

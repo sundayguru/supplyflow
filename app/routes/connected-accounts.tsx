@@ -39,6 +39,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
+  if (!user.planFeatures.emailAutomation) {return redirect('/billing');}
   return {
     accounts: await listConnectedEmailAccounts(organization.id),
     isOwner: organization.createdBy === user.id,
@@ -58,6 +59,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
       { status: 403 },
     );
   }
+  if (!user.planFeatures.emailAutomation)
+    {return data(
+      { error: 'Your plan does not include email automation' },
+      { status: 403 },
+    );}
   const form = await request.formData();
   const id = form.get('id');
   const intent = form.get('intent');

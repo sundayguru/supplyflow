@@ -1,8 +1,9 @@
 import { BarChart3, CalendarDays, Coins, Gauge, Hash } from 'lucide-react';
 import { data, Form, redirect } from 'react-router';
 import type { Route } from './+types/llm-usage';
-import { getLlmUsageSummary } from '~/db/llmUsages';
+import { getCurrentMonthLlmUsage, getLlmUsageSummary } from '~/db/llmUsages';
 import { getOrganizationForUser } from '~/db/organizations';
+import { getPlan } from '~/db/plans';
 import { getUserFromRequest } from '~/utils/session.server';
 
 type Period = 'daily' | 'weekly' | 'monthly';
@@ -49,7 +50,11 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     requestedPeriod === 'weekly' || requestedPeriod === 'monthly'
       ? requestedPeriod
       : 'daily';
-  const summary = await getLlmUsageSummary(organization.id, dateFrom, dateTo);
+  const [summary, currentMonthUsage, plan] = await Promise.all([
+    getLlmUsageSummary(organization.id, dateFrom, dateTo),
+    getCurrentMonthLlmUsage(organization.id),
+    getPlan(organization.planId),
+  ]);
   const buckets = new Map<
     string,
     { inputTokens: number; outputTokens: number }
@@ -76,13 +81,19 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       outputTokens: Number(summary.totals?.outputTokens ?? 0),
       requests: Number(summary.totals?.requests ?? 0),
     },
+    allowance: {
+      inputLimit: plan?.inputTokenLimit ?? 0,
+      outputLimit: plan?.outputTokenLimit ?? 0,
+      inputUsed: currentMonthUsage.inputTokens,
+      outputUsed: currentMonthUsage.outputTokens,
+    },
   });
 };
 
 const formatNumber = (value: number) => new Intl.NumberFormat().format(value);
 
 export default function LlmUsagePage({ loaderData }: Route.ComponentProps) {
-  const { totals, chart, dateFrom, dateTo, period } = loaderData;
+  const { totals, chart, dateFrom, dateTo, period, allowance } = loaderData;
   const max = Math.max(
     ...chart.map((item) => item.inputTokens + item.outputTokens),
     1,
@@ -134,6 +145,30 @@ export default function LlmUsagePage({ loaderData }: Route.ComponentProps) {
             <p className='mt-3 text-2xl font-bold tracking-tight'>{value}</p>
           </div>
         ))}
+      </section>
+      <section className='mt-4 grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:grid-cols-2'>
+        <div>
+          <p className='text-sm font-medium text-slate-600'>
+            Monthly input allowance
+          </p>
+          <p className='mt-1 text-lg font-semibold'>
+            {formatNumber(allowance.inputUsed)} /{' '}
+            {allowance.inputLimit > 0
+              ? formatNumber(allowance.inputLimit)
+              : 'Unlimited'}
+          </p>
+        </div>
+        <div>
+          <p className='text-sm font-medium text-slate-600'>
+            Monthly output allowance
+          </p>
+          <p className='mt-1 text-lg font-semibold'>
+            {formatNumber(allowance.outputUsed)} /{' '}
+            {allowance.outputLimit > 0
+              ? formatNumber(allowance.outputLimit)
+              : 'Unlimited'}
+          </p>
+        </div>
       </section>
       <section className='mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm'>
         <Form

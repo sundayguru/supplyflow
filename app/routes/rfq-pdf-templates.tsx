@@ -53,6 +53,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
+  if (!user.planFeatures.customPdfTemplates) {return redirect('/billing');}
   return {
     organization,
     templates: await listRfqPdfTemplates(organization.id),
@@ -68,6 +69,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
   if (!organization) {
     return data({ error: 'Organization required' }, { status: 403 });
   }
+  if (!user.planFeatures.customPdfTemplates)
+    {return data(
+      { error: 'Your plan does not include custom PDF templates' },
+      { status: 403 },
+    );}
   const formData = await request.formData();
   const intent = String(formData.get('intent') ?? '');
   const id = String(formData.get('id') ?? '');

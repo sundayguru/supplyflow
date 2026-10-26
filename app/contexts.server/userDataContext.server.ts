@@ -14,4 +14,6 @@ export const userDataContext = createContext<User>({
   isBanned: false,
   isAdmin: false,
   isOrganizationOwner: false,
+  organizationPlanId: 'free',
+  planFeatures: {},
 });

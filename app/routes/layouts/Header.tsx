@@ -45,7 +45,9 @@ export const Header = () => {
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/rfqs', label: 'RFQ management', icon: ClipboardList },
     { to: '/purchase-orders', label: 'PO management', icon: ShoppingCart },
-    { to: '/vendor-purchase-orders', label: 'Vendor POs', icon: Package },
+    ...(user?.planFeatures?.vendorPurchaseOrders
+      ? [{ to: '/vendor-purchase-orders', label: 'Vendor POs', icon: Package }]
+      : []),
     {
       to: '/vendor-purchase-order-acknowledgements',
       label: 'Vendor PO acks',
@@ -54,9 +56,21 @@ export const Header = () => {
     { to: '/activities', label: 'Activity logs', icon: History },
     { to: '/manufacturers', label: 'Manufacturers', icon: Factory },
     { to: '/addresses', label: 'Addresses', icon: MapPin },
-    { to: '/product-prices', label: 'Product prices', icon: Package },
-    { to: '/rfq-pdf-templates', label: 'PDF templates', icon: FileText },
-    { to: '/connected-accounts', label: 'Connected accounts', icon: MailCheck },
+    ...(user?.planFeatures?.productPricing
+      ? [{ to: '/product-prices', label: 'Product prices', icon: Package }]
+      : []),
+    ...(user?.planFeatures?.customPdfTemplates
+      ? [{ to: '/rfq-pdf-templates', label: 'PDF templates', icon: FileText }]
+      : []),
+    ...(user?.planFeatures?.emailAutomation
+      ? [
+          {
+            to: '/connected-accounts',
+            label: 'Connected accounts',
+            icon: MailCheck,
+          },
+        ]
+      : []),
     {
       to: '/notifications',
       label: 'Notifications',
@@ -194,6 +208,7 @@ export const Header = () => {
               userName={user.name}
               userEmail={user.email}
               avatarUrl={user.avatarUrl}
+              isAdmin={user.isAdmin}
               onClose={() => setShowProfileMenu(false)}
               placement='above'
             />

@@ -10,6 +10,11 @@ export const loader = async ({ request, context }: Route.ActionArgs) => {
   if (!user) {
     return data({ error: 'Unauthorized' }, { status: 401 });
   }
+  if (!user.planFeatures.emailAutomation) {
+    return new Response('Your plan does not include email automation', {
+      status: 403,
+    });
+  }
   const organization = await getOrganizationForUser(user.id);
   if (!organization) {
     return data({ error: 'Organization required' }, { status: 409 });

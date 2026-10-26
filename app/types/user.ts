@@ -11,4 +11,6 @@ export type User = {
   isBanned: boolean;
   isAdmin: boolean;
   isOrganizationOwner: boolean;
+  organizationPlanId: string;
+  planFeatures: Record<string, boolean>;
 };

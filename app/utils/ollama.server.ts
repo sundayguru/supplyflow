@@ -2,7 +2,7 @@ import type {
   LlmGenerationRequest,
   LlmGenerationResponse,
 } from './openaiCompatible.server';
-import { saveLlmUsage } from './llmUsage.server';
+import { checkLlmUsageAllowance, saveLlmUsage } from './llmUsage.server';
 
 const OLLAMA_API_URL = 'https://ollama.com/api/chat';
 
@@ -29,6 +29,11 @@ export const OllamaService = {
     if (!apiKey) {
       throw new Error('Missing OLLAMA_API_KEY');
     }
+    const allowedMaxTokens = await checkLlmUsageAllowance(usage, {
+      systemPrompt,
+      userPrompt,
+      requestedOutputTokens: maxTokens,
+    });
 
     const response = await fetch(OLLAMA_API_URL, {
       method: 'POST',
@@ -43,7 +48,7 @@ export const OllamaService = {
         think: false,
         options: {
           temperature: temperature ?? 0.4,
-          num_predict: maxTokens,
+          num_predict: allowedMaxTokens,
         },
         messages: [
           { role: 'system', content: systemPrompt },

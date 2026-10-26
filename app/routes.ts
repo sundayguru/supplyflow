@@ -38,6 +38,8 @@ export default [
     route('connected-accounts', 'routes/connected-accounts.tsx'),
     route('email-ingestions', 'routes/email-ingestions.tsx'),
     route('settings', 'routes/settings.tsx'),
+    route('billing', 'routes/billing.tsx'),
+    route('admin/plans', 'routes/admin-plans.tsx'),
     route('organization', 'routes/organization.tsx'),
     route('organization/users', 'routes/organization-users.tsx'),
     route(

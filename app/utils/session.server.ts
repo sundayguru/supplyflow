@@ -4,6 +4,7 @@ import { getUnreadNotificationCount } from '~/db/notifications';
 import { verifySessionToken } from '~/utils/auth.server';
 import type { User } from '~/types';
 import { getOrganizationForUser } from '~/db/organizations';
+import { getEnabledPlanFeatures } from '~/db/plans';
 
 /**
  * Extracts the session cookie from the request headers and returns the user data.
@@ -46,12 +47,18 @@ export const getUserFromRequest = async (
   const profile = await getProfileByUserId(dbUser.id);
   const unreadNotifications = await getUnreadNotificationCount(dbUser.id);
   const organization = await getOrganizationForUser(dbUser.id);
+  const organizationPlanId = organization?.planId ?? 'free';
+  const planFeatures = await getEnabledPlanFeatures(organizationPlanId);
 
   if (dbUser.isDeactivated) {
     return null;
   }
 
   // Map DB user to User type
+  const adminEmails = (env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
   const user: User = {
     id: dbUser.id,
     name: `${dbUser.firstName} ${dbUser.lastName}`,
@@ -63,9 +70,12 @@ export const getUserFromRequest = async (
     unreadNotifications,
     isDeactivated: dbUser.isDeactivated || false,
     isBanned: dbUser.isBanned || false,
-    isAdmin: dbUser.isAdmin || false,
+    isAdmin: adminEmails.includes(dbUser.email.toLowerCase()),
     isOrganizationOwner: organization?.createdBy === dbUser.id,
+    organizationPlanId,
+    planFeatures,
   };
 
   return user;
 };
+import { env } from 'cloudflare:workers';
