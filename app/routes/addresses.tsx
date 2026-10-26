@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { data, redirect, useFetcher } from 'react-router';
 import { MapPin, Plus, Trash2 } from 'lucide-react';
 import type { Route } from './+types/addresses';
+import { ConfirmModal } from '~/components/ConfirmModal';
 import {
   createAddress,
   deleteAddress,
@@ -66,10 +67,27 @@ export const action = async ({ request }: Route.ActionArgs) => {
   return data({ error: 'Invalid action.' }, { status: 400 });
 };
 
-const AddressForm = ({ address }: { address?: AddressRecord }) => {
+const AddressForm = ({
+  address,
+  onSaved,
+}: {
+  address?: AddressRecord;
+  onSaved?: () => void;
+}) => {
   const fetcher = useFetcher<ActionResponse>();
+  useEffect(() => {
+    if (address && fetcher.data && 'success' in fetcher.data) {
+      onSaved?.();
+    }
+  }, [address, fetcher.data, onSaved]);
+
   return (
     <fetcher.Form method='post' className='space-y-3'>
+      {fetcher.data && 'error' in fetcher.data && (
+        <p className='rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700'>
+          {fetcher.data.error}
+        </p>
+      )}
       <input
         type='hidden'
         name='intent'
@@ -93,8 +111,15 @@ const AddressForm = ({ address }: { address?: AddressRecord }) => {
         placeholder='Street, city, postal code, country'
         aria-label='Address'
       />
-      <button className='rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white'>
-        {address ? 'Save address' : 'Add address'}
+      <button
+        disabled={fetcher.state !== 'idle'}
+        className='rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:cursor-wait disabled:opacity-60'
+      >
+        {fetcher.state !== 'idle'
+          ? 'Saving…'
+          : address
+            ? 'Save address'
+            : 'Add address'}
       </button>
     </fetcher.Form>
   );
@@ -103,6 +128,19 @@ const AddressForm = ({ address }: { address?: AddressRecord }) => {
 const AddressesPage = ({ loaderData }: Route.ComponentProps) => {
   const fetcher = useFetcher<ActionResponse>();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AddressRecord | null>(null);
+
+  const confirmDelete = () => {
+    if (!deleteTarget) {
+      return;
+    }
+    fetcher.submit(
+      { intent: 'delete', id: deleteTarget.id },
+      { method: 'post' },
+    );
+    setDeleteTarget(null);
+  };
+
   return (
     <div className='mx-auto max-w-[1100px] font-sans text-slate-950'>
       <p className='text-xs font-bold tracking-[0.18em] text-emerald-700 uppercase'>
@@ -134,7 +172,10 @@ const AddressesPage = ({ loaderData }: Route.ComponentProps) => {
             className='rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'
           >
             {editingId === address.id ? (
-              <AddressForm address={address} />
+              <AddressForm
+                address={address}
+                onSaved={() => setEditingId(null)}
+              />
             ) : (
               <div className='flex items-start justify-between gap-4'>
                 <div className='flex gap-3'>
@@ -157,16 +198,14 @@ const AddressesPage = ({ loaderData }: Route.ComponentProps) => {
                   >
                     Edit
                   </button>
-                  <fetcher.Form method='post'>
-                    <input type='hidden' name='intent' value='delete' />
-                    <input type='hidden' name='id' value={address.id} />
-                    <button
-                      aria-label={`Delete ${address.name}`}
-                      className='rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-700'
-                    >
-                      <Trash2 size={17} />
-                    </button>
-                  </fetcher.Form>
+                  <button
+                    type='button'
+                    onClick={() => setDeleteTarget(address)}
+                    aria-label={`Delete ${address.name}`}
+                    className='rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-700'
+                  >
+                    <Trash2 size={17} />
+                  </button>
                 </div>
               </div>
             )}
@@ -178,6 +217,15 @@ const AddressesPage = ({ loaderData }: Route.ComponentProps) => {
           </p>
         )}
       </section>
+      <ConfirmModal
+        isOpen={deleteTarget !== null}
+        title='Delete saved address?'
+        description={`Are you sure you want to delete ${deleteTarget?.name ?? 'this address'}? This address will no longer be available when creating vendor purchase orders.`}
+        confirmVariant='danger'
+        isLoading={fetcher.state !== 'idle'}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };
