@@ -36,6 +36,31 @@ export const getOrganizationById = async (organizationId: string) => {
   return organization ?? null;
 };
 
+export const getOrganizationsForAdmin = () => {
+  const db = getDb();
+  return db
+    .select({
+      id: organizations.id,
+      name: organizations.name,
+      planId: organizations.planId,
+      ownerEmail: users.email,
+    })
+    .from(organizations)
+    .innerJoin(users, eq(organizations.createdBy, users.id))
+    .orderBy(organizations.name);
+};
+
+export const updateOrganizationPlan = async (
+  organizationId: string,
+  planId: string,
+) => {
+  const db = getDb();
+  await db
+    .update(organizations)
+    .set({ planId, updatedAt: now() })
+    .where(eq(organizations.id, organizationId));
+};
+
 export const createOrganization = async (
   createdBy: string,
   values: Omit<InsertOrganization, 'id' | 'createdBy'>,

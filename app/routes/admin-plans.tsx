@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { LoaderCircle } from 'lucide-react';
 import { data, redirect, useFetcher, useLoaderData } from 'react-router';
 import type { Route } from './+types/admin-plans';
 import {
@@ -7,7 +8,12 @@ import {
   setSuggestedPlanId,
   updatePlan,
 } from '~/db/plans';
+import {
+  getOrganizationsForAdmin,
+  updateOrganizationPlan,
+} from '~/db/organizations';
 import { getUserFromRequest } from '~/utils/session.server';
+import { useToast } from '~/utils/useToast';
 
 const featureLabels: Record<string, string> = {
   vendorPurchaseOrders: 'Vendor purchase orders',
@@ -28,6 +34,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   return {
     plans: await getAllPlans(),
     suggestedPlanId: await getSuggestedPlanId(),
+    organizations: await getOrganizationsForAdmin(),
   };
 };
 
@@ -50,7 +57,27 @@ export const action = async ({ request }: Route.ActionArgs) => {
       return data({ error: 'Choose an active plan' }, { status: 400 });
     }
     await setSuggestedPlanId(planId);
-    return data({ success: true });
+    return data({ success: true, intent: 'suggested' as const });
+  }
+  if (intent === 'organization-plan') {
+    const organizationId = String(form.get('organizationId') ?? '');
+    const planId = String(form.get('planId') ?? '');
+    const [organization, plan] = await Promise.all([
+      getOrganizationsForAdmin().then((items) =>
+        items.find((item) => item.id === organizationId),
+      ),
+      getAllPlans().then((items) =>
+        items.find((item) => item.id === planId && item.isActive),
+      ),
+    ]);
+    if (!organization) {
+      return data({ error: 'Organization not found' }, { status: 404 });
+    }
+    if (!plan) {
+      return data({ error: 'Choose an active plan' }, { status: 400 });
+    }
+    await updateOrganizationPlan(organizationId, planId);
+    return data({ success: true, intent: 'organization-plan' as const });
   }
   const id = String(form.get('id') ?? '');
   const plan = (await getAllPlans()).find((item) => item.id === id);
@@ -90,13 +117,45 @@ export const action = async ({ request }: Route.ActionArgs) => {
     isActive: form.get('isActive') === 'on',
     features,
   });
-  return data({ success: true });
+  return data({ success: true, intent: 'plan' as const });
 };
 
 export default function AdminPlansPage() {
-  const { plans, suggestedPlanId } = useLoaderData<typeof loader>();
+  const { plans, suggestedPlanId, organizations } =
+    useLoaderData<typeof loader>();
   const [suggested, setSuggested] = useState(suggestedPlanId);
   const fetcher = useFetcher<typeof action>();
+  const { showToast } = useToast();
+  const lastHandledResponse = useRef(fetcher.data);
+  const isSavingSuggestion =
+    fetcher.state !== 'idle' && fetcher.formData?.get('intent') === 'suggested';
+
+  useEffect(() => {
+    if (
+      fetcher.state !== 'idle' ||
+      !fetcher.data ||
+      fetcher.data === lastHandledResponse.current
+    ) {
+      return;
+    }
+    lastHandledResponse.current = fetcher.data;
+    if ('success' in fetcher.data && fetcher.data.success) {
+      showToast({
+        tone: 'success',
+        message:
+          fetcher.data.intent === 'suggested'
+            ? 'Suggested plan saved.'
+            : fetcher.data.intent === 'organization-plan'
+              ? 'Organization plan updated.'
+              : 'Plan saved.',
+      });
+      return;
+    }
+    if ('error' in fetcher.data) {
+      showToast({ tone: 'error', message: fetcher.data.error });
+    }
+  }, [fetcher.data, fetcher.state, showToast]);
+
   return (
     <div className='mx-auto max-w-5xl space-y-7'>
       <header>
@@ -128,115 +187,199 @@ export default function AdminPlansPage() {
               ))}
           </select>
         </label>
-        <button className='rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white'>
-          Save suggestion
+        <button
+          disabled={isSavingSuggestion}
+          className='inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-wait disabled:opacity-70'
+        >
+          {isSavingSuggestion && (
+            <LoaderCircle size={16} className='animate-spin' />
+          )}
+          {isSavingSuggestion ? 'Saving…' : 'Save suggestion'}
         </button>
       </fetcher.Form>
-      <div className='space-y-5'>
-        {plans.map((plan) => (
-          <fetcher.Form
-            key={plan.id}
-            method='post'
-            className='space-y-5 rounded-2xl border border-slate-200 bg-white p-6'
-          >
-            <input type='hidden' name='id' value={plan.id} />
-            <div className='grid gap-4 sm:grid-cols-2'>
-              <label className='text-sm font-medium text-slate-700'>
-                Plan name
-                <input
-                  name='name'
-                  defaultValue={plan.name}
-                  required
-                  className='mt-2 block w-full rounded-lg border border-slate-300 px-3 py-2'
-                />
-              </label>
-              <label className='text-sm font-medium text-slate-700'>
-                Price label
-                <input
-                  name='priceLabel'
-                  defaultValue={plan.priceLabel}
-                  required
-                  className='mt-2 block w-full rounded-lg border border-slate-300 px-3 py-2'
-                />
-              </label>
-              <label className='text-sm font-medium text-slate-700'>
-                Monthly amount (EUR)
-                <input
-                  name='amount'
-                  type='number'
-                  min='0'
-                  step='0.01'
-                  defaultValue={plan.amount}
-                  className='mt-2 block w-full rounded-lg border border-slate-300 px-3 py-2'
-                />
-              </label>
-              <label className='text-sm font-medium text-slate-700'>
-                Monthly input token allowance
-                <input
-                  name='inputTokenLimit'
-                  type='number'
-                  min='0'
-                  step='1'
-                  defaultValue={plan.inputTokenLimit}
-                  className='mt-2 block w-full rounded-lg border border-slate-300 px-3 py-2'
-                />
-              </label>
-              <label className='text-sm font-medium text-slate-700'>
-                Monthly output token allowance
-                <input
-                  name='outputTokenLimit'
-                  type='number'
-                  min='0'
-                  step='1'
-                  defaultValue={plan.outputTokenLimit}
-                  className='mt-2 block w-full rounded-lg border border-slate-300 px-3 py-2'
-                />
-              </label>
-              <p className='text-xs text-slate-500 sm:col-span-2'>
-                Set a token allowance to 0 for unlimited usage.
-              </p>
-              <label className='text-sm font-medium text-slate-700 sm:col-span-2'>
-                Description
-                <textarea
-                  name='description'
-                  defaultValue={plan.description}
-                  className='mt-2 block w-full rounded-lg border border-slate-300 px-3 py-2'
-                />
-              </label>
-            </div>
-            <label className='flex items-center gap-2 text-sm text-slate-700'>
+      <section className='space-y-4 rounded-2xl border border-slate-200 bg-white p-6'>
+        <div>
+          <h2 className='text-lg font-semibold text-slate-950'>
+            Organization plans
+          </h2>
+          <p className='mt-1 text-sm text-slate-600'>
+            Assign or change an organization’s current plan.
+          </p>
+        </div>
+        {organizations.map((organization) => {
+          const isSavingOrganization =
+            fetcher.state !== 'idle' &&
+            fetcher.formData?.get('organizationId') === organization.id;
+          return (
+            <fetcher.Form
+              key={organization.id}
+              method='post'
+              className='flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-end'
+            >
+              <input type='hidden' name='intent' value='organization-plan' />
               <input
-                type='checkbox'
-                name='isActive'
-                defaultChecked={plan.isActive}
-              />{' '}
-              Show plan on billing page
-            </label>
-            <fieldset>
-              <legend className='mb-3 text-sm font-semibold text-slate-800'>
-                Enabled features
-              </legend>
-              <div className='grid gap-3 sm:grid-cols-2'>
-                {Object.entries(featureLabels).map(([key, label]) => (
-                  <label
-                    key={key}
-                    className='flex items-center gap-2 text-sm text-slate-700'
-                  >
-                    <input
-                      type='checkbox'
-                      name={`feature:${key}`}
-                      defaultChecked={plan.features[key] === true}
-                    />
-                    {label}
-                  </label>
-                ))}
+                type='hidden'
+                name='organizationId'
+                value={organization.id}
+              />
+              <div className='min-w-0 flex-1'>
+                <p className='truncate text-sm font-semibold text-slate-900'>
+                  {organization.name}
+                </p>
+                <p className='truncate text-xs text-slate-500'>
+                  {organization.ownerEmail}
+                </p>
               </div>
-            </fieldset>
-            <button className='rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white'>
-              Save {plan.name}
-            </button>
-          </fetcher.Form>
-        ))}
+              <label className='text-sm font-medium text-slate-700'>
+                Plan
+                <select
+                  name='planId'
+                  defaultValue={organization.planId}
+                  className='mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 sm:min-w-48'
+                >
+                  {plans
+                    .filter((plan) => plan.isActive)
+                    .map((plan) => (
+                      <option key={plan.id} value={plan.id}>
+                        {plan.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <button
+                disabled={isSavingOrganization}
+                className='inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-wait disabled:opacity-70'
+              >
+                {isSavingOrganization && (
+                  <LoaderCircle size={16} className='animate-spin' />
+                )}
+                {isSavingOrganization ? 'Saving…' : 'Save plan'}
+              </button>
+            </fetcher.Form>
+          );
+        })}
+        {organizations.length === 0 && (
+          <p className='text-sm text-slate-500'>No organizations yet.</p>
+        )}
+      </section>
+      <div className='space-y-5'>
+        {plans.map((plan) =>
+          (() => {
+            const isSavingPlan =
+              fetcher.state !== 'idle' &&
+              fetcher.formData?.get('id') === plan.id;
+            return (
+              <fetcher.Form
+                key={plan.id}
+                method='post'
+                className='space-y-5 rounded-2xl border border-slate-200 bg-white p-6'
+              >
+                <input type='hidden' name='id' value={plan.id} />
+                <div className='grid gap-4 sm:grid-cols-2'>
+                  <label className='text-sm font-medium text-slate-700'>
+                    Plan name
+                    <input
+                      name='name'
+                      defaultValue={plan.name}
+                      required
+                      className='mt-2 block w-full rounded-lg border border-slate-300 px-3 py-2'
+                    />
+                  </label>
+                  <label className='text-sm font-medium text-slate-700'>
+                    Price label
+                    <input
+                      name='priceLabel'
+                      defaultValue={plan.priceLabel}
+                      required
+                      className='mt-2 block w-full rounded-lg border border-slate-300 px-3 py-2'
+                    />
+                  </label>
+                  <label className='text-sm font-medium text-slate-700'>
+                    Monthly amount (EUR)
+                    <input
+                      name='amount'
+                      type='number'
+                      min='0'
+                      step='0.01'
+                      defaultValue={plan.amount}
+                      className='mt-2 block w-full rounded-lg border border-slate-300 px-3 py-2'
+                    />
+                  </label>
+                  <label className='text-sm font-medium text-slate-700'>
+                    Monthly input token allowance
+                    <input
+                      name='inputTokenLimit'
+                      type='number'
+                      min='0'
+                      step='1'
+                      defaultValue={plan.inputTokenLimit}
+                      className='mt-2 block w-full rounded-lg border border-slate-300 px-3 py-2'
+                    />
+                  </label>
+                  <label className='text-sm font-medium text-slate-700'>
+                    Monthly output token allowance
+                    <input
+                      name='outputTokenLimit'
+                      type='number'
+                      min='0'
+                      step='1'
+                      defaultValue={plan.outputTokenLimit}
+                      className='mt-2 block w-full rounded-lg border border-slate-300 px-3 py-2'
+                    />
+                  </label>
+                  <p className='text-xs text-slate-500 sm:col-span-2'>
+                    Set a token allowance to 0 for unlimited usage.
+                  </p>
+                  <label className='text-sm font-medium text-slate-700 sm:col-span-2'>
+                    Description
+                    <textarea
+                      name='description'
+                      defaultValue={plan.description}
+                      className='mt-2 block w-full rounded-lg border border-slate-300 px-3 py-2'
+                    />
+                  </label>
+                </div>
+                <label className='flex items-center gap-2 text-sm text-slate-700'>
+                  <input
+                    type='checkbox'
+                    name='isActive'
+                    defaultChecked={plan.isActive}
+                  />{' '}
+                  Show plan on billing page
+                </label>
+                <fieldset>
+                  <legend className='mb-3 text-sm font-semibold text-slate-800'>
+                    Enabled features
+                  </legend>
+                  <div className='grid gap-3 sm:grid-cols-2'>
+                    {Object.entries(featureLabels).map(([key, label]) => (
+                      <label
+                        key={key}
+                        className='flex items-center gap-2 text-sm text-slate-700'
+                      >
+                        <input
+                          type='checkbox'
+                          name={`feature:${key}`}
+                          defaultChecked={plan.features[key] === true}
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+                <button
+                  disabled={isSavingPlan}
+                  className='inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-wait disabled:opacity-70'
+                >
+                  {isSavingPlan && (
+                    <LoaderCircle size={16} className='animate-spin' />
+                  )}
+                  {isSavingPlan ? 'Saving…' : `Save ${plan.name}`}
+                </button>
+              </fetcher.Form>
+            );
+          })(),
+        )}
       </div>
     </div>
   );
