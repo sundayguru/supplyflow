@@ -179,7 +179,14 @@ export const action = async ({ request }: Route.ActionArgs) => {
         { status: 500 },
       );
     }
-    await updateUser(currentUser.id, { isDeactivated: true });
+    await updateUser(currentUser.id, {
+      isDeactivated: true,
+      email: `deleted-${currentUser.id}@deleted.invalid`,
+      firstName: 'Deleted',
+      lastName: 'User',
+      passwordHash: null,
+      emailVerified: false,
+    });
     await deleteUserSessions(currentUser.id);
     const headers = new Headers();
     headers.append(

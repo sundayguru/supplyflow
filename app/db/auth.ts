@@ -84,6 +84,35 @@ export const getUserByEmail = async (email: string) => {
   }
 };
 
+export const releaseDeactivatedUserEmail = async (email: string) => {
+  try {
+    const db = getDb();
+    const [user] = await db
+      .select({ id: users.id, isDeactivated: users.isDeactivated })
+      .from(users)
+      .where(eq(users.email, email));
+    if (!user?.isDeactivated) {
+      return false;
+    }
+
+    await db
+      .update(users)
+      .set({
+        email: `deleted-${user.id}@deleted.invalid`,
+        firstName: 'Deleted',
+        lastName: 'User',
+        passwordHash: null,
+        emailVerified: false,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(users.id, user.id));
+    return true;
+  } catch (e) {
+    logError(e, 'Error releasing deactivated user email');
+    return false;
+  }
+};
+
 export const verifyUserEmail = async (email: string) => {
   try {
     const db = getDb();

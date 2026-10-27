@@ -4,6 +4,7 @@ import {
   getUserByEmail,
   createUserWithPassword,
   createVerificationToken,
+  releaseDeactivatedUserEmail,
 } from '~/db/auth';
 import { generateVerificationToken } from '~/utils/auth.server';
 import { AuthPageLayout } from '~/components/AuthPageLayout';
@@ -49,10 +50,16 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
   // Check if user already exists
   const existingUser = await getUserByEmail(email);
-  if (existingUser) {
+  if (existingUser && !existingUser.isDeactivated) {
     return data(
       { error: 'An account with this email already exists' },
       { status: 400 },
+    );
+  }
+  if (existingUser && !(await releaseDeactivatedUserEmail(email))) {
+    return data(
+      { error: 'Unable to register with this email. Please try again.' },
+      { status: 500 },
     );
   }
 
