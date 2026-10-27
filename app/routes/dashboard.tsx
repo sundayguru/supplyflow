@@ -5,9 +5,10 @@ import {
   CircleDollarSign,
   Clock3,
   FileText,
+  CalendarDays,
   TrendingUp,
 } from 'lucide-react';
-import { Link, redirect } from 'react-router';
+import { Form, Link, redirect } from 'react-router';
 import type { Route } from './+types/dashboard';
 import {
   getRfqStatusBadgeClassName,
@@ -18,7 +19,10 @@ import {
   getOrganizationUsers,
 } from '~/db/organizations';
 import { getRfqs } from '~/db/rfqs';
-import type { DashboardMetricId } from '~/utils/dashboardAnalytics';
+import type {
+  DashboardDateRange,
+  DashboardMetricId,
+} from '~/utils/dashboardAnalytics';
 import { buildDashboardAnalytics } from '~/utils/dashboardAnalytics';
 import { getUserFromRequest } from '~/utils/session.server';
 import { useUser } from '~/utils/useUser';
@@ -33,6 +37,65 @@ const metricIcons: Record<
   avgTurnaround: Clock3,
 };
 
+type DashboardRangePreset = 'today' | '7d' | '30d' | 'custom';
+
+const toDateKey = (date: Date) => date.toISOString().slice(0, 10);
+
+const parseDateKey = (value: string | null) => {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return null;
+  }
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return Number.isNaN(date.getTime()) || toDateKey(date) !== value
+    ? null
+    : date;
+};
+
+const getDashboardRange = (params: URLSearchParams, now = new Date()) => {
+  const requestedPreset = params.get('range');
+  const preset: DashboardRangePreset =
+    requestedPreset === 'today' ||
+    requestedPreset === '7d' ||
+    requestedPreset === 'custom'
+      ? requestedPreset
+      : '30d';
+  const today = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+  const defaultStart = new Date(today);
+  defaultStart.setUTCDate(defaultStart.getUTCDate() - 29);
+  const selectedStart =
+    preset === 'today'
+      ? today
+      : preset === '7d'
+        ? new Date(today.getTime() - 6 * 24 * 60 * 60 * 1000)
+        : preset === 'custom'
+          ? (parseDateKey(params.get('from')) ?? defaultStart)
+          : defaultStart;
+  const selectedEndDay =
+    preset === 'today' || preset === '7d'
+      ? today
+      : preset === 'custom'
+        ? (parseDateKey(params.get('to')) ?? today)
+        : today;
+  const filterError =
+    preset === 'custom' && selectedStart.getTime() > selectedEndDay.getTime()
+      ? 'Start date must be on or before end date.'
+      : null;
+  const start = filterError ? defaultStart : selectedStart;
+  const endDay = filterError ? today : selectedEndDay;
+  const end = new Date(endDay);
+  end.setUTCDate(end.getUTCDate() + 1);
+
+  return {
+    preset,
+    dateFrom: toDateKey(start),
+    dateTo: toDateKey(endDay),
+    filterError,
+    range: { start, end } satisfies DashboardDateRange,
+  };
+};
+
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
   if (!user) {
@@ -42,7 +105,11 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
-  if (!user.planFeatures.dashboard) { return redirect('/billing'); }
+  if (!user.planFeatures.dashboard) {
+    return redirect('/billing');
+  }
+
+  const selectedRange = getDashboardRange(new URL(request.url).searchParams);
 
   const [rfqs, users] = await Promise.all([
     getRfqs(organization.id, organization.vat),
@@ -50,13 +117,17 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   ]);
 
   return {
-    analytics: buildDashboardAnalytics(rfqs, users),
+    analytics: buildDashboardAnalytics(rfqs, users, selectedRange.range),
+    rangePreset: selectedRange.preset,
+    dateFrom: selectedRange.dateFrom,
+    dateTo: selectedRange.dateTo,
+    filterError: selectedRange.filterError,
   };
 };
 
 const DashboardPage = ({ loaderData }: Route.ComponentProps) => {
   const { user } = useUser();
-  const { analytics } = loaderData;
+  const { analytics, rangePreset, dateFrom, dateTo, filterError } = loaderData;
   const maxVolume = Math.max(
     ...analytics.weeklyVolume.map(({ received, quoted }) =>
       Math.max(received, quoted),
@@ -76,9 +147,72 @@ const DashboardPage = ({ loaderData }: Route.ComponentProps) => {
             Good morning, {greetingName}.
           </h1>
           <p className='mt-2 text-sm text-slate-500'>
-            Here’s how your quotation desk is performing this month.
+            Dashboard activity for {dateFrom} through {dateTo}.
           </p>
         </div>
+        <Form
+          method='get'
+          className='flex flex-wrap items-end gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm'
+        >
+          <div className='flex flex-wrap gap-2' aria-label='Time range'>
+            {(
+              [
+                ['today', 'Today'],
+                ['7d', 'Last 7 days'],
+                ['30d', 'Last 30 days'],
+                ['custom', 'Custom'],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type='submit'
+                name='range'
+                value={value}
+                className={`rounded-xl px-3 py-2 text-sm font-medium transition ${rangePreset === value ? 'bg-emerald-700 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {rangePreset === 'custom' && (
+            <div className='flex w-full flex-wrap items-end gap-3 border-t border-slate-100 pt-3'>
+              <label className='grid gap-1 text-xs font-medium text-slate-500'>
+                From
+                <input
+                  type='date'
+                  name='from'
+                  defaultValue={dateFrom}
+                  required
+                  className='rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800'
+                />
+              </label>
+              <label className='grid gap-1 text-xs font-medium text-slate-500'>
+                To
+                <input
+                  type='date'
+                  name='to'
+                  defaultValue={dateTo}
+                  required
+                  className='rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800'
+                />
+              </label>
+              <button
+                type='submit'
+                name='range'
+                value='custom'
+                className='inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800'
+              >
+                <CalendarDays size={16} />
+                Apply range
+              </button>
+              {filterError && (
+                <p role='alert' className='w-full text-sm text-red-700'>
+                  {filterError}
+                </p>
+              )}
+            </div>
+          )}
+        </Form>
       </div>
 
       <section
@@ -129,9 +263,9 @@ const DashboardPage = ({ loaderData }: Route.ComponentProps) => {
         <section className='rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6'>
           <div className='flex flex-wrap items-start justify-between gap-3'>
             <div>
-              <h2 className='text-base font-bold'>Weekly RFQ volume</h2>
+              <h2 className='text-base font-bold'>RFQ volume</h2>
               <p className='mt-1 text-xs text-slate-500'>
-                Requests received and quotes completed in the last 7 days
+                Requests received and quotes completed in the selected period
               </p>
             </div>
             <div className='flex gap-4 text-xs font-medium text-slate-500'>

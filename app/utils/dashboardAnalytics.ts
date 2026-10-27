@@ -54,7 +54,7 @@ type OrganizationUser = {
   lastName: string;
 };
 
-type DateRange = {
+export type DashboardDateRange = {
   start: Date;
   end: Date;
 };
@@ -98,31 +98,17 @@ const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 
 const parseDate = (value: string) => new Date(value);
 
-const isInRange = (value: string, range: DateRange) => {
+const isInRange = (value: string, range: DashboardDateRange) => {
   const time = parseDate(value).getTime();
   return time >= range.start.getTime() && time < range.end.getTime();
 };
 
-const getMonthRanges = (now: Date) => {
-  const currentMonthStart = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
-  );
-  const nextMonthStart = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
-  );
-  const previousMonthStart = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1),
-  );
+const getPreviousRange = (range: DashboardDateRange): DashboardDateRange => {
+  const duration = range.end.getTime() - range.start.getTime();
   return {
-    current: { start: currentMonthStart, end: nextMonthStart },
-    previous: { start: previousMonthStart, end: currentMonthStart },
+    start: new Date(range.start.getTime() - duration),
+    end: new Date(range.start),
   };
-};
-
-const getStartOfUtcDay = (date: Date) => {
-  const start = new Date(date);
-  start.setUTCHours(0, 0, 0, 0);
-  return start;
 };
 
 const sumByCurrency = (records: RfqRecord[]) =>
@@ -223,26 +209,35 @@ const ownerName = (
   return name || 'Unassigned';
 };
 
-const buildWeeklyVolume = (
+const buildRangeVolume = (
   rfqs: RfqRecord[],
-  now: Date,
+  range: DashboardDateRange,
 ): DashboardWeeklyVolume[] => {
-  const start = getStartOfUtcDay(now);
-  start.setUTCDate(start.getUTCDate() - 6);
+  const dayMs = 24 * 60 * 60 * 1000;
+  const totalDays = Math.max(
+    1,
+    Math.ceil((range.end.getTime() - range.start.getTime()) / dayMs),
+  );
+  const bucketCount = Math.min(totalDays, 14);
 
-  return Array.from({ length: 7 }, (_, index) => {
-    const dayStart = new Date(start);
-    dayStart.setUTCDate(start.getUTCDate() + index);
-    const dayEnd = new Date(dayStart);
-    dayEnd.setUTCDate(dayStart.getUTCDate() + 1);
-    const range = { start: dayStart, end: dayEnd };
+  return Array.from({ length: bucketCount }, (_, index) => {
+    const startOffset = Math.floor((index * totalDays) / bucketCount);
+    const endOffset = Math.floor(((index + 1) * totalDays) / bucketCount);
+    const bucketStart = new Date(range.start.getTime() + startOffset * dayMs);
+    const bucketEnd = new Date(range.start.getTime() + endOffset * dayMs);
+    const bucket = { start: bucketStart, end: bucketEnd };
+    const dayLabel = new Intl.DateTimeFormat('en', {
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'UTC',
+    }).format(bucketStart);
 
     return {
-      day: DAY_LABELS[dayStart.getUTCDay()],
-      received: rfqs.filter((rfq) => isInRange(rfq.createdAt, range)).length,
+      day: totalDays <= 7 ? DAY_LABELS[bucketStart.getUTCDay()] : dayLabel,
+      received: rfqs.filter((rfq) => isInRange(rfq.createdAt, bucket)).length,
       quoted: rfqs.filter(
         (rfq) =>
-          rfq.quotationSentAt != null && isInRange(rfq.quotationSentAt, range),
+          rfq.quotationSentAt != null && isInRange(rfq.quotationSentAt, bucket),
       ).length,
     };
   });
@@ -269,9 +264,9 @@ const buildPipeline = (rfqs: RfqRecord[]): DashboardPipelineStage[] => {
 export const buildDashboardAnalytics = (
   rfqs: RfqRecord[],
   users: OrganizationUser[],
-  now = new Date(),
+  current: DashboardDateRange,
 ): DashboardAnalytics => {
-  const { current, previous } = getMonthRanges(now);
+  const previous = getPreviousRange(current);
   const usersById = new Map(users.map((user) => [user.userId, user]));
 
   const receivedCurrent = rfqs.filter((rfq) =>
@@ -333,7 +328,8 @@ export const buildDashboardAnalytics = (
     avgTurnaroundPrevious,
   );
 
-  const activeRfqs = rfqs.filter(
+  const rangeRfqs = rfqs.filter((rfq) => isInRange(rfq.createdAt, current));
+  const activeRfqs = rangeRfqs.filter(
     (rfq) => rfq.status !== 'won' && rfq.status !== 'lost',
   );
 
@@ -345,7 +341,7 @@ export const buildDashboardAnalytics = (
         value: String(receivedCurrent.length),
         change: receivedChange.change,
         trend: receivedChange.trend,
-        detail: 'vs. last month',
+        detail: 'vs. previous period',
       },
       {
         id: 'quoteValue',
@@ -353,7 +349,7 @@ export const buildDashboardAnalytics = (
         value: formatCombinedRfqValue(quoteCurrent),
         change: quoteChange.change,
         trend: quoteChange.trend,
-        detail: 'vs. last month',
+        detail: 'vs. previous period',
       },
       {
         id: 'winRate',
@@ -361,7 +357,7 @@ export const buildDashboardAnalytics = (
         value: formatPercent(winRateCurrent),
         change: winRateChange.change,
         trend: winRateChange.trend,
-        detail: 'vs. last month',
+        detail: 'vs. previous period',
       },
       {
         id: 'avgTurnaround',
@@ -371,14 +367,14 @@ export const buildDashboardAnalytics = (
         trend: turnaroundChange.trend,
         detail:
           turnaroundChange.trend === 'down'
-            ? 'faster than last month'
-            : 'vs. last month',
+            ? 'faster than previous period'
+            : 'vs. previous period',
       },
     ],
-    weeklyVolume: buildWeeklyVolume(rfqs, now),
-    pipeline: buildPipeline(rfqs),
+    weeklyVolume: buildRangeVolume(rangeRfqs, current),
+    pipeline: buildPipeline(rangeRfqs),
     activeCount: activeRfqs.length,
-    recentRequests: rfqs.slice(0, 5).map((rfq) => ({
+    recentRequests: rangeRfqs.slice(0, 5).map((rfq) => ({
       id: rfq.id,
       reference: rfq.reference,
       customer: rfq.customerName,
