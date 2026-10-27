@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Building2, Save } from 'lucide-react';
 import { useFetcher } from 'react-router';
 import { Button } from '~/components/Button';
@@ -35,9 +35,18 @@ export const OrganizationFormModal = ({
 }: OrganizationFormModalProps) => {
   const fetcher = useFetcher<OrganizationActionData>();
   const isSubmitting = fetcher.state !== 'idle';
+  const submissionPending = useRef(false);
 
   useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data && 'success' in fetcher.data) {
+    if (
+      !submissionPending.current ||
+      fetcher.state !== 'idle' ||
+      !fetcher.data
+    ) {
+      return;
+    }
+    submissionPending.current = false;
+    if ('success' in fetcher.data) {
       onClose();
     }
   }, [fetcher.data, fetcher.state, onClose]);
@@ -54,7 +63,13 @@ export const OrganizationFormModal = ({
       scrollable
       closeOnBackdrop={false}
     >
-      <fetcher.Form method='post' className='flex min-h-0 flex-col'>
+      <fetcher.Form
+        method='post'
+        className='flex min-h-0 flex-col'
+        onSubmit={() => {
+          submissionPending.current = true;
+        }}
+      >
         <input
           type='hidden'
           name='intent'

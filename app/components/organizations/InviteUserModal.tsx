@@ -5,7 +5,7 @@ import { Input } from '~/components/FormFields';
 import { Modal } from '~/components/Modal';
 
 type InviteActionData =
-  | { success: true; inviteUrl: string }
+  | { success: true; inviteUrl: string; emailSent: boolean }
   | { error: string };
 
 type InviteUserModalProps = {
@@ -30,7 +30,9 @@ export const InviteUserModal = ({ isOpen, onClose }: InviteUserModalProps) => {
       {inviteUrl ? (
         <div className='space-y-4'>
           <p className='text-sm text-slate-600'>
-            Invitation created. Share this secure link with the invited user.
+            {fetcher.data?.emailSent
+              ? 'Invitation email sent. You can also share this secure link.'
+              : 'Invitation created, but the email could not be sent. Share this secure link with the invited user.'}
           </p>
           <div className='rounded-2xl bg-slate-50 p-4 text-sm break-all text-slate-700'>
             {inviteUrl}

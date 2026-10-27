@@ -17,6 +17,10 @@ import {
 } from '~/db/organizations';
 import type { OrganizationUser } from '~/types';
 import { getUserFromRequest } from '~/utils/session.server';
+import {
+  renderBaseEmailTemplate,
+  sendEmailWithSendGrid,
+} from '~/services/sendgrid.server';
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
@@ -85,7 +89,24 @@ export const action = async ({ request }: Route.ActionArgs) => {
         `/organization/invitations/${invitation.token}`,
         request.url,
       ).toString();
-      return data({ success: true as const, inviteUrl });
+      let emailSent = false;
+      try {
+        emailSent = await sendEmailWithSendGrid({
+          to: email,
+          subject: `${currentUser.name} invited you to ${organization.name}`,
+          html: renderBaseEmailTemplate({
+            organizationName: organization.name,
+            title: `You're invited to join ${organization.name}`,
+            message: `${currentUser.name} invited you to collaborate in the ${organization.name} workspace. Accept the invitation to join the team. This link expires in seven days.`,
+            actorLabel: currentUser.name,
+            actionUrl: inviteUrl,
+            actionLabel: 'Accept invitation',
+          }),
+        });
+      } catch (error) {
+        console.error('Could not send organization invitation email', error);
+      }
+      return data({ success: true as const, inviteUrl, emailSent });
     }
     if (intent === 'updateUser') {
       const userId = String(formData.get('userId') ?? '');
