@@ -13,6 +13,7 @@ export default [
     route('terms', 'routes/terms.tsx'),
     route('auth/login', 'routes/auth/login.tsx'),
     route('auth/register', 'routes/auth/register.tsx'),
+    route('auth/verify-email', 'routes/auth/verify-email.tsx'),
     route('auth/forgot-password', 'routes/auth/forgot-password.tsx'),
     route('auth/reset-password', 'routes/auth/reset-password.tsx'),
   ]),

@@ -18,6 +18,7 @@ export const renderBaseEmailTemplate = (input: {
   message: string;
   actorLabel: string;
   actionUrl?: string | null;
+  actionLabel?: string;
 }) => {
   const title = escapeHtml(input.title);
   const message = escapeHtml(input.message);
@@ -28,8 +29,9 @@ export const renderBaseEmailTemplate = (input: {
     appBaseUrl && input.actionUrl
       ? new URL(input.actionUrl, appBaseUrl).toString()
       : null;
+  const actionLabel = escapeHtml(input.actionLabel ?? 'View details');
   const action = actionHref
-    ? `<p style="margin:28px 0 0"><a href="${escapeHtml(actionHref)}" style="display:inline-block;background:#5a5a40;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">View details</a></p>`
+    ? `<p style="margin:28px 0 0"><a href="${escapeHtml(actionHref)}" style="display:inline-block;background:#5a5a40;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">${actionLabel}</a></p>`
     : '';
 
   return `<!doctype html><html><body style="margin:0;background:#f5f5f2;font-family:Arial,sans-serif;color:#1a1a1a"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:32px 12px"><tr><td align="center"><table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden"><tr><td style="background:#5a5a40;padding:20px 28px;color:#fff;font-size:18px;font-weight:700">${organizationName}</td></tr><tr><td style="padding:32px 28px"><h1 style="margin:0 0 16px;font-size:22px">${title}</h1><p style="margin:0;color:#454545;font-size:15px;line-height:1.6">${message}</p><p style="margin:20px 0 0;color:#777;font-size:12px">Source: ${actorLabel}</p>${action}</td></tr><tr><td style="border-top:1px solid #eee;padding:18px 28px;color:#888;font-size:12px">You received this email because you are a member of ${organizationName}.</td></tr></table></td></tr></table></body></html>`;

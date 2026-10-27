@@ -1,14 +1,25 @@
 import type { Route } from './+types/login';
 import { data, redirect, Form } from 'react-router';
-import { getUserByEmail, verifyUserPassword } from '~/db/auth';
+import {
+  createVerificationToken,
+  getUserByEmail,
+  verifyUserPassword,
+} from '~/db/auth';
 import { ensureProfileForUser } from '~/db/profile';
-import { generateSessionToken } from '~/utils/auth.server';
+import {
+  generateSessionToken,
+  generateVerificationToken,
+} from '~/utils/auth.server';
 import { AuthPageLayout } from '~/components/AuthPageLayout';
 import { GoogleAuthButton } from '~/components/GoogleAuthButton';
 import { PasswordField } from '~/components/PasswordField';
 import { normalizeEmailAddress } from '~/utils/email';
 import { LogIn } from 'lucide-react';
 import { useState } from 'react';
+import {
+  renderBaseEmailTemplate,
+  sendEmailWithSendGrid,
+} from '~/services/sendgrid.server';
 
 const loginErrorMessages: Record<string, string> = {
   access_denied: 'Google sign-in was cancelled. Please try again.',
@@ -25,7 +36,8 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   const callbackUrl = url.searchParams.get('callbackUrl') || '/dashboard';
   const error = url.searchParams.get('error');
   const resetSuccess = url.searchParams.get('resetSuccess');
-  return { callbackUrl, error, resetSuccess };
+  const verified = url.searchParams.get('verified') === '1';
+  return { callbackUrl, error, resetSuccess, verified };
 };
 
 export const action = async ({ request }: Route.ActionArgs) => {
@@ -50,6 +62,36 @@ export const action = async ({ request }: Route.ActionArgs) => {
     return data({ error: 'Invalid email or password' }, { status: 401 });
   }
 
+  if (!user.emailVerified) {
+    const token = generateVerificationToken();
+    await createVerificationToken(
+      user.email,
+      token,
+      new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    );
+    try {
+      await sendEmailWithSendGrid({
+        to: user.email,
+        subject: 'Verify your Suploop email address',
+        html: renderBaseEmailTemplate({
+          organizationName: 'Suploop',
+          title: 'Verify your email address',
+          message:
+            'Your account is waiting for verification. Use the button below to verify your email and activate sign in.',
+          actorLabel: 'Suploop',
+          actionUrl: `/auth/verify-email?token=${encodeURIComponent(token)}`,
+          actionLabel: 'Verify email',
+        }),
+      });
+    } catch (error) {
+      console.error('Could not resend verification email', error);
+    }
+    return data({
+      error:
+        'Your email is not verified yet. We sent a new verification link if email delivery is configured.',
+    });
+  }
+
   await ensureProfileForUser(user.id);
 
   const sessionToken = await generateSessionToken(user.id, user.email);
@@ -67,7 +109,7 @@ export default function LoginPage({
   loaderData,
   actionData,
 }: Route.ComponentProps) {
-  const { callbackUrl, error: queryError, resetSuccess } = loaderData;
+  const { callbackUrl, error: queryError, resetSuccess, verified } = loaderData;
   const actionError =
     actionData && 'error' in actionData ? actionData.error : null;
   const queryErrorMessage = queryError
@@ -134,6 +176,11 @@ export default function LoginPage({
         {resetSuccess && (
           <p className='rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700'>
             Your password has been reset. Please sign in.
+          </p>
+        )}
+        {verified && (
+          <p className='rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700'>
+            Your email is verified. You can now sign in.
           </p>
         )}
 

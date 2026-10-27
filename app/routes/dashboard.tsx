@@ -42,7 +42,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
-  if (!user.planFeatures.dashboard) {return redirect('/billing');}
+  if (!user.planFeatures.dashboard) { return redirect('/billing'); }
 
   const [rfqs, users] = await Promise.all([
     getRfqs(organization.id, organization.vat),
@@ -78,10 +78,6 @@ const DashboardPage = ({ loaderData }: Route.ComponentProps) => {
           <p className='mt-2 text-sm text-slate-500'>
             Here’s how your quotation desk is performing this month.
           </p>
-        </div>
-        <div className='flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 shadow-sm'>
-          <span className='h-2 w-2 rounded-full bg-emerald-500' />
-          Live organization data
         </div>
       </div>
 

@@ -1,12 +1,20 @@
 import type { Route } from './+types/register';
-import { data, redirect, Form } from 'react-router';
-import { getUserByEmail, createUserWithPassword } from '~/db/auth';
-import { generateSessionToken } from '~/utils/auth.server';
+import { data, Form } from 'react-router';
+import {
+  getUserByEmail,
+  createUserWithPassword,
+  createVerificationToken,
+} from '~/db/auth';
+import { generateVerificationToken } from '~/utils/auth.server';
 import { AuthPageLayout } from '~/components/AuthPageLayout';
 import { GoogleAuthButton } from '~/components/GoogleAuthButton';
 import { PasswordField } from '~/components/PasswordField';
 import { normalizeEmailAddress } from '~/utils/email';
 import { UserPlus } from 'lucide-react';
+import {
+  renderBaseEmailTemplate,
+  sendEmailWithSendGrid,
+} from '~/services/sendgrid.server';
 
 export const loader = ({ request }: Route.LoaderArgs) => {
   const url = new URL(request.url);
@@ -62,20 +70,52 @@ export const action = async ({ request }: Route.ActionArgs) => {
     );
   }
 
-  // Generate session and log user in
-  const sessionToken = await generateSessionToken(user.id, user.email);
-
-  const headers = new Headers();
-  headers.append(
-    'Set-Cookie',
-    `session=${sessionToken}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`,
+  const token = generateVerificationToken();
+  await createVerificationToken(
+    user.email,
+    token,
+    new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
   );
-
-  return redirect(callbackUrl, { headers });
+  try {
+    const sent = await sendEmailWithSendGrid({
+      to: user.email,
+      subject: 'Welcome to Suploop — verify your email',
+      html: renderBaseEmailTemplate({
+        organizationName: 'Suploop',
+        title: `Welcome, ${firstName}`,
+        message:
+          'Thanks for creating an account. Verify your email address to activate your account and continue to your workspace.',
+        actorLabel: 'Suploop',
+        actionUrl: `/auth/verify-email?token=${encodeURIComponent(token)}&callbackUrl=${encodeURIComponent(callbackUrl)}`,
+        actionLabel: 'Verify email',
+      }),
+    });
+    return data({
+      success: true,
+      emailSent: sent,
+      message: sent
+        ? `We sent a verification link to ${user.email}. It expires in 24 hours.`
+        : 'Your account was created, but we could not send the verification email. Sign in with your password to request another link after SendGrid is configured.',
+    });
+  } catch {
+    return data({
+      success: true,
+      emailSent: false,
+      message:
+        'Your account was created, but we could not send the verification email. Sign in with your password to request another link.',
+    });
+  }
 };
 
-export default function RegisterPage({ loaderData }: Route.ComponentProps) {
+export default function RegisterPage({
+  loaderData,
+  actionData,
+}: Route.ComponentProps) {
   const { callbackUrl } = loaderData;
+  const registrationMessage =
+    actionData && 'message' in actionData ? actionData.message : null;
+  const registrationError =
+    actionData && 'error' in actionData ? actionData.error : null;
 
   return (
     <AuthPageLayout
@@ -83,78 +123,90 @@ export default function RegisterPage({ loaderData }: Route.ComponentProps) {
       title='Build a faster quotation process.'
       description='Create your workspace and turn scattered RFQs into a clear, repeatable flow.'
     >
-      <Form method='post' className='space-y-4'>
-        <input type='hidden' name='callbackUrl' value={callbackUrl} />
-        <div className='grid grid-cols-2 gap-3'>
-          <div>
-            <label className='mb-1 block text-sm font-medium text-black/70'>
-              First Name
-            </label>
-            <input
-              type='text'
-              name='firstName'
-              className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm transition outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
-              placeholder='John'
-              required
-            />
+      {registrationMessage ? (
+        <p className='mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700'>
+          {registrationMessage}
+        </p>
+      ) : null}
+      {registrationError ? (
+        <p className='mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700'>
+          {registrationError}
+        </p>
+      ) : null}
+      {!registrationMessage ? (
+        <Form method='post' className='space-y-4'>
+          <input type='hidden' name='callbackUrl' value={callbackUrl} />
+          <div className='grid grid-cols-2 gap-3'>
+            <div>
+              <label className='mb-1 block text-sm font-medium text-black/70'>
+                First Name
+              </label>
+              <input
+                type='text'
+                name='firstName'
+                className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm transition outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
+                placeholder='John'
+                required
+              />
+            </div>
+            <div>
+              <label className='mb-1 block text-sm font-medium text-black/70'>
+                Last Name
+              </label>
+              <input
+                type='text'
+                name='lastName'
+                className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm transition outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
+                placeholder='Doe'
+                required
+              />
+            </div>
           </div>
           <div>
             <label className='mb-1 block text-sm font-medium text-black/70'>
-              Last Name
+              Email Address
             </label>
             <input
-              type='text'
-              name='lastName'
+              type='email'
+              name='email'
               className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm transition outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
-              placeholder='Doe'
+              placeholder='you@example.com'
               required
             />
           </div>
-        </div>
-        <div>
-          <label className='mb-1 block text-sm font-medium text-black/70'>
-            Email Address
-          </label>
-          <input
-            type='email'
-            name='email'
-            className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm transition outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
-            placeholder='you@example.com'
-            required
+          <PasswordField
+            label='Password'
+            name='password'
+            autoComplete='new-password'
           />
-        </div>
-        <PasswordField
-          label='Password'
-          name='password'
-          autoComplete='new-password'
-        />
-        <PasswordField
-          label='Confirm Password'
-          name='confirmPassword'
-          autoComplete='new-password'
-        />
+          <PasswordField
+            label='Confirm Password'
+            name='confirmPassword'
+            autoComplete='new-password'
+          />
 
-        <button
-          type='submit'
-          className='flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 py-3.5 text-sm font-semibold text-white shadow-lg shadow-emerald-900/15 transition hover:-translate-y-0.5 hover:bg-emerald-500'
-        >
-          <UserPlus size={20} />
-          Create Account
-        </button>
+          <button
+            type='submit'
+            className='flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 py-3.5 text-sm font-semibold text-white shadow-lg shadow-emerald-900/15 transition hover:-translate-y-0.5 hover:bg-emerald-500'
+          >
+            <UserPlus size={20} />
+            Create Account
+          </button>
 
-        <div className='relative my-6'>
-          <div className='absolute inset-0 flex items-center'>
-            <div className='w-full border-t border-black/10'></div>
+          <div className='relative my-6'>
+            <div className='absolute inset-0 flex items-center'>
+              <div className='w-full border-t border-black/10'></div>
+            </div>
+            <div className='relative flex justify-center text-xs'>
+              <span className='bg-white px-3 text-slate-400'>
+                Or continue with
+              </span>
+            </div>
           </div>
-          <div className='relative flex justify-center text-xs'>
-            <span className='bg-white px-3 text-slate-400'>
-              Or continue with
-            </span>
-          </div>
-        </div>
 
-        <GoogleAuthButton />
-      </Form>
+          <GoogleAuthButton />
+        </Form>
+      ) : null}
 
       <div className='mt-6 text-center text-sm text-slate-500'>
         Already have an account?{' '}

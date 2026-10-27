@@ -84,6 +84,18 @@ export const getUserByEmail = async (email: string) => {
   }
 };
 
+export const verifyUserEmail = async (email: string) => {
+  try {
+    const db = getDb();
+    await db
+      .update(users)
+      .set({ emailVerified: true })
+      .where(eq(users.email, email));
+  } catch (e) {
+    logError(e, 'Error verifying user email');
+  }
+};
+
 export const getUserById = async (id: string) => {
   try {
     const db = getDb();
