@@ -1,4 +1,7 @@
-import type { SelectChatMessage } from '~/db/schemas';
+type SelectChatMessage = {
+  role: 'user' | 'assistant';
+  content: string;
+};
 
 export const buildChatSystemPrompt = (
   unitTitle: string,

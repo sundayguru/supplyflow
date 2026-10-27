@@ -90,9 +90,13 @@ npx wrangler secret put AOL_CLIENT_ID --env production
 npx wrangler secret put AOL_CLIENT_SECRET --env production
 npx wrangler secret put AI_API_KEY --env production
 npx wrangler secret put TOKEN_ENCRYPTION_KEY --env production
+npx wrangler secret put JWT_SECRET --env production
 ```
 
-`TOKEN_ENCRYPTION_KEY` must be a base64-encoded 32-byte key. Users connect
+`TOKEN_ENCRYPTION_KEY` must be a base64-encoded 32-byte key. `JWT_SECRET` must
+contain at least 32 characters; generate one with `openssl rand -base64 48`.
+Set it in `.dev.vars` for local development and configure it separately for
+each deployed Worker environment. Users connect
 Gmail from the Connected accounts page; refresh tokens are requested with the
 `https://www.googleapis.com/auth/gmail.readonly` scope and encrypted before
 being stored. Extracted RFQs belong to the connected inbox's organization. For

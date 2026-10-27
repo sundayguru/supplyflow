@@ -1,10 +1,16 @@
 import bcrypt from 'bcryptjs';
+import { env } from 'cloudflare:workers';
 import { SignJWT, jwtVerify } from 'jose';
 import { v4 as uuidv4 } from 'uuid';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'your-secret-key-change-in-production',
-);
+const getJwtSecret = () => {
+  if (!env.JWT_SECRET || env.JWT_SECRET.length < 32) {
+    throw new Error(
+      'JWT_SECRET must be configured with at least 32 characters',
+    );
+  }
+  return new TextEncoder().encode(env.JWT_SECRET);
+};
 
 const SALT_ROUNDS = 10;
 const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -29,7 +35,7 @@ export const generateSessionToken = async (
     .setIssuedAt()
     .setExpirationTime('7d')
     .setJti(uuidv4())
-    .sign(JWT_SECRET);
+    .sign(getJwtSecret());
 
   return token;
 };
@@ -38,7 +44,7 @@ export const verifySessionToken = async (
   token: string,
 ): Promise<{ userId: string; email: string } | null> => {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, getJwtSecret());
     return {
       userId: payload.userId as string,
       email: payload.email as string,

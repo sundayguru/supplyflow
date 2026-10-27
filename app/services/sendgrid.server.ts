@@ -23,7 +23,6 @@ export const renderBaseEmailTemplate = (input: {
   const title = escapeHtml(input.title);
   const message = escapeHtml(input.message);
   const organizationName = escapeHtml(input.organizationName);
-  const actorLabel = escapeHtml(input.actorLabel);
   const appBaseUrl = env.BASE_URL?.replace(/\/$/, '');
   const actionHref =
     appBaseUrl && input.actionUrl
