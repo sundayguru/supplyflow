@@ -12,6 +12,7 @@ import {
   getOrganizationInvitationDetails,
 } from '~/db/organizations';
 import { getUserFromRequest } from '~/utils/session.server';
+import { notifyOrganizationOwner } from '~/db/notifications';
 
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
   const invitation = await getOrganizationInvitationDetails(params.token);
@@ -44,7 +45,21 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     };
   }
   try {
-    await acceptOrganizationInvitation(params.token, user.id, user.email);
+    const organization = await acceptOrganizationInvitation(
+      params.token,
+      user.id,
+      user.email,
+    );
+    if (organization) {
+      await notifyOrganizationOwner(organization.id, {
+        title: 'Invitation accepted',
+        message: `${user.name} (${user.email}) accepted your invitation to join ${organization.name}.`,
+        actorType: 'user',
+        actionUrl: '/organization/users',
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      });
+    }
     return redirect('/organization/users');
   } catch (error) {
     return {

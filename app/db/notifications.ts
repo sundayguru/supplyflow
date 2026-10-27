@@ -15,6 +15,33 @@ import {
   sendEmailWithSendGrid,
 } from '~/services/sendgrid.server';
 
+const sendNotificationEmails = async (
+  recipients: Array<{ email: string }>,
+  organizationName: string,
+  notification: Omit<InsertNotification, 'id' | 'userId'>,
+) => {
+  const html = renderBaseEmailTemplate({
+    organizationName,
+    title: notification.title,
+    message: notification.message,
+    actorLabel: notification.actorType === 'system' ? 'System' : 'Team member',
+    actionUrl: notification.actionUrl,
+  });
+  await Promise.all(
+    recipients.map(async ({ email }) => {
+      try {
+        await sendEmailWithSendGrid({
+          to: email,
+          subject: `${organizationName}: ${notification.title}`,
+          html,
+        });
+      } catch (error) {
+        logError(error, 'Error sending notification email');
+      }
+    }),
+  );
+};
+
 export const createNotification = async (
   notification: Omit<InsertNotification, 'id'>,
 ) => {
@@ -79,32 +106,66 @@ export const notifyOrganizationMembers = async (
               eq(users.isBanned, false),
             ),
           );
-        const html = renderBaseEmailTemplate({
-          organizationName: organization.name,
-          title: notification.title,
-          message: notification.message,
-          actorLabel:
-            notification.actorType === 'system' ? 'System' : 'Team member',
-          actionUrl: notification.actionUrl,
-        });
-        await Promise.all(
-          recipients.map(async ({ email }) => {
-            try {
-              await sendEmailWithSendGrid({
-                to: email,
-                subject: `${organization.name}: ${notification.title}`,
-                html,
-              });
-            } catch (error) {
-              logError(error, 'Error sending notification email');
-            }
-          }),
+        await sendNotificationEmails(
+          recipients,
+          organization.name,
+          notification,
         );
       }
       return created;
     }
   } catch (e) {
     logError(e, 'Error creating notification');
+    return null;
+  }
+};
+
+export const notifyOrganizationOwner = async (
+  organizationId: string,
+  notification: Omit<InsertNotification, 'id' | 'userId'>,
+) => {
+  try {
+    const db = getDb();
+    const [organization] = await db
+      .select({
+        ownerId: organizations.createdBy,
+        ownerEmail: users.email,
+        ownerIsDeactivated: users.isDeactivated,
+        ownerIsBanned: users.isBanned,
+        name: organizations.name,
+        features: plans.features,
+      })
+      .from(organizations)
+      .innerJoin(plans, eq(organizations.planId, plans.id))
+      .innerJoin(users, eq(organizations.createdBy, users.id))
+      .where(eq(organizations.id, organizationId));
+    if (!organization) {
+      return null;
+    }
+
+    const [created] = await db
+      .insert(notifications)
+      .values({
+        ...notification,
+        id: uuidv4(),
+        userId: organization.ownerId,
+        isRead: false,
+      })
+      .returning();
+    if (
+      organization.features.emailNotifications === true &&
+      !organization.ownerIsDeactivated &&
+      !organization.ownerIsBanned
+    ) {
+      await sendNotificationEmails(
+        [{ email: organization.ownerEmail }],
+        organization.name,
+        notification,
+      );
+    }
+    return created ?? null;
+  } catch (error) {
+    logError(error, 'Error notifying organization owner');
     return null;
   }
 };
