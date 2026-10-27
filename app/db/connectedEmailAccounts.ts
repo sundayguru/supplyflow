@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, sql } from 'drizzle-orm';
 import { getDb } from './connection';
 import {
   connectedEmailAccounts,
@@ -214,6 +214,41 @@ export const deleteConnectedEmailAccount = async (
     )
     .returning({ id: connectedEmailAccounts.id });
   return account ?? null;
+};
+
+export const deleteConnectedEmailAccountsForUser = async (userId: string) => {
+  const db = getDb();
+  const accounts = await db
+    .select({ id: connectedEmailAccounts.id })
+    .from(connectedEmailAccounts)
+    .where(eq(connectedEmailAccounts.userId, userId));
+  const accountIds = accounts.map(({ id }) => id);
+  if (!accountIds.length) {
+    return;
+  }
+
+  await db
+    .delete(emailAccountSyncStates)
+    .where(inArray(emailAccountSyncStates.accountId, accountIds));
+  await db
+    .update(emailIngestions)
+    .set({ accountId: null, updatedAt: new Date().toISOString() })
+    .where(inArray(emailIngestions.accountId, accountIds));
+  await db
+    .update(vendorPurchaseOrders)
+    .set({
+      generatedEmailDraftAccountId: null,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(
+      inArray(vendorPurchaseOrders.generatedEmailDraftAccountId, accountIds),
+    );
+  await db
+    .delete(connectedEmailAccounts)
+    .where(eq(connectedEmailAccounts.userId, userId));
+  await db
+    .delete(emailAccountOauthStates)
+    .where(eq(emailAccountOauthStates.userId, userId));
 };
 
 export const createEmailAccountOauthState = async (userId: string) => {

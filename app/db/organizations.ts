@@ -22,7 +22,12 @@ export const getOrganizationForUser = async (userId: string) => {
       organizations,
       eq(organizationMembers.organizationId, organizations.id),
     )
-    .where(eq(organizationMembers.userId, userId));
+    .where(
+      and(
+        eq(organizationMembers.userId, userId),
+        isNull(organizations.deletedAt),
+      ),
+    );
 
   return result ? { ...result.organization, role: result.role } : null;
 };
@@ -44,6 +49,7 @@ export const getOrganizationsForAdmin = () => {
       name: organizations.name,
       planId: organizations.planId,
       ownerEmail: users.email,
+      deletedAt: organizations.deletedAt,
     })
     .from(organizations)
     .innerJoin(users, eq(organizations.createdBy, users.id))
@@ -59,6 +65,18 @@ export const updateOrganizationPlan = async (
     .update(organizations)
     .set({ planId, updatedAt: now() })
     .where(eq(organizations.id, organizationId));
+};
+
+export const softDeleteOrganizationForOwner = async (userId: string) => {
+  const db = getDb();
+  const [organization] = await db
+    .update(organizations)
+    .set({ deletedAt: now(), updatedAt: now() })
+    .where(
+      and(eq(organizations.createdBy, userId), isNull(organizations.deletedAt)),
+    )
+    .returning({ id: organizations.id });
+  return organization ?? null;
 };
 
 export const createOrganization = async (

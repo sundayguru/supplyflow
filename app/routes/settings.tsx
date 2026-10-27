@@ -12,15 +12,29 @@ import {
   Eye,
   EyeOff,
   Loader2,
+  Trash2,
+  X,
 } from 'lucide-react';
 import { getUserFromRequest } from '~/utils/session.server';
+import { deleteConnectedEmailAccountsForUser } from '~/db/connectedEmailAccounts';
+import {
+  getOrganizationForUser,
+  removeOrganizationMember,
+  softDeleteOrganizationForOwner,
+} from '~/db/organizations';
 import {
   getUserById,
   updateUser,
   verifyUserPassword,
   updateUserPassword,
+  deleteUserSessions,
 } from '~/db/auth';
-import { getProfileByUserId, insertProfile, updateProfile } from '~/db/profile';
+import {
+  deleteProfileByUserId,
+  getProfileByUserId,
+  insertProfile,
+  updateProfile,
+} from '~/db/profile';
 import { v4 as uuidv4 } from 'uuid';
 
 type LoaderData = {
@@ -150,6 +164,31 @@ export const action = async ({ request }: Route.ActionArgs) => {
     return data({ success: true, message: 'Password changed successfully' });
   }
 
+  if (intent === 'deleteProfile') {
+    const organization = await getOrganizationForUser(currentUser.id);
+    await deleteConnectedEmailAccountsForUser(currentUser.id);
+    if (organization?.createdBy === currentUser.id) {
+      await softDeleteOrganizationForOwner(currentUser.id);
+    } else if (organization) {
+      await removeOrganizationMember(organization.id, currentUser.id);
+    }
+    const deleted = await deleteProfileByUserId(currentUser.id);
+    if (!deleted) {
+      return data(
+        { error: 'Unable to delete your profile. Please try again.' },
+        { status: 500 },
+      );
+    }
+    await updateUser(currentUser.id, { isDeactivated: true });
+    await deleteUserSessions(currentUser.id);
+    const headers = new Headers();
+    headers.append(
+      'Set-Cookie',
+      'session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0',
+    );
+    return redirect('/auth/login?profileDeleted=1', { headers });
+  }
+
   return data({ error: 'Invalid action' }, { status: 400 });
 };
 
@@ -158,11 +197,13 @@ export default function SettingsPage({ loaderData }: Route.ComponentProps) {
   const profileFetcher = useFetcher();
   const avatarFetcher = useFetcher<AvatarActionData>();
   const passwordFetcher = useFetcher();
+  const deleteProfileFetcher = useFetcher();
   const revalidator = useRevalidator();
 
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showDeleteProfileDialog, setShowDeleteProfileDialog] = useState(false);
 
   const [firstName, setFirstName] = useState(user.firstName);
   const [lastName, setLastName] = useState(user.lastName);
@@ -269,6 +310,7 @@ export default function SettingsPage({ loaderData }: Route.ComponentProps) {
   const profileMessage = getProfileMessage();
   const avatarMessage = getAvatarMessage();
   const passwordMessage = getPasswordMessage();
+  const deleteProfileMessage = deleteProfileFetcher.data;
 
   return (
     <div className='mx-auto max-w-2xl px-4 py-8'>
@@ -636,7 +678,99 @@ export default function SettingsPage({ loaderData }: Route.ComponentProps) {
             </div>
           </passwordFetcher.Form>
         </motion.section>
+
+        <motion.section
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className='rounded-[36px] border border-red-200 bg-white p-6 shadow-sm'
+        >
+          <h2 className='text-xl font-medium text-[#1a1a1a]'>
+            Delete profile and close account
+          </h2>
+          <p className='mt-2 text-sm text-black/55'>
+            Remove your profile information and connected email accounts, then
+            close your sign-in access. If you own the organization, it will be
+            marked deleted while its records are kept for reporting.
+          </p>
+          {deleteProfileMessage && 'error' in deleteProfileMessage && (
+            <p className='mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700'>
+              {deleteProfileMessage.error}
+            </p>
+          )}
+          <button
+            type='button'
+            onClick={() => setShowDeleteProfileDialog(true)}
+            className='mt-5 inline-flex items-center gap-2 rounded-xl border border-red-200 px-5 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50'
+          >
+            <Trash2 size={16} />
+            Delete profile and close account
+          </button>
+        </motion.section>
       </div>
+
+      {showDeleteProfileDialog && (
+        <div
+          className='fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4'
+          role='presentation'
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setShowDeleteProfileDialog(false);
+            }
+          }}
+        >
+          <div
+            className='w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl'
+            role='alertdialog'
+            aria-modal='true'
+            aria-labelledby='delete-profile-title'
+          >
+            <div className='flex items-start justify-between gap-4'>
+              <div>
+                <h3 id='delete-profile-title' className='text-lg font-semibold'>
+                  Delete your profile and close your account?
+                </h3>
+                <p className='mt-2 text-sm text-black/60'>
+                  Your connected email accounts will be removed and you will be
+                  signed out. If you own the organization, it will be marked
+                  deleted while RFQs, purchase orders, and other records are
+                  retained for reporting.
+                </p>
+              </div>
+              <button
+                type='button'
+                onClick={() => setShowDeleteProfileDialog(false)}
+                aria-label='Close confirmation'
+                className='rounded-lg p-1 text-black/50 hover:bg-black/5'
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className='mt-6 flex justify-end gap-3'>
+              <button
+                type='button'
+                onClick={() => setShowDeleteProfileDialog(false)}
+                className='rounded-xl border border-black/10 px-4 py-2 text-sm font-medium hover:bg-black/5'
+              >
+                Cancel
+              </button>
+              <deleteProfileFetcher.Form method='post'>
+                <input type='hidden' name='intent' value='deleteProfile' />
+                <button
+                  type='submit'
+                  disabled={deleteProfileFetcher.state !== 'idle'}
+                  className='inline-flex items-center gap-2 rounded-xl bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800 disabled:opacity-50'
+                >
+                  {deleteProfileFetcher.state !== 'idle' && (
+                    <Loader2 size={15} className='animate-spin' />
+                  )}
+                  Delete profile and close account
+                </button>
+              </deleteProfileFetcher.Form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

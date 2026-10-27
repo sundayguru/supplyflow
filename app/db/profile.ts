@@ -49,6 +49,19 @@ export const getProfileByUserId = async (userId: string) => {
   }
 };
 
+export const deleteProfileByUserId = async (userId: string) => {
+  try {
+    const db = getDb();
+    return await db
+      .delete(profile)
+      .where(eq(profile.userId, userId))
+      .returning();
+  } catch (e) {
+    logError(e, 'Error deleting profile');
+    return null;
+  }
+};
+
 export const getAllProfiles = async () => {
   try {
     const db = getDb();

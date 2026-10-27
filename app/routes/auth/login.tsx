@@ -37,7 +37,8 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   const error = url.searchParams.get('error');
   const resetSuccess = url.searchParams.get('resetSuccess');
   const verified = url.searchParams.get('verified') === '1';
-  return { callbackUrl, error, resetSuccess, verified };
+  const profileDeleted = url.searchParams.get('profileDeleted') === '1';
+  return { callbackUrl, error, resetSuccess, verified, profileDeleted };
 };
 
 export const action = async ({ request }: Route.ActionArgs) => {
@@ -109,7 +110,13 @@ export default function LoginPage({
   loaderData,
   actionData,
 }: Route.ComponentProps) {
-  const { callbackUrl, error: queryError, resetSuccess, verified } = loaderData;
+  const {
+    callbackUrl,
+    error: queryError,
+    resetSuccess,
+    verified,
+    profileDeleted,
+  } = loaderData;
   const actionError =
     actionData && 'error' in actionData ? actionData.error : null;
   const queryErrorMessage = queryError
@@ -181,6 +188,11 @@ export default function LoginPage({
         {verified && (
           <p className='rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700'>
             Your email is verified. You can now sign in.
+          </p>
+        )}
+        {profileDeleted && (
+          <p className='rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700'>
+            Your profile has been deleted and sign-in access has been closed.
           </p>
         )}
 

@@ -46,6 +46,7 @@ export const organizations = sqliteTable(
     emailFolder: text('email_folder', { length: 255 })
       .notNull()
       .default('INBOX'),
+    deletedAt: text('deleted_at'),
     createdBy: text('created_by')
       .notNull()
       .references(() => users.id, { onDelete: 'restrict' }),
