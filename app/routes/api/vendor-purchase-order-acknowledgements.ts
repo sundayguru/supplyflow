@@ -21,6 +21,7 @@ import {
 import { parseVendorPurchaseOrderAcknowledgementInput } from '~/utils/vendorPurchaseOrderAcknowledgement.server';
 import { getUserFromRequest } from '~/utils/session.server';
 import type { Route } from './+types/vendor-purchase-order-acknowledgements';
+import { notifyOrganizationMembers } from '~/db/notifications';
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
@@ -83,6 +84,12 @@ export const action = async ({ request }: Route.ActionArgs) => {
           parsed.value,
         );
       if (vendorPurchaseOrderAcknowledgement) {
+        await notifyOrganizationMembers(organization.id, {
+          title: 'New vendor PO acknowledgement',
+          message: `Acknowledgement ${vendorPurchaseOrderAcknowledgement.reference} was created by a team member.`,
+          actorType: 'user',
+          actionUrl: `/vendor-purchase-order-acknowledgements?id=${vendorPurchaseOrderAcknowledgement.id}`,
+        });
         await logCreatedActivity(
           {
             organizationId: organization.id,
@@ -177,6 +184,14 @@ export const action = async ({ request }: Route.ActionArgs) => {
             unknown
           >,
         );
+        if (existing.status !== vendorPurchaseOrderAcknowledgement.status) {
+          await notifyOrganizationMembers(organization.id, {
+            title: 'Vendor PO acknowledgement status changed',
+            message: `Acknowledgement ${vendorPurchaseOrderAcknowledgement.reference} status changed from ${existing.status} to ${vendorPurchaseOrderAcknowledgement.status} by a team member.`,
+            actorType: 'user',
+            actionUrl: `/vendor-purchase-order-acknowledgements?id=${vendorPurchaseOrderAcknowledgement.id}`,
+          });
+        }
         return data({ success: true, vendorPurchaseOrderAcknowledgement });
       }
       const parsed = parseVendorPurchaseOrderAcknowledgementInput(body);

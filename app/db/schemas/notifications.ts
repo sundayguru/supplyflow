@@ -9,6 +9,9 @@ export const notifications = sqliteTable('notifications', {
     .references(() => users.id, { onDelete: 'cascade' }),
   title: text('title', { length: 255 }).notNull(),
   message: text('message').notNull(),
+  actorType: text('actor_type', { enum: ['user', 'system'] })
+    .notNull()
+    .default('user'),
   actionUrl: text('action_url'),
   isRead: integer('is_read', { mode: 'boolean' }).notNull().default(false),
   createdAt: text('created_at')

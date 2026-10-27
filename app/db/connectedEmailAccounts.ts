@@ -1,10 +1,12 @@
-import { and, desc, eq, gt } from 'drizzle-orm';
+import { and, desc, eq, gt, sql } from 'drizzle-orm';
 import { getDb } from './connection';
 import {
   connectedEmailAccounts,
   emailAccountOauthStates,
   emailAccountSyncStates,
   emailIngestions,
+  organizations,
+  plans,
   vendorPurchaseOrders,
 } from './schemas';
 import type { EmailProvider } from '~/services/email/providers';
@@ -47,6 +49,31 @@ export const listActiveConnectedEmailAccounts = (organizationId?: string) => {
             eq(connectedEmailAccounts.needsReconnect, false),
           ),
     );
+};
+
+export const listActiveIngestionConnectedEmailAccounts = (
+  organizationId?: string,
+) => {
+  const db = getDb();
+  const filters = [
+    eq(connectedEmailAccounts.isActive, true),
+    eq(connectedEmailAccounts.needsReconnect, false),
+    sql`json_extract(${plans.features}, '$.emailIngestions') = 1`,
+  ];
+  if (organizationId) {
+    filters.push(eq(connectedEmailAccounts.organizationId, organizationId));
+  }
+
+  return db
+    .select({ account: connectedEmailAccounts })
+    .from(connectedEmailAccounts)
+    .innerJoin(
+      organizations,
+      eq(connectedEmailAccounts.organizationId, organizations.id),
+    )
+    .innerJoin(plans, eq(organizations.planId, plans.id))
+    .where(and(...filters))
+    .then((rows) => rows.map(({ account }) => account));
 };
 
 export const upsertConnectedEmailAccount = async (input: {

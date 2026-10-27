@@ -1,5 +1,5 @@
 import {
-  listActiveConnectedEmailAccounts,
+  listActiveIngestionConnectedEmailAccounts,
   markConnectedEmailAccountNeedsReconnect,
 } from '~/db/connectedEmailAccounts';
 import { getOrganizationById } from '~/db/organizations';
@@ -183,7 +183,8 @@ export const loadScheduledMailboxes = async (
   env: Env,
   organizationId?: string,
 ): Promise<ScheduledMailbox[]> => {
-  const accounts = await listActiveConnectedEmailAccounts(organizationId);
+  const accounts =
+    await listActiveIngestionConnectedEmailAccounts(organizationId);
   const startedAt = new Date();
   const mailboxes: ScheduledMailbox[] = [];
 

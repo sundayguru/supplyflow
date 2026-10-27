@@ -26,6 +26,7 @@ import type {
 } from '~/types/purchaseOrder';
 import { calculateRfqItemAmounts } from '~/utils/rfq';
 import { uploadRfqSourcePdf } from '~/utils/rfqSourcePdf.server';
+import { notifyOrganizationMembers } from '~/db/notifications';
 
 type AccountResult = {
   accountId: string;
@@ -254,6 +255,12 @@ const processAccount = async (
       if (!purchaseOrder) {
         throw new Error('Purchase order could not be created');
       }
+      await notifyOrganizationMembers(organization.id, {
+        title: 'New purchase order',
+        message: `Purchase order ${purchaseOrder.reference} was created automatically from email.`,
+        actorType: 'system',
+        actionUrl: `/purchase-orders?id=${purchaseOrder.id}`,
+      });
       if (rfqId) {
         await updateRfqStatus(
           rfqId,
@@ -340,6 +347,12 @@ const processAccount = async (
       if (!rfq) {
         throw new Error('RFQ could not be created');
       }
+      await notifyOrganizationMembers(organization.id, {
+        title: 'New RFQ',
+        message: `RFQ ${rfq.reference} was created automatically from email.`,
+        actorType: 'system',
+        actionUrl: `/rfqs?id=${rfq.id}`,
+      });
       try {
         await sendRfqAcknowledgement({
           emailClient,

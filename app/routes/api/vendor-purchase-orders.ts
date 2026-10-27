@@ -29,6 +29,7 @@ import { resolveItemManufacturers } from '~/utils/itemManufacturers.server';
 import { parseVendorPurchaseOrderInput } from '~/utils/vendorPurchaseOrder.server';
 import { getUserFromRequest } from '~/utils/session.server';
 import type { Route } from './+types/vendor-purchase-orders';
+import { notifyOrganizationMembers } from '~/db/notifications';
 
 const hasValidPdfTemplate = async (
   templateId: string | null,
@@ -162,6 +163,12 @@ export const action = async ({ request }: Route.ActionArgs) => {
         resolved.value,
       );
       if (vendorPurchaseOrder) {
+        await notifyOrganizationMembers(organization.id, {
+          title: 'New vendor purchase order',
+          message: `Vendor PO ${vendorPurchaseOrder.reference} was created by a team member.`,
+          actorType: 'user',
+          actionUrl: `/vendor-purchase-orders?id=${vendorPurchaseOrder.id}`,
+        });
         await logCreatedActivity(
           {
             organizationId: organization.id,
@@ -234,6 +241,14 @@ export const action = async ({ request }: Route.ActionArgs) => {
           existing as unknown as Record<string, unknown>,
           vendorPurchaseOrder as unknown as Record<string, unknown>,
         );
+        if (existing.status !== vendorPurchaseOrder.status) {
+          await notifyOrganizationMembers(organization.id, {
+            title: 'Vendor PO status changed',
+            message: `Vendor PO ${vendorPurchaseOrder.reference} status changed from ${existing.status} to ${vendorPurchaseOrder.status} by a team member.`,
+            actorType: 'user',
+            actionUrl: `/vendor-purchase-orders?id=${vendorPurchaseOrder.id}`,
+          });
+        }
         return data({ success: true, vendorPurchaseOrder });
       }
       const parsed = parseVendorPurchaseOrderInput(body);

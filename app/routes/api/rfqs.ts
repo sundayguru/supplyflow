@@ -23,6 +23,7 @@ import {
   syncRfqItemsWithProductPrices,
 } from '~/utils/rfqProductPrices.server';
 import { resolveItemManufacturers } from '~/utils/itemManufacturers.server';
+import { notifyOrganizationMembers } from '~/db/notifications';
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
@@ -98,6 +99,12 @@ export const action = async ({ request }: Route.ActionArgs) => {
         organization.priceMarkup,
       );
       if (rfq) {
+        await notifyOrganizationMembers(organization.id, {
+          title: 'New RFQ',
+          message: `RFQ ${rfq.reference} was created by a team member.`,
+          actorType: 'user',
+          actionUrl: `/rfqs?id=${rfq.id}`,
+        });
         await logCreatedActivity(
           {
             organizationId: organization.id,
@@ -170,6 +177,14 @@ export const action = async ({ request }: Route.ActionArgs) => {
           existing as unknown as Record<string, unknown>,
           rfq as unknown as Record<string, unknown>,
         );
+        if (existing.status !== rfq.status) {
+          await notifyOrganizationMembers(organization.id, {
+            title: 'RFQ status changed',
+            message: `RFQ ${rfq.reference} status changed from ${existing.status} to ${rfq.status} by a team member.`,
+            actorType: 'user',
+            actionUrl: `/rfqs?id=${rfq.id}`,
+          });
+        }
         return data({ success: true, rfq });
       }
       const parsed = parseRfqInput(

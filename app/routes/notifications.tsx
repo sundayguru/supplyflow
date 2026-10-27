@@ -149,6 +149,11 @@ export default function NotificationsPage({
                   >
                     {notification.title}
                   </h4>
+                  <span className='mt-1 inline-flex rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-black/50 uppercase'>
+                    {notification.actorType === 'system'
+                      ? 'System'
+                      : 'Team member'}
+                  </span>
                   <p
                     className={`mt-1 text-sm ${
                       notification.isRead ? 'text-black/50' : 'text-black/70'

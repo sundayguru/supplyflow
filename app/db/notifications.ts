@@ -1,9 +1,13 @@
 import { eq, desc, and } from 'drizzle-orm';
 import { getDb } from './connection';
-import { notifications, type InsertNotification } from './schemas';
+import {
+  notifications,
+  organizationMembers,
+  organizations,
+  type InsertNotification,
+} from './schemas';
 import { logError } from '../utils/logger';
 import { v4 as uuidv4 } from 'uuid';
-import { getAllUsers } from './users';
 
 export const createNotification = async (
   notification: Omit<InsertNotification, 'id'>,
@@ -21,17 +25,29 @@ export const createNotification = async (
   }
 };
 
-export const notifyAllUsers = async (
-  notification: Partial<InsertNotification>,
+export const notifyOrganizationMembers = async (
+  organizationId: string,
+  notification: Omit<InsertNotification, 'id' | 'userId'>,
 ) => {
   try {
     const db = getDb();
-    const allUsers = await getAllUsers();
-    if (allUsers) {
-      const notificationsInsert = allUsers.map((u) => {
+    const members = await db
+      .select({ userId: organizationMembers.userId })
+      .from(organizationMembers)
+      .where(eq(organizationMembers.organizationId, organizationId));
+    const [organization] = await db
+      .select({ ownerId: organizations.createdBy })
+      .from(organizations)
+      .where(eq(organizations.id, organizationId));
+    const recipientIds = new Set(members.map((member) => member.userId));
+    if (organization) {
+      recipientIds.add(organization.ownerId);
+    }
+    if (recipientIds.size) {
+      const notificationsInsert = [...recipientIds].map((userId) => {
         return {
           ...notification,
-          userId: u.users.id,
+          userId,
           isRead: false,
           id: uuidv4(),
         } as InsertNotification;

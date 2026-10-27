@@ -22,6 +22,7 @@ import { isGmailAuthenticationError } from '~/services/email/gmail.server';
 import type { EmailClient, EmailMessage } from '~/services/email/types';
 import type { ScheduledMailbox } from '~/services/email-schedule.server';
 import type { VendorPurchaseOrderAcknowledgementItemInput } from '~/types/vendorPurchaseOrderAcknowledgement';
+import { notifyOrganizationMembers } from '~/db/notifications';
 
 type VendorPurchaseOrderAcknowledgementSyncResult = {
   checked: number;
@@ -250,6 +251,12 @@ const processClassifiedAcknowledgement = async ({
       vendorPurchaseOrder.id,
       organizationId,
     );
+    await notifyOrganizationMembers(organizationId, {
+      title: 'New vendor PO acknowledgement',
+      message: `Acknowledgement ${acknowledgement.reference} was created automatically from email.`,
+      actorType: 'system',
+      actionUrl: `/vendor-purchase-order-acknowledgements?id=${acknowledgement.id}`,
+    });
     await completeEmailIngestion(ingestionId, { status: 'processed' });
     return 'created' as const;
   } catch (error) {

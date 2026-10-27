@@ -16,6 +16,7 @@ import {
   purchaseOrderItemStatuses,
   type PurchaseOrderItemStatus,
 } from '~/types/purchaseOrder';
+import { notifyOrganizationMembers } from '~/db/notifications';
 
 const getItemId = (value: unknown) => {
   if (
@@ -94,6 +95,15 @@ export const action = async ({ request }: Route.ActionArgs) => {
           );
         }
         if (existing) {
+          const previousItem = existing.items.find((item) => item.id === id);
+          if (previousItem && previousItem.status !== body.status) {
+            await notifyOrganizationMembers(organization.id, {
+              title: 'Purchase order item status changed',
+              message: `${previousItem.name} on purchase order ${purchaseOrder.reference} changed from ${previousItem.status} to ${body.status} by a team member.`,
+              actorType: 'user',
+              actionUrl: `/purchase-orders?id=${purchaseOrder.id}`,
+            });
+          }
           await logUpdatedActivity(
             {
               organizationId: organization.id,
