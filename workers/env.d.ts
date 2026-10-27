@@ -9,4 +9,7 @@ interface Env {
   AI_API_KEY?: string;
   AI_MODEL?: string;
   TOKEN_ENCRYPTION_KEY: string;
+  SENDGRID_API_KEY?: string;
+  SENDGRID_FROM_EMAIL?: string;
+  APP_BASE_URL?: string;
 }

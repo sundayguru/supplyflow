@@ -3,5 +3,7 @@ declare namespace Cloudflare {
   // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface Env {
     ADMIN_EMAILS?: string;
+    SENDGRID_API_KEY?: string;
+    SENDGRID_FROM_EMAIL?: string;
   }
 }

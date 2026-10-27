@@ -12,6 +12,7 @@ export const planFeatureLabels = {
   customPdfTemplates: 'PDF templates',
   emailAutomation: 'Connected email accounts',
   emailIngestions: 'Email ingestions',
+  emailNotifications: 'Email notifications',
   teamManagement: 'Organization users',
 } as const;
 

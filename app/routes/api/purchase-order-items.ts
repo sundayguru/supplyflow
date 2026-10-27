@@ -99,7 +99,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
           if (previousItem && previousItem.status !== body.status) {
             await notifyOrganizationMembers(organization.id, {
               title: 'Purchase order item status changed',
-              message: `${previousItem.name} on purchase order ${purchaseOrder.reference} changed from ${previousItem.status} to ${body.status} by a team member.`,
+              message: `${previousItem.description} on purchase order ${purchaseOrder.reference} changed from ${previousItem.status} to ${body.status} by a team member.`,
               actorType: 'user',
               actionUrl: `/purchase-orders?id=${purchaseOrder.id}`,
             });

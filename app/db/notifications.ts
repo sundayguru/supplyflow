@@ -1,13 +1,19 @@
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, inArray } from 'drizzle-orm';
 import { getDb } from './connection';
 import {
   notifications,
   organizationMembers,
   organizations,
+  plans,
+  users,
   type InsertNotification,
 } from './schemas';
 import { logError } from '../utils/logger';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  renderBaseEmailTemplate,
+  sendEmailWithSendGrid,
+} from '~/services/sendgrid.server';
 
 export const createNotification = async (
   notification: Omit<InsertNotification, 'id'>,
@@ -36,8 +42,13 @@ export const notifyOrganizationMembers = async (
       .from(organizationMembers)
       .where(eq(organizationMembers.organizationId, organizationId));
     const [organization] = await db
-      .select({ ownerId: organizations.createdBy })
+      .select({
+        ownerId: organizations.createdBy,
+        name: organizations.name,
+        features: plans.features,
+      })
       .from(organizations)
+      .innerJoin(plans, eq(organizations.planId, plans.id))
       .where(eq(organizations.id, organizationId));
     const recipientIds = new Set(members.map((member) => member.userId));
     if (organization) {
@@ -53,10 +64,44 @@ export const notifyOrganizationMembers = async (
         } as InsertNotification;
       });
 
-      return await db
+      const created = await db
         .insert(notifications)
         .values(notificationsInsert)
         .returning();
+      if (organization?.features.emailNotifications === true) {
+        const recipients = await db
+          .select({ email: users.email })
+          .from(users)
+          .where(
+            and(
+              inArray(users.id, [...recipientIds]),
+              eq(users.isDeactivated, false),
+              eq(users.isBanned, false),
+            ),
+          );
+        const html = renderBaseEmailTemplate({
+          organizationName: organization.name,
+          title: notification.title,
+          message: notification.message,
+          actorLabel:
+            notification.actorType === 'system' ? 'System' : 'Team member',
+          actionUrl: notification.actionUrl,
+        });
+        await Promise.all(
+          recipients.map(async ({ email }) => {
+            try {
+              await sendEmailWithSendGrid({
+                to: email,
+                subject: `${organization.name}: ${notification.title}`,
+                html,
+              });
+            } catch (error) {
+              logError(error, 'Error sending notification email');
+            }
+          }),
+        );
+      }
+      return created;
     }
   } catch (e) {
     logError(e, 'Error creating notification');
