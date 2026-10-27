@@ -23,6 +23,7 @@ export default [
   ]),
   // OAuth callback route
   route('api/auth/google', 'routes/api/auth/google.tsx'),
+  route('api/stripe/webhook', 'routes/api/stripe-webhook.ts'),
 
   // Protected routes
   layout('./routes/layouts/ProtectedLayout.tsx', [

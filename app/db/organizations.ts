@@ -67,6 +67,56 @@ export const updateOrganizationPlan = async (
     .where(eq(organizations.id, organizationId));
 };
 
+export const getOrganizationForStripeCustomer = async (
+  stripeCustomerId: string,
+) => {
+  const [organization] = await getDb()
+    .select()
+    .from(organizations)
+    .where(eq(organizations.stripeCustomerId, stripeCustomerId));
+  return organization ?? null;
+};
+
+export const getOrganizationForStripeSubscription = async (
+  stripeSubscriptionId: string,
+) => {
+  const [organization] = await getDb()
+    .select()
+    .from(organizations)
+    .where(eq(organizations.stripeSubscriptionId, stripeSubscriptionId));
+  return organization ?? null;
+};
+
+export const updateOrganizationStripeSubscription = async (values: {
+  organizationId: string;
+  planId: string;
+  stripeCustomerId: string;
+  stripeSubscriptionId: string;
+  stripeSubscriptionStatus: string;
+}) => {
+  await getDb()
+    .update(organizations)
+    .set({ ...values, updatedAt: now() })
+    .where(eq(organizations.id, values.organizationId));
+};
+
+export const clearOrganizationStripeSubscription = async (values: {
+  organizationId: string;
+  stripeSubscriptionId: string;
+  stripeSubscriptionStatus: string;
+  freePlanId: string;
+}) => {
+  await getDb()
+    .update(organizations)
+    .set({
+      planId: values.freePlanId,
+      stripeSubscriptionId: values.stripeSubscriptionId,
+      stripeSubscriptionStatus: values.stripeSubscriptionStatus,
+      updatedAt: now(),
+    })
+    .where(eq(organizations.id, values.organizationId));
+};
+
 export const softDeleteOrganizationForOwner = async (userId: string) => {
   const db = getDb();
   const [organization] = await db

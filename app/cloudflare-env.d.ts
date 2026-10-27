@@ -5,5 +5,7 @@ declare namespace Cloudflare {
     ADMIN_EMAILS?: string;
     SENDGRID_API_KEY?: string;
     SENDGRID_FROM_EMAIL?: string;
+    STRIPE_SECRET_KEY?: string;
+    STRIPE_WEBHOOK_SECRET?: string;
   }
 }

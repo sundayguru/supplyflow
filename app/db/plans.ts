@@ -21,6 +21,7 @@ export const updatePlan = (
     description: string;
     priceLabel: string;
     amount: number;
+    stripePriceId: string | null;
     inputTokenLimit: number;
     outputTokenLimit: number;
     features: Record<string, boolean>;
@@ -36,6 +37,15 @@ export const updatePlan = (
 export const getPlan = async (planId: string) => {
   const db = getDb();
   const [plan] = await db.select().from(plans).where(eq(plans.id, planId));
+  return plan ?? null;
+};
+
+export const getPlanByStripePriceId = async (stripePriceId: string) => {
+  const db = getDb();
+  const [plan] = await db
+    .select()
+    .from(plans)
+    .where(eq(plans.stripePriceId, stripePriceId));
   return plan ?? null;
 };
 

@@ -9,6 +9,7 @@ export const plans = sqliteTable('plans', {
     .notNull()
     .default('Contact us'),
   amount: real('amount').notNull().default(0),
+  stripePriceId: text('stripe_price_id'),
   inputTokenLimit: integer('input_token_limit').notNull().default(0),
   outputTokenLimit: integer('output_token_limit').notNull().default(0),
   features: text('features', { mode: 'json' })

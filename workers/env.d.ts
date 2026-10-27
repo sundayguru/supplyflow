@@ -11,5 +11,7 @@ interface Env {
   TOKEN_ENCRYPTION_KEY: string;
   SENDGRID_API_KEY?: string;
   SENDGRID_FROM_EMAIL?: string;
+  STRIPE_SECRET_KEY?: string;
+  STRIPE_WEBHOOK_SECRET?: string;
   APP_BASE_URL?: string;
 }

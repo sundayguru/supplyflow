@@ -19,4 +19,7 @@ export default defineConfig({
     !process.env.VITEST && reactRouter(),
     tsconfigPaths(),
   ],
+  server: {
+    allowedHosts: ['local.suploop.com'],
+  },
 });

@@ -26,6 +26,9 @@ export const organizations = sqliteTable(
       .notNull()
       .default('free')
       .references(() => plans.id, { onDelete: 'restrict' }),
+    stripeCustomerId: text('stripe_customer_id'),
+    stripeSubscriptionId: text('stripe_subscription_id'),
+    stripeSubscriptionStatus: text('stripe_subscription_status'),
     description: text('description'),
     website: text('website', { length: 511 }),
     phone: text('phone', { length: 64 }),

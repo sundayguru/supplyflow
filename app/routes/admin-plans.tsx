@@ -84,9 +84,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
     ]),
   );
   const amount = Number(form.get('amount') ?? 0);
+  const stripePriceId = String(form.get('stripePriceId') ?? '').trim() || null;
   const inputTokenLimit = Number(form.get('inputTokenLimit') ?? 0);
   const outputTokenLimit = Number(form.get('outputTokenLimit') ?? 0);
   if (
+    (stripePriceId !== null && !/^price_[a-zA-Z0-9]+$/.test(stripePriceId)) ||
     !Number.isFinite(amount) ||
     amount < 0 ||
     !Number.isSafeInteger(inputTokenLimit) ||
@@ -95,7 +97,12 @@ export const action = async ({ request }: Route.ActionArgs) => {
     outputTokenLimit < 0
   ) {
     return data(
-      { error: 'Enter a valid amount and non-negative token limits' },
+      {
+        error:
+          stripePriceId !== null && !/^price_[a-zA-Z0-9]+$/.test(stripePriceId)
+            ? 'Enter a valid Stripe Price ID (starts with price_)'
+            : 'Enter a valid amount and non-negative token limits',
+      },
       { status: 400 },
     );
   }
@@ -104,6 +111,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
     description: String(form.get('description') ?? '').trim(),
     priceLabel: String(form.get('priceLabel') ?? '').trim(),
     amount,
+    stripePriceId,
     inputTokenLimit,
     outputTokenLimit,
     displayOrder: Number(form.get('displayOrder') ?? plan.displayOrder),
@@ -154,7 +162,7 @@ export default function AdminPlansPage() {
       <header>
         <h1 className='text-2xl font-bold text-slate-950'>Plan management</h1>
         <p className='mt-1 text-sm text-slate-600'>
-          Manage plan visibility, features, pricing labels, and the suggested
+          Manage plan visibility, features, Stripe prices, and the suggested
           plan.
         </p>
       </header>
@@ -297,6 +305,19 @@ export default function AdminPlansPage() {
                       defaultValue={plan.amount}
                       className='mt-2 block w-full rounded-lg border border-slate-300 px-3 py-2'
                     />
+                  </label>
+                  <label className='text-sm font-medium text-slate-700'>
+                    Stripe Price ID
+                    <input
+                      name='stripePriceId'
+                      defaultValue={plan.stripePriceId ?? ''}
+                      placeholder='price_...'
+                      className='mt-2 block w-full rounded-lg border border-slate-300 px-3 py-2'
+                    />
+                    <span className='mt-1 block text-xs font-normal text-slate-500'>
+                      Enter a recurring Stripe Price ID. Leave blank for free or
+                      manually assigned plans.
+                    </span>
                   </label>
                   <label className='text-sm font-medium text-slate-700'>
                     Monthly input token allowance
