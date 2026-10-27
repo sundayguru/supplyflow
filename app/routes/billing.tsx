@@ -26,6 +26,11 @@ const formatAmount = (amount: number) =>
 const formatTokenLimit = (limit: number) =>
   limit > 0 ? new Intl.NumberFormat().format(limit) : 'Unlimited';
 
+const formatCancellationDate = (timestamp: number) =>
+  new Date(timestamp * 1000).toLocaleDateString(undefined, {
+    dateStyle: 'long',
+  });
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const user = await getUserFromRequest(request);
   if (!user) {
@@ -42,6 +47,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     currentPlanId: organization?.planId ?? 'free',
     stripeCustomerId: organization?.stripeCustomerId ?? null,
     stripeSubscriptionStatus: organization?.stripeSubscriptionStatus ?? null,
+    stripeCancelAtPeriodEnd: organization?.stripeCancelAtPeriodEnd ?? false,
+    stripeCancelEffectiveAt: organization?.stripeCancelEffectiveAt ?? null,
     isOrganizationOwner: organization?.createdBy === user.id,
     checkoutResult: new URL(request.url).searchParams.get('checkout'),
   };
@@ -90,6 +97,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         env.STRIPE_SECRET_KEY,
         organization.stripeCustomerId,
         `${baseUrl}/billing`,
+        env.STRIPE_PORTAL_CONFIGURATION_ID,
       );
       if (!session.url) {
         throw new Error('Stripe did not return a billing portal URL');
@@ -149,6 +157,8 @@ export default function BillingPage() {
     currentPlanId,
     stripeCustomerId,
     stripeSubscriptionStatus,
+    stripeCancelAtPeriodEnd,
+    stripeCancelEffectiveAt,
     isOrganizationOwner,
     checkoutResult,
   } = useLoaderData<typeof loader>();
@@ -173,8 +183,8 @@ export default function BillingPage() {
 
       {checkoutResult === 'success' && (
         <p className='rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900'>
-          Checkout completed. Your plan will update as soon as  our payment processor confirms
-          the subscription.
+          Checkout completed. Your plan will update as soon as our payment
+          processor confirms the subscription.
         </p>
       )}
       {checkoutResult === 'cancelled' && (
@@ -190,20 +200,38 @@ export default function BillingPage() {
           {actionData.error}
         </p>
       )}
-      {isOrganizationOwner && stripeCustomerId && (
+      {stripeCustomerId && (
         <div className='flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3'>
-          <p className='text-sm text-slate-600'>
-            Subscription status:{' '}
-            <span className='font-semibold text-slate-900 capitalize'>
-              {stripeSubscriptionStatus ?? 'active'}
-            </span>
-          </p>
-          <Form method='post'>
-            <input type='hidden' name='intent' value='portal' />
-            <button className='rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50'>
-              Manage billing
-            </button>
-          </Form>
+          <div className='text-sm text-slate-600'>
+            <p>
+              Subscription status:{' '}
+              <span className='font-semibold text-slate-900 capitalize'>
+                {stripeSubscriptionStatus ?? 'active'}
+              </span>
+            </p>
+            {stripeCancelAtPeriodEnd && stripeCancelEffectiveAt && (
+              <p className='mt-1 font-medium text-amber-800'>
+                Your subscription will cancel on{' '}
+                {formatCancellationDate(stripeCancelEffectiveAt)}. Your current
+                plan remains available until then.
+              </p>
+            )}
+            {stripeSubscriptionStatus === 'canceled' &&
+              stripeCancelEffectiveAt && (
+                <p className='mt-1 font-medium text-slate-700'>
+                  Your subscription ended on{' '}
+                  {formatCancellationDate(stripeCancelEffectiveAt)}.
+                </p>
+              )}
+          </div>
+          {isOrganizationOwner && (
+            <Form method='post'>
+              <input type='hidden' name='intent' value='portal' />
+              <button className='rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50'>
+                Manage billing
+              </button>
+            </Form>
+          )}
         </div>
       )}
 

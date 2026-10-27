@@ -55,11 +55,16 @@ export const createStripePortalSession = (
   secretKey: string,
   customerId: string,
   returnUrl: string,
+  configurationId?: string,
 ) =>
   stripeRequest(
     '/billing_portal/sessions',
     secretKey,
-    new URLSearchParams({ customer: customerId, return_url: returnUrl }),
+    new URLSearchParams({
+      customer: customerId,
+      return_url: returnUrl,
+      ...(configurationId ? { configuration: configurationId } : {}),
+    }),
   );
 
 export const retrieveStripeSubscription = async (
@@ -76,8 +81,18 @@ export const retrieveStripeSubscription = async (
     id?: string;
     customer?: string;
     status?: string;
+    cancel_at_period_end?: boolean;
+    cancel_at?: number | null;
+    canceled_at?: number | null;
+    ended_at?: number | null;
+    current_period_end?: number;
     metadata?: Record<string, string>;
-    items?: { data?: Array<{ price?: { id?: string } }> };
+    items?: {
+      data?: Array<{
+        price?: { id?: string };
+        current_period_end?: number;
+      }>;
+    };
   };
   if (!response.ok) {
     throw new Error(result.error?.message ?? 'Unable to retrieve subscription');

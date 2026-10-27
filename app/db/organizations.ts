@@ -93,6 +93,8 @@ export const updateOrganizationStripeSubscription = async (values: {
   stripeCustomerId: string;
   stripeSubscriptionId: string;
   stripeSubscriptionStatus: string;
+  stripeCancelAtPeriodEnd: boolean;
+  stripeCancelEffectiveAt: number | null;
 }) => {
   await getDb()
     .update(organizations)
@@ -104,6 +106,8 @@ export const clearOrganizationStripeSubscription = async (values: {
   organizationId: string;
   stripeSubscriptionId: string;
   stripeSubscriptionStatus: string;
+  stripeCancelAtPeriodEnd: boolean;
+  stripeCancelEffectiveAt: number | null;
   freePlanId: string;
 }) => {
   await getDb()
@@ -112,6 +116,8 @@ export const clearOrganizationStripeSubscription = async (values: {
       planId: values.freePlanId,
       stripeSubscriptionId: values.stripeSubscriptionId,
       stripeSubscriptionStatus: values.stripeSubscriptionStatus,
+      stripeCancelAtPeriodEnd: values.stripeCancelAtPeriodEnd,
+      stripeCancelEffectiveAt: values.stripeCancelEffectiveAt,
       updatedAt: now(),
     })
     .where(eq(organizations.id, values.organizationId));

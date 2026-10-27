@@ -13,5 +13,6 @@ interface Env {
   SENDGRID_FROM_EMAIL?: string;
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
+  STRIPE_PORTAL_CONFIGURATION_ID?: string;
   APP_BASE_URL?: string;
 }

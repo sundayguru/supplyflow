@@ -17,8 +17,18 @@ type StripeSubscriptionEvent = {
   id?: string;
   customer?: string;
   status?: string;
+  cancel_at_period_end?: boolean;
+  cancel_at?: number | null;
+  canceled_at?: number | null;
+  ended_at?: number | null;
+  current_period_end?: number;
   metadata?: Record<string, string>;
-  items?: { data?: Array<{ price?: { id?: string } }> };
+  items?: {
+    data?: Array<{
+      price?: { id?: string };
+      current_period_end?: number;
+    }>;
+  };
 };
 
 const resolveOrganization = async (subscription: StripeSubscriptionEvent) => {
@@ -64,10 +74,19 @@ const syncSubscription = async (subscription: StripeSubscriptionEvent) => {
     if (!freePlan) {
       throw new Error('Default free plan is missing');
     }
+    const effectiveAt =
+      subscription.ended_at ??
+      subscription.canceled_at ??
+      subscription.cancel_at ??
+      subscription.current_period_end ??
+      subscription.items?.data?.[0]?.current_period_end ??
+      null;
     await clearOrganizationStripeSubscription({
       organizationId: organization.id,
       stripeSubscriptionId: subscription.id,
       stripeSubscriptionStatus: subscription.status,
+      stripeCancelAtPeriodEnd: false,
+      stripeCancelEffectiveAt: effectiveAt,
       freePlanId: freePlan.id,
     });
     return;
@@ -81,12 +100,28 @@ const syncSubscription = async (subscription: StripeSubscriptionEvent) => {
   if (!plan) {
     return;
   }
+
+  // Stripe may emit subscription.updated before an upgrade invoice is paid.
+  // Keep the existing entitlements until Stripe reports the subscription as
+  // active; invoice.paid will retrieve and synchronize it after payment.
+  if (subscription.status === 'past_due') {
+    return;
+  }
+
   await updateOrganizationStripeSubscription({
     organizationId: organization.id,
     planId: plan.id,
     stripeCustomerId: subscription.customer,
     stripeSubscriptionId: subscription.id,
     stripeSubscriptionStatus: subscription.status,
+    stripeCancelAtPeriodEnd: subscription.cancel_at_period_end === true,
+    stripeCancelEffectiveAt:
+      subscription.cancel_at_period_end === true
+        ? (subscription.cancel_at ??
+          subscription.current_period_end ??
+          subscription.items?.data?.[0]?.current_period_end ??
+          null)
+        : null,
   });
 };
 
@@ -109,7 +144,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
   let event: {
     type?: string;
-    data?: { object?: StripeSubscriptionEvent & { subscription?: string } };
+    data?: {
+      object?: StripeSubscriptionEvent & {
+        subscription?: string | { id?: string } | null;
+      };
+    };
   };
   try {
     event = JSON.parse(payload) as typeof event;
@@ -129,7 +168,24 @@ export const action = async ({ request }: Route.ActionArgs) => {
         await syncSubscription(subscription);
       }
     } else if (event.type === 'checkout.session.completed') {
-      const subscriptionId = event.data?.object?.subscription;
+      const subscriptionValue = event.data?.object?.subscription;
+      const subscriptionId =
+        typeof subscriptionValue === 'string'
+          ? subscriptionValue
+          : (subscriptionValue?.id ?? null);
+      if (subscriptionId && env.STRIPE_SECRET_KEY) {
+        const subscription = await retrieveStripeSubscription(
+          env.STRIPE_SECRET_KEY,
+          subscriptionId,
+        );
+        await syncSubscription(subscription);
+      }
+    } else if (event.type === 'invoice.paid') {
+      const subscriptionValue = event.data?.object?.subscription;
+      const subscriptionId =
+        typeof subscriptionValue === 'string'
+          ? subscriptionValue
+          : (subscriptionValue?.id ?? null);
       if (subscriptionId && env.STRIPE_SECRET_KEY) {
         const subscription = await retrieveStripeSubscription(
           env.STRIPE_SECRET_KEY,

@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   index,
+  integer,
   real,
   sqliteTable,
   text,
@@ -29,6 +30,12 @@ export const organizations = sqliteTable(
     stripeCustomerId: text('stripe_customer_id'),
     stripeSubscriptionId: text('stripe_subscription_id'),
     stripeSubscriptionStatus: text('stripe_subscription_status'),
+    stripeCancelAtPeriodEnd: integer('stripe_cancel_at_period_end', {
+      mode: 'boolean',
+    })
+      .notNull()
+      .default(false),
+    stripeCancelEffectiveAt: integer('stripe_cancel_effective_at'),
     description: text('description'),
     website: text('website', { length: 511 }),
     phone: text('phone', { length: 64 }),
