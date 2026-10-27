@@ -3,10 +3,15 @@ import { data, Form } from 'react-router';
 import { getUserByEmail, generatePasswordResetTokenForEmail } from '~/db/auth';
 import { AuthPageLayout } from '~/components/AuthPageLayout';
 import { KeyRound } from 'lucide-react';
+import { normalizeEmailAddress } from '~/utils/email';
+import {
+  renderBaseEmailTemplate,
+  sendEmailWithSendGrid,
+} from '~/services/sendgrid.server';
 
 export const action = async ({ request }: Route.ActionArgs) => {
   const formData = await request.formData();
-  const email = formData.get('email') as string;
+  const email = normalizeEmailAddress(formData.get('email'));
 
   if (!email) {
     return data({ error: 'Email is required' }, { status: 400 });
@@ -20,17 +25,26 @@ export const action = async ({ request }: Route.ActionArgs) => {
     const resetToken = await generatePasswordResetTokenForEmail(email);
 
     if (resetToken) {
-      // In production, send email with reset link
-      // For now, we'll log it (you should implement email sending)
-      const resetUrl = `${new URL(request.url).origin}/auth/reset-password?token=${resetToken.token}`;
-      console.log(`Password reset URL for ${email}: ${resetUrl}`);
-
-      // TODO: Send email with resetUrl
-      // await sendEmail({
-      //   to: email,
-      //   subject: 'Reset your password',
-      //   text: `Click here to reset your password: ${resetUrl}`,
-      // });
+      try {
+        await sendEmailWithSendGrid({
+          to: email,
+          subject: 'Reset your Suploop password',
+          html: renderBaseEmailTemplate({
+            organizationName: 'Suploop',
+            title: 'Reset your password',
+            message:
+              'We received a request to reset the password for your account. Use the button below to choose a new password. If you did not request this, you can ignore this email.',
+            actorLabel: 'Suploop account recovery',
+            actionUrl: new URL(
+              `/auth/reset-password?token=${encodeURIComponent(resetToken.token)}`,
+              request.url,
+            ).toString(),
+            actionLabel: 'Reset password',
+          }),
+        });
+      } catch (error) {
+        console.error('Could not send password reset email', error);
+      }
     }
   }
 

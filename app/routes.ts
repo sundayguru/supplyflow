@@ -14,6 +14,10 @@ export default [
     route('auth/login', 'routes/auth/login.tsx'),
     route('auth/register', 'routes/auth/register.tsx'),
     route('auth/verify-email', 'routes/auth/verify-email.tsx'),
+    route(
+      'organization/invitations/:token',
+      'routes/organization-invitation.tsx',
+    ),
     route('auth/forgot-password', 'routes/auth/forgot-password.tsx'),
     route('auth/reset-password', 'routes/auth/reset-password.tsx'),
   ]),
@@ -43,10 +47,6 @@ export default [
     route('admin/plans', 'routes/admin-plans.tsx'),
     route('organization', 'routes/organization.tsx'),
     route('organization/users', 'routes/organization-users.tsx'),
-    route(
-      'organization/invitations/:token',
-      'routes/organization-invitation.tsx',
-    ),
     route('notifications', 'routes/notifications.tsx'),
     route('auth/logout', 'routes/auth/logout.tsx'),
     route('api/user', 'routes/api/user.ts'),

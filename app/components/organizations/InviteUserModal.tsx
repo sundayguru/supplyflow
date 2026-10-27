@@ -17,6 +17,8 @@ export const InviteUserModal = ({ isOpen, onClose }: InviteUserModalProps) => {
   const fetcher = useFetcher<InviteActionData>();
   const inviteUrl =
     fetcher.data && 'success' in fetcher.data ? fetcher.data.inviteUrl : null;
+  const emailSent =
+    fetcher.data && 'success' in fetcher.data ? fetcher.data.emailSent : false;
 
   return (
     <Modal
@@ -30,7 +32,7 @@ export const InviteUserModal = ({ isOpen, onClose }: InviteUserModalProps) => {
       {inviteUrl ? (
         <div className='space-y-4'>
           <p className='text-sm text-slate-600'>
-            {fetcher.data?.emailSent
+            {emailSent
               ? 'Invitation email sent. You can also share this secure link.'
               : 'Invitation created, but the email could not be sent. Share this secure link with the invited user.'}
           </p>

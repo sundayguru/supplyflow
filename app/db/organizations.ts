@@ -267,6 +267,33 @@ export const getOrganizationInvitations = async (organizationId: string) => {
     .where(eq(organizationInvitations.organizationId, organizationId));
 };
 
+export const getOrganizationInvitationDetails = async (token: string) => {
+  const db = getDb();
+  const [invitation] = await db
+    .select({
+      id: organizationInvitations.id,
+      email: organizationInvitations.email,
+      token: organizationInvitations.token,
+      status: organizationInvitations.status,
+      expiresAt: organizationInvitations.expiresAt,
+      organizationName: organizations.name,
+      organizationDescription: organizations.description,
+      organizationWebsite: organizations.website,
+    })
+    .from(organizationInvitations)
+    .innerJoin(
+      organizations,
+      eq(organizationInvitations.organizationId, organizations.id),
+    )
+    .where(
+      and(
+        eq(organizationInvitations.token, token),
+        isNull(organizations.deletedAt),
+      ),
+    );
+  return invitation ?? null;
+};
+
 export const revokeOrganizationInvitation = async (
   organizationId: string,
   invitationId: string,

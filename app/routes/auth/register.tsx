@@ -12,15 +12,36 @@ import { GoogleAuthButton } from '~/components/GoogleAuthButton';
 import { PasswordField } from '~/components/PasswordField';
 import { normalizeEmailAddress } from '~/utils/email';
 import { UserPlus } from 'lucide-react';
+import { getOrganizationInvitationDetails } from '~/db/organizations';
 import {
   renderBaseEmailTemplate,
   sendEmailWithSendGrid,
 } from '~/services/sendgrid.server';
 
-export const loader = ({ request }: Route.LoaderArgs) => {
+export const loader = async ({ request }: Route.LoaderArgs) => {
   const url = new URL(request.url);
-  const callbackUrl = url.searchParams.get('callbackUrl') || '/dashboard';
-  return { callbackUrl };
+  const requestedCallbackUrl =
+    url.searchParams.get('callbackUrl') || '/dashboard';
+  const callbackUrl =
+    requestedCallbackUrl.startsWith('/') &&
+    !requestedCallbackUrl.startsWith('//')
+      ? requestedCallbackUrl
+      : '/dashboard';
+  const inviteToken = url.searchParams.get('inviteToken');
+  const invitation = inviteToken
+    ? await getOrganizationInvitationDetails(inviteToken)
+    : null;
+  const isValidInvitation =
+    !!invitation &&
+    invitation.status === 'pending' &&
+    new Date(invitation.expiresAt).getTime() > Date.now() &&
+    callbackUrl ===
+      `/organization/invitations/${encodeURIComponent(inviteToken!)}`;
+  return {
+    callbackUrl,
+    inviteToken: isValidInvitation ? inviteToken : null,
+    invitation: isValidInvitation ? invitation : null,
+  };
 };
 
 export const action = async ({ request }: Route.ActionArgs) => {
@@ -31,6 +52,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
   const firstName = formData.get('firstName') as string;
   const lastName = formData.get('lastName') as string;
   const callbackUrl = (formData.get('callbackUrl') as string) || '/dashboard';
+  const inviteToken = String(formData.get('inviteToken') ?? '');
 
   // Validation
   if (!email || !password || !firstName || !lastName) {
@@ -46,6 +68,30 @@ export const action = async ({ request }: Route.ActionArgs) => {
       { error: 'Password must be at least 8 characters' },
       { status: 400 },
     );
+  }
+
+  const invitation = inviteToken
+    ? await getOrganizationInvitationDetails(inviteToken)
+    : null;
+  if (inviteToken) {
+    if (
+      !invitation ||
+      invitation.status !== 'pending' ||
+      new Date(invitation.expiresAt).getTime() <= Date.now() ||
+      callbackUrl !==
+        `/organization/invitations/${encodeURIComponent(inviteToken)}`
+    ) {
+      return data(
+        { error: 'This team invitation is invalid or expired.' },
+        { status: 400 },
+      );
+    }
+    if (email !== invitation.email) {
+      return data(
+        { error: `Use the invited email address ${invitation.email}.` },
+        { status: 400 },
+      );
+    }
   }
 
   // Check if user already exists
@@ -118,7 +164,7 @@ export default function RegisterPage({
   loaderData,
   actionData,
 }: Route.ComponentProps) {
-  const { callbackUrl } = loaderData;
+  const { callbackUrl, invitation, inviteToken } = loaderData;
   const registrationMessage =
     actionData && 'message' in actionData ? actionData.message : null;
   const registrationError =
@@ -140,9 +186,30 @@ export default function RegisterPage({
           {registrationError}
         </p>
       ) : null}
+      {invitation && (
+        <div className='mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4'>
+          <p className='text-xs font-bold tracking-wider text-emerald-800 uppercase'>
+            You are joining
+          </p>
+          <p className='mt-1 font-semibold text-emerald-950'>
+            {invitation.organizationName}
+          </p>
+          {invitation.organizationDescription && (
+            <p className='mt-1 text-sm text-emerald-900/75'>
+              {invitation.organizationDescription}
+            </p>
+          )}
+          <p className='mt-2 text-xs text-emerald-900/70'>
+            Invited as a team member · {invitation.email}
+          </p>
+        </div>
+      )}
       {!registrationMessage ? (
         <Form method='post' className='space-y-4'>
           <input type='hidden' name='callbackUrl' value={callbackUrl} />
+          {inviteToken && (
+            <input type='hidden' name='inviteToken' value={inviteToken} />
+          )}
           <div className='grid grid-cols-2 gap-3'>
             <div>
               <label className='mb-1 block text-sm font-medium text-black/70'>
@@ -176,6 +243,8 @@ export default function RegisterPage({
             <input
               type='email'
               name='email'
+              defaultValue={invitation?.email ?? ''}
+              readOnly={!!invitation}
               className='w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm transition outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10'
               placeholder='you@example.com'
               required
@@ -211,7 +280,7 @@ export default function RegisterPage({
             </div>
           </div>
 
-          <GoogleAuthButton />
+          <GoogleAuthButton callbackUrl={callbackUrl} />
         </Form>
       ) : null}
 

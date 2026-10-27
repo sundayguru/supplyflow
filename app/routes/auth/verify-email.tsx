@@ -40,7 +40,13 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
   await verifyUserEmail(user.email);
   await deleteVerificationToken(token);
-  return redirect('/auth/login?verified=1');
+  const callbackUrl = url.searchParams.get('callbackUrl');
+  const loginUrl = new URL('/auth/login', url.origin);
+  loginUrl.searchParams.set('verified', '1');
+  if (callbackUrl?.startsWith('/') && !callbackUrl.startsWith('//')) {
+    loginUrl.searchParams.set('callbackUrl', callbackUrl);
+  }
+  return redirect(`${loginUrl.pathname}${loginUrl.search}`);
 };
 
 export default function VerifyEmailPage({ loaderData }: Route.ComponentProps) {
