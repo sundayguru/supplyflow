@@ -42,6 +42,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
+  if (!user.planFeatures.emailIngestions) {return redirect('/billing');}
   if (organization.createdBy !== user.id) {
     throw new Response(
       'Only the organization owner can view email ingestions',

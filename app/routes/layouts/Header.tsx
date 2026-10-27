@@ -56,20 +56,36 @@ export const Header = ({
   } | null>(null);
 
   const navItems: NavItem[] = [
-    { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/rfqs', label: 'RFQ management', icon: ClipboardList },
-    { to: '/purchase-orders', label: 'PO management', icon: ShoppingCart },
+    ...(user?.planFeatures?.dashboard
+      ? [{ to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }]
+      : []),
+    ...(user?.planFeatures?.rfqs
+      ? [{ to: '/rfqs', label: 'RFQ management', icon: ClipboardList }]
+      : []),
+    ...(user?.planFeatures?.purchaseOrders
+      ? [{ to: '/purchase-orders', label: 'PO management', icon: ShoppingCart }]
+      : []),
     ...(user?.planFeatures?.vendorPurchaseOrders
       ? [{ to: '/vendor-purchase-orders', label: 'Vendor POs', icon: Package }]
       : []),
-    {
-      to: '/vendor-purchase-order-acknowledgements',
-      label: 'Vendor PO acks',
-      icon: MailCheck,
-    },
-    { to: '/activities', label: 'Activity logs', icon: History },
-    { to: '/manufacturers', label: 'Manufacturers', icon: Factory },
-    { to: '/addresses', label: 'Addresses', icon: MapPin },
+    ...(user?.planFeatures?.vendorPurchaseOrderAcknowledgements
+      ? [
+          {
+            to: '/vendor-purchase-order-acknowledgements',
+            label: 'Vendor PO acks',
+            icon: MailCheck,
+          },
+        ]
+      : []),
+    ...(user?.planFeatures?.activities
+      ? [{ to: '/activities', label: 'Activity logs', icon: History }]
+      : []),
+    ...(user?.planFeatures?.manufacturers
+      ? [{ to: '/manufacturers', label: 'Manufacturers', icon: Factory }]
+      : []),
+    ...(user?.planFeatures?.addresses
+      ? [{ to: '/addresses', label: 'Addresses', icon: MapPin }]
+      : []),
     ...(user?.planFeatures?.productPricing
       ? [{ to: '/product-prices', label: 'Product prices', icon: Package }]
       : []),
@@ -93,8 +109,8 @@ export const Header = ({
     },
   ];
 
-  if (user?.isOrganizationOwner) {
-    navItems.splice(3, 0, {
+  if (user?.isOrganizationOwner && user.planFeatures.emailIngestions) {
+    navItems.push({
       to: '/email-ingestions',
       label: 'Email ingestions',
       icon: MailSearch,
@@ -105,6 +121,14 @@ export const Header = ({
     navItems.push({
       to: '/admin/users',
       label: 'Administration',
+      icon: ShieldCheck,
+    });
+  }
+
+  if (user?.isOrganizationOwner && user.planFeatures.teamManagement) {
+    navItems.push({
+      to: '/organization/users',
+      label: 'Organization users',
       icon: ShieldCheck,
     });
   }
@@ -270,6 +294,7 @@ export const Header = ({
               userEmail={user.email}
               avatarUrl={user.avatarUrl}
               isAdmin={user.isAdmin}
+              showLlmUsage={user.planFeatures.llmUsage}
               onClose={() => setShowProfileMenu(false)}
               placement='above'
             />

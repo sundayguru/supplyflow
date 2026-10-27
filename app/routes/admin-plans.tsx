@@ -14,14 +14,7 @@ import {
 } from '~/db/organizations';
 import { getUserFromRequest } from '~/utils/session.server';
 import { useToast } from '~/utils/useToast';
-
-const featureLabels: Record<string, string> = {
-  vendorPurchaseOrders: 'Vendor purchase orders',
-  emailAutomation: 'Email automation',
-  customPdfTemplates: 'Custom PDF templates',
-  teamManagement: 'Team management',
-  productPricing: 'Product pricing',
-};
+import { planFeatureLabels } from '~/config/planFeatures';
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
@@ -85,7 +78,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
     return data({ error: 'Plan not found' }, { status: 404 });
   }
   const features = Object.fromEntries(
-    Object.keys(featureLabels).map((key) => [
+    Object.keys(planFeatureLabels).map((key) => [
       key,
       form.get(`feature:${key}`) === 'on',
     ]),
@@ -352,7 +345,7 @@ export default function AdminPlansPage() {
                     Enabled features
                   </legend>
                   <div className='grid gap-3 sm:grid-cols-2'>
-                    {Object.entries(featureLabels).map(([key, label]) => (
+                    {Object.entries(planFeatureLabels).map(([key, label]) => (
                       <label
                         key={key}
                         className='flex items-center gap-2 text-sm text-slate-700'

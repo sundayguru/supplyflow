@@ -42,6 +42,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
+  if (!user.planFeatures.dashboard) {return redirect('/billing');}
 
   const [rfqs, users] = await Promise.all([
     getRfqs(organization.id, organization.vat),

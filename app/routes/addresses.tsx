@@ -29,6 +29,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
+  if (!user.planFeatures.addresses) {return redirect('/billing');}
   return data({ addresses: await listAddresses(organization.id) });
 };
 
@@ -41,6 +42,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
   if (!organization) {
     return data({ error: 'Organization required' }, { status: 403 });
   }
+  if (!user.planFeatures.addresses)
+    {return data(
+      { error: 'Your plan does not include addresses' },
+      { status: 403 },
+    );}
 
   const formData = await request.formData();
   const intent = formString(formData, 'intent');

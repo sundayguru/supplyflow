@@ -81,6 +81,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
+  if (!user.planFeatures.rfqs) {return redirect('/billing');}
 
   try {
     const templates = await listRfqPdfTemplates(organization.id);
@@ -128,6 +129,11 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   if (!organization) {
     return data({ error: 'Organization required' }, { status: 409 });
   }
+  if (!user.planFeatures.rfqs)
+    {return data(
+      { error: 'Your plan does not include RFQ management' },
+      { status: 403 },
+    );}
 
   try {
     const formData = await request.formData();

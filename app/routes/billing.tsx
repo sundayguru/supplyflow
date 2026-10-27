@@ -5,13 +5,7 @@ import { getPlans, getSuggestedPlanId } from '~/db/plans';
 import { getOrganizationForUser } from '~/db/organizations';
 import { getUserFromRequest } from '~/utils/session.server';
 
-const featureLabels: Record<string, string> = {
-  vendorPurchaseOrders: 'Vendor purchase orders',
-  emailAutomation: 'Email automation',
-  customPdfTemplates: 'Custom PDF templates',
-  teamManagement: 'Team management',
-  productPricing: 'Product pricing',
-};
+import { planFeatureLabels } from '~/config/planFeatures';
 
 const formatAmount = (amount: number) =>
   amount > 0
@@ -94,7 +88,7 @@ export default function BillingPage() {
                 input / {formatTokenLimit(plan.outputTokenLimit)} output tokens
               </p>
               <ul className='mt-6 flex-1 space-y-3 border-t border-slate-100 pt-5'>
-                {Object.entries(featureLabels).map(([key, label]) => {
+                {Object.entries(planFeatureLabels).map(([key, label]) => {
                   const enabled = plan.features[key] === true;
                   return (
                     <li

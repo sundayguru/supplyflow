@@ -14,6 +14,7 @@ type ProfileMenuProps = {
   userEmail: string;
   avatarUrl: string | null;
   isAdmin: boolean;
+  showLlmUsage: boolean;
   onClose: () => void;
   placement?: 'above' | 'below';
 };
@@ -23,6 +24,7 @@ export const ProfileMenu = ({
   userEmail,
   avatarUrl,
   isAdmin,
+  showLlmUsage,
   onClose,
   placement = 'below',
 }: ProfileMenuProps) => {
@@ -94,14 +96,16 @@ export const ProfileMenu = ({
             <Building2 size={16} />
             Organization
           </Link>
-          <Link
-            to='/llm-usage'
-            onClick={onClose}
-            className='flex items-center gap-3 px-4 py-2.5 text-sm text-black/70 transition-colors hover:bg-black/5'
-          >
-            <BarChart3 size={16} />
-            LLM usage
-          </Link>
+          {showLlmUsage && (
+            <Link
+              to='/llm-usage'
+              onClick={onClose}
+              className='flex items-center gap-3 px-4 py-2.5 text-sm text-black/70 transition-colors hover:bg-black/5'
+            >
+              <BarChart3 size={16} />
+              LLM usage
+            </Link>
+          )}
           <Link
             to='/settings'
             onClick={onClose}

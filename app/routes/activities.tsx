@@ -72,6 +72,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
+  if (!user.planFeatures.activities) {return redirect('/billing');}
 
   const url = new URL(request.url);
   const sourceType = url.searchParams.get('sourceType');

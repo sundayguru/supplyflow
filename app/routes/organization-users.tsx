@@ -27,7 +27,9 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
-  if (!user.planFeatures.teamManagement) {return redirect('/billing');}
+  if (!user.planFeatures.teamManagement) {
+    return redirect('/billing');
+  }
   const [members, invitations] = await Promise.all([
     getOrganizationUsers(organization.id),
     getOrganizationInvitations(organization.id),

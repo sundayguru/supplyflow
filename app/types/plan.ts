@@ -1,9 +1,4 @@
-export type PlanFeature =
-  | 'vendorPurchaseOrders'
-  | 'emailAutomation'
-  | 'customPdfTemplates'
-  | 'teamManagement'
-  | 'productPricing';
+export type { PlanFeature } from '~/config/planFeatures';
 
 export type PlanRecord = {
   id: string;

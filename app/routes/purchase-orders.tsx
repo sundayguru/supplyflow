@@ -71,6 +71,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
+  if (!user.planFeatures.purchaseOrders) {return redirect('/billing');}
 
   try {
     const [

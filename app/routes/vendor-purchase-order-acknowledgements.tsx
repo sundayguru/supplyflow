@@ -38,6 +38,8 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
+  if (!user.planFeatures.vendorPurchaseOrderAcknowledgements)
+    {return redirect('/billing');}
 
   try {
     const [vendorPurchaseOrderAcknowledgements, vendorPurchaseOrders] =
