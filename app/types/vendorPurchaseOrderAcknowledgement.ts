@@ -64,6 +64,7 @@ export type VendorPurchaseOrderAcknowledgementRecord = Omit<
   id: string;
   userId: string;
   organizationId: string | null;
+  creator?: { firstName: string; lastName: string } | null;
   reference: string;
   sourceEmailIngestionId: string | null;
   createdAt: string;

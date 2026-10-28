@@ -64,6 +64,7 @@ export type VendorPurchaseOrderRecord = Omit<
   id: string;
   userId: string;
   organizationId: string | null;
+  creator?: { firstName: string; lastName: string } | null;
   reference: string;
   generatedEmailDraftId: string | null;
   generatedEmailDraftUpdatedAt: string | null;

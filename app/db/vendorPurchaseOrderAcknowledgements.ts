@@ -61,6 +61,7 @@ export const getVendorPurchaseOrderAcknowledgements = async (
     ),
     orderBy: [desc(vendorPurchaseOrderAcknowledgements.createdAt)],
     with: {
+      creator: { columns: { firstName: true, lastName: true } },
       items: {
         orderBy: [asc(vendorPurchaseOrderAcknowledgementItems.position)],
       },
@@ -89,6 +90,7 @@ export const getVendorPurchaseOrderAcknowledgement = async (
       eq(vendorPurchaseOrderAcknowledgements.organizationId, organizationId),
     ),
     with: {
+      creator: { columns: { firstName: true, lastName: true } },
       items: {
         orderBy: [asc(vendorPurchaseOrderAcknowledgementItems.position)],
       },

@@ -101,8 +101,12 @@ export const rfqItems = sqliteTable(
   ],
 );
 
-export const rfqsRelations = relations(rfqs, ({ many }) => ({
+export const rfqsRelations = relations(rfqs, ({ many, one }) => ({
   items: many(rfqItems),
+  creator: one(users, {
+    fields: [rfqs.userId],
+    references: [users.id],
+  }),
 }));
 
 export const rfqItemsRelations = relations(rfqItems, ({ one }) => ({

@@ -141,6 +141,10 @@ export const purchaseOrdersRelations = relations(
   ({ many, one }) => ({
     items: many(purchaseOrderItems),
     paymentConfirmations: many(purchaseOrderPaymentConfirmations),
+    creator: one(users, {
+      fields: [purchaseOrders.userId],
+      references: [users.id],
+    }),
     rfq: one(rfqs, {
       fields: [purchaseOrders.rfqId],
       references: [rfqs.id],

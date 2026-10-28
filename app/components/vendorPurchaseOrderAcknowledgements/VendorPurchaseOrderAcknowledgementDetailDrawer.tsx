@@ -132,6 +132,12 @@ export const VendorPurchaseOrderAcknowledgementDetailDrawer = ({
               <p className='mt-1 text-xs text-slate-400'>
                 Created {formatDate(acknowledgement.createdAt)}
               </p>
+              <p className='mt-1 text-xs text-slate-500'>
+                Created by{' '}
+                {acknowledgement.creator
+                  ? `${acknowledgement.creator.firstName} ${acknowledgement.creator.lastName}`.trim()
+                  : 'Unknown'}
+              </p>
             </div>
           </section>
 

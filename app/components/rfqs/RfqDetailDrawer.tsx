@@ -327,6 +327,12 @@ export const RfqDetailDrawer = ({
               <p className='mt-3 font-semibold text-slate-900'>
                 {formatDate(rfq.createdAt)}
               </p>
+              <p className='mt-1 text-xs text-slate-500'>
+                Created by{' '}
+                {rfq.creator
+                  ? `${rfq.creator.firstName} ${rfq.creator.lastName}`.trim()
+                  : 'Unknown'}
+              </p>
               <p className='mt-1 text-xs text-slate-400'>
                 Updated {formatDate(rfq.updatedAt)}
               </p>

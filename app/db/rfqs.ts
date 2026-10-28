@@ -71,7 +71,10 @@ export const getRfqs = async (
   const records = await db.query.rfqs.findMany({
     where: eq(rfqs.organizationId, organizationId),
     orderBy: [desc(rfqs.createdAt)],
-    with: { items: { orderBy: [asc(rfqItems.position)] } },
+    with: {
+      items: { orderBy: [asc(rfqItems.position)] },
+      creator: { columns: { firstName: true, lastName: true } },
+    },
   });
   const linkedPurchaseOrders = await getLinkedPurchaseOrdersByRfqIds(
     records.map((rfq) => rfq.id),
@@ -95,7 +98,10 @@ export const getRfq = async (
   const db = getDb();
   const rfq = await db.query.rfqs.findFirst({
     where: and(eq(rfqs.id, id), eq(rfqs.organizationId, organizationId)),
-    with: { items: { orderBy: [asc(rfqItems.position)] } },
+    with: {
+      items: { orderBy: [asc(rfqItems.position)] },
+      creator: { columns: { firstName: true, lastName: true } },
+    },
   });
   if (!rfq) {
     return null;
@@ -121,7 +127,10 @@ export const getRfqByReference = async (
       eq(rfqs.reference, reference),
       eq(rfqs.organizationId, organizationId),
     ),
-    with: { items: { orderBy: [asc(rfqItems.position)] } },
+    with: {
+      items: { orderBy: [asc(rfqItems.position)] },
+      creator: { columns: { firstName: true, lastName: true } },
+    },
   });
   if (!rfq) {
     return null;

@@ -123,6 +123,10 @@ export const vendorPurchaseOrdersRelations = relations(
   vendorPurchaseOrders,
   ({ many, one }) => ({
     items: many(vendorPurchaseOrderItems),
+    creator: one(users, {
+      fields: [vendorPurchaseOrders.userId],
+      references: [users.id],
+    }),
     purchaseOrder: one(purchaseOrders, {
       fields: [vendorPurchaseOrders.purchaseOrderId],
       references: [purchaseOrders.id],

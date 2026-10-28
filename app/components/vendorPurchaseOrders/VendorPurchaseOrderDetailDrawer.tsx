@@ -205,6 +205,12 @@ export const VendorPurchaseOrderDetailDrawer = ({
               <p className='mt-3 font-semibold text-slate-900'>
                 {formatDate(currentVendorPurchaseOrder.createdAt)}
               </p>
+              <p className='mt-1 text-xs text-slate-500'>
+                Created by{' '}
+                {currentVendorPurchaseOrder.creator
+                  ? `${currentVendorPurchaseOrder.creator.firstName} ${currentVendorPurchaseOrder.creator.lastName}`.trim()
+                  : 'Unknown'}
+              </p>
               <p className='mt-1 text-xs text-slate-400'>
                 Updated {formatDate(currentVendorPurchaseOrder.updatedAt)}
               </p>

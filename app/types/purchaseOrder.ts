@@ -107,6 +107,7 @@ export type PurchaseOrderRecord = Omit<PurchaseOrderInput, 'items'> & {
   id: string;
   userId: string;
   organizationId: string | null;
+  creator?: { firstName: string; lastName: string } | null;
   reference: string;
   createdAt: string;
   updatedAt: string;

@@ -147,6 +147,7 @@ export const getPurchaseOrders = async (
     where: eq(purchaseOrders.organizationId, organizationId),
     orderBy: [desc(purchaseOrders.createdAt)],
     with: {
+      creator: { columns: { firstName: true, lastName: true } },
       items: { orderBy: [asc(purchaseOrderItems.position)] },
       paymentConfirmations: {
         orderBy: [desc(purchaseOrderPaymentConfirmations.createdAt)],
@@ -201,6 +202,7 @@ export const getPurchaseOrder = async (
       eq(purchaseOrders.organizationId, organizationId),
     ),
     with: {
+      creator: { columns: { firstName: true, lastName: true } },
       items: { orderBy: [asc(purchaseOrderItems.position)] },
       paymentConfirmations: {
         orderBy: [desc(purchaseOrderPaymentConfirmations.createdAt)],
