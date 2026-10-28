@@ -8,30 +8,20 @@ import {
 } from '~/db/auth';
 import { ensureProfileForUser } from '~/db/profile';
 import { generateSessionToken } from '~/utils/auth.server';
+import { safeRedirectPath } from '~/utils/safeRedirectPath.server';
+import { cloudflareContext } from '~/contexts.server/cloudflareContext.server';
 import { v4 as uuidv4 } from 'uuid';
-
-type GlobalWithProcess = typeof globalThis & {
-  process?: {
-    env?: Record<string, string | undefined>;
-  };
-};
-
-const processEnv = (globalThis as GlobalWithProcess).process?.env;
-const GOOGLE_CLIENT_ID = processEnv?.GOOGLE_CLIENT_ID || '';
-const GOOGLE_CLIENT_SECRET = processEnv?.GOOGLE_CLIENT_SECRET || '';
-const BASE_URL = processEnv?.BASE_URL;
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v3/userinfo';
+const STATE_COOKIE = 'google_oauth_state';
+const CALLBACK_COOKIE = 'google_oauth_callback';
+const OAUTH_COOKIE_ATTRIBUTES =
+  'Path=/api/auth/google; HttpOnly; Secure; SameSite=Lax';
 
 type GoogleTokens = {
   access_token: string;
-  refresh_token?: string;
-  expires_in?: number;
-  scope?: string;
-  id_token?: string;
-  token_type: string;
 };
 
 type GoogleUserInfo = {
@@ -44,154 +34,197 @@ type GoogleUserInfo = {
   picture?: string;
 };
 
-export async function loader({ request }: Route.LoaderArgs) {
+const getCookie = (request: Request, name: string) => {
+  const cookieHeader = request.headers.get('Cookie');
+  if (!cookieHeader) {
+    return null;
+  }
+
+  for (const cookie of cookieHeader.split(';')) {
+    const separator = cookie.indexOf('=');
+    if (separator < 0 || cookie.slice(0, separator).trim() !== name) {
+      continue;
+    }
+    const value = cookie.slice(separator + 1).trim();
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
+const clearOAuthCookies = () => {
+  const headers = new Headers();
+  headers.append(
+    'Set-Cookie',
+    `${STATE_COOKIE}=; ${OAUTH_COOKIE_ATTRIBUTES}; Max-Age=0`,
+  );
+  headers.append(
+    'Set-Cookie',
+    `${CALLBACK_COOKIE}=; ${OAUTH_COOKIE_ATTRIBUTES}; Max-Age=0`,
+  );
+  return headers;
+};
+
+const redirectWithOAuthError = (error: string) =>
+  redirect(`/auth/login?error=${encodeURIComponent(error)}`, {
+    headers: clearOAuthCookies(),
+  });
+
+export const loader = async ({ request, context }: Route.LoaderArgs) => {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
-  const error = url.searchParams.get('error');
-  const callbackUrl = url.searchParams.get('state') || '/dashboard';
+  const providerError = url.searchParams.get('error');
+  const returnedState = url.searchParams.get('state');
+  const { env } = context.get(cloudflareContext);
+  const baseUrl = (env.BASE_URL || url.origin).replace(/\/$/, '');
+  const redirectUri = `${baseUrl}/api/auth/google`;
 
-  // If there's an error from Google (e.g., user denied access)
-  if (error) {
-    return redirect('/auth/login?error=access_denied');
-  }
+  if (!code && !providerError && !returnedState) {
+    if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+      return redirect('/auth/login?error=oauth_not_configured');
+    }
 
-  // If no code, this is the initial auth request - redirect to Google
-  if (!code) {
+    const callbackUrl = safeRedirectPath(url.searchParams.get('callbackUrl'));
+    const state = crypto.randomUUID();
     const authUrl = new URL(GOOGLE_AUTH_URL);
-    authUrl.searchParams.set('client_id', GOOGLE_CLIENT_ID);
-    authUrl.searchParams.set('redirect_uri', `${BASE_URL}/api/auth/google`);
+    authUrl.searchParams.set('client_id', env.GOOGLE_CLIENT_ID);
+    authUrl.searchParams.set('redirect_uri', redirectUri);
     authUrl.searchParams.set('response_type', 'code');
     authUrl.searchParams.set('scope', 'openid email profile');
-    authUrl.searchParams.set('state', callbackUrl);
-    authUrl.searchParams.set('access_type', 'offline');
-    authUrl.searchParams.set('prompt', 'consent');
+    authUrl.searchParams.set('state', state);
 
-    return redirect(authUrl.toString());
+    const headers = new Headers();
+    headers.append(
+      'Set-Cookie',
+      `${STATE_COOKIE}=${state}; ${OAUTH_COOKIE_ATTRIBUTES}; Max-Age=600`,
+    );
+    headers.append(
+      'Set-Cookie',
+      `${CALLBACK_COOKIE}=${encodeURIComponent(callbackUrl)}; ${OAUTH_COOKIE_ATTRIBUTES}; Max-Age=600`,
+    );
+    return redirect(authUrl.toString(), { headers });
   }
 
-  // Exchange code for tokens
+  const stateCookie = getCookie(request, STATE_COOKIE);
+  if (!returnedState || !stateCookie || returnedState !== stateCookie) {
+    return redirectWithOAuthError('invalid_oauth_state');
+  }
+
+  const callbackUrl = safeRedirectPath(getCookie(request, CALLBACK_COOKIE));
+  if (providerError) {
+    return redirectWithOAuthError('access_denied');
+  }
+  if (!code || !env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+    return redirectWithOAuthError(
+      code ? 'oauth_not_configured' : 'invalid_oauth_state',
+    );
+  }
+
   const tokenResponse = await fetch(GOOGLE_TOKEN_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       code,
-      client_id: GOOGLE_CLIENT_ID,
-      client_secret: GOOGLE_CLIENT_SECRET,
-      redirect_uri: `${BASE_URL}/api/auth/google`,
+      client_id: env.GOOGLE_CLIENT_ID,
+      client_secret: env.GOOGLE_CLIENT_SECRET,
+      redirect_uri: redirectUri,
       grant_type: 'authorization_code',
     }),
   });
 
   if (!tokenResponse.ok) {
-    console.error(
-      'Failed to exchange code for tokens:',
-      await tokenResponse.text(),
-    );
-    return redirect('/auth/login?error=token_exchange_failed');
+    console.error('Google OAuth code exchange failed');
+    return redirectWithOAuthError('token_exchange_failed');
   }
 
   const tokens: GoogleTokens = await tokenResponse.json();
-
-  // Get user info from Google
   const userInfoResponse = await fetch(GOOGLE_USERINFO_URL, {
     headers: { Authorization: `Bearer ${tokens.access_token}` },
   });
 
   if (!userInfoResponse.ok) {
-    console.error('Failed to get user info:', await userInfoResponse.text());
-    return redirect('/auth/login?error=userinfo_failed');
+    console.error('Google OAuth user info request failed');
+    return redirectWithOAuthError('userinfo_failed');
   }
 
   const userInfo: GoogleUserInfo = await userInfoResponse.json();
+  if (!userInfo.email_verified) {
+    return redirectWithOAuthError('google_email_unverified');
+  }
 
-  // Check if user exists by Google account
   const existingAccount = await getUserByAccount('google', userInfo.sub);
-
   if (existingAccount) {
-    // User exists, log them in
+    if (existingAccount.isDeactivated || existingAccount.isBanned) {
+      return redirectWithOAuthError('account_unavailable');
+    }
     await ensureProfileForUser(existingAccount.id);
     const sessionToken = await generateSessionToken(
       existingAccount.id,
       existingAccount.email,
     );
-    const headers = createSessionHeaders(sessionToken);
-    return redirect(callbackUrl, { headers });
+    return redirect(callbackUrl, {
+      headers: createSessionHeaders(sessionToken),
+    });
   }
 
-  // Check if user exists by email (link accounts)
   const existingUser = await getUserByEmail(userInfo.email);
+  if (existingUser && (existingUser.isDeactivated || existingUser.isBanned)) {
+    return redirectWithOAuthError('account_unavailable');
+  }
 
   if (existingUser) {
-    // Link Google account to existing user
     await createAccount({
       userId: existingUser.id,
       type: 'oauth',
       provider: 'google',
       providerAccountId: userInfo.sub,
-      access_token: tokens.access_token,
-      refresh_token: tokens.refresh_token,
-      expires_at: tokens.expires_in
-        ? Math.floor(Date.now() / 1000) + tokens.expires_in
-        : undefined,
-      token_type: 'Bearer',
-      scope: tokens.scope,
-      id_token: tokens.id_token,
     });
-
     await ensureProfileForUser(existingUser.id);
-
     const sessionToken = await generateSessionToken(
       existingUser.id,
       existingUser.email,
     );
-    const headers = createSessionHeaders(sessionToken);
-    return redirect(callbackUrl, { headers });
+    return redirect(callbackUrl, {
+      headers: createSessionHeaders(sessionToken),
+    });
   }
 
-  // Create new user from Google info
   const userId = uuidv4();
   const firstName = userInfo.given_name || userInfo.name?.split(' ')[0] || '';
   const lastName = userInfo.family_name || userInfo.name?.split(' ')[1] || '';
-
   const newUser = await createUser({
     id: userId,
     email: userInfo.email,
     firstName,
     lastName,
-    emailVerified: userInfo.email_verified || false,
+    emailVerified: true,
     image: userInfo.picture || null,
-    passwordHash: null, // OAuth user, no password
+    passwordHash: null,
   });
 
   if (!newUser) {
     console.error('Failed to create user from Google OAuth');
-    return redirect('/auth/login?error=creation_failed');
+    return redirectWithOAuthError('creation_failed');
   }
 
-  // Create the Google account link
   await createAccount({
     userId,
     type: 'oauth',
     provider: 'google',
     providerAccountId: userInfo.sub,
-    access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token,
-    expires_at: tokens.expires_in
-      ? Math.floor(Date.now() / 1000) + tokens.expires_in
-      : undefined,
-    token_type: 'Bearer',
-    scope: tokens.scope,
-    id_token: tokens.id_token,
   });
 
-  // Generate session and log user in
   const sessionToken = await generateSessionToken(newUser.id, newUser.email);
-  const headers = createSessionHeaders(sessionToken);
-  return redirect(callbackUrl, { headers });
-}
+  return redirect(callbackUrl, {
+    headers: createSessionHeaders(sessionToken),
+  });
+};
 
 function createSessionHeaders(sessionToken: string): Headers {
-  const headers = new Headers();
+  const headers = clearOAuthCookies();
   headers.append(
     'Set-Cookie',
     `session=${sessionToken}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`,

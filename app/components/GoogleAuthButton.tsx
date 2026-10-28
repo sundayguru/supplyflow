@@ -4,7 +4,7 @@ type GoogleAuthButtonProps = {
 
 export const GoogleAuthButton = ({ callbackUrl }: GoogleAuthButtonProps) => {
   const href = callbackUrl
-    ? `/api/auth/google?state=${encodeURIComponent(callbackUrl)}`
+    ? `/api/auth/google?callbackUrl=${encodeURIComponent(callbackUrl)}`
     : '/api/auth/google';
 
   return (

@@ -14,6 +14,7 @@ import { AuthPageLayout } from '~/components/AuthPageLayout';
 import { GoogleAuthButton } from '~/components/GoogleAuthButton';
 import { PasswordField } from '~/components/PasswordField';
 import { normalizeEmailAddress } from '~/utils/email';
+import { safeRedirectPath } from '~/utils/safeRedirectPath.server';
 import { LogIn } from 'lucide-react';
 import {
   renderBaseEmailTemplate,
@@ -26,6 +27,13 @@ const loginErrorMessages: Record<string, string> = {
     'Google sign-in could not be completed. Please try again.',
   userinfo_failed:
     'We could not read your Google account details. Please try again.',
+  invalid_oauth_state:
+    'Google sign-in expired or could not be verified. Please try again.',
+  google_email_unverified:
+    'Google could not verify your email address. Verify it with Google and try again.',
+  oauth_not_configured:
+    'Google sign-in is not configured. Please contact support.',
+  account_unavailable: 'This account is not available. Please contact support.',
   creation_failed:
     'We could not create your account from Google. Please try again.',
 };
@@ -35,7 +43,7 @@ const genericLoginError =
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const url = new URL(request.url);
-  const callbackUrl = url.searchParams.get('callbackUrl') || '/dashboard';
+  const callbackUrl = safeRedirectPath(url.searchParams.get('callbackUrl'));
   const error = url.searchParams.get('error');
   const resetSuccess = url.searchParams.get('resetSuccess');
   const verified = url.searchParams.get('verified') === '1';
@@ -47,7 +55,9 @@ export const action = async ({ request }: Route.ActionArgs) => {
   const formData = await request.formData();
   const email = normalizeEmailAddress(formData.get('email'));
   const password = formData.get('password') as string;
-  const callbackUrl = (formData.get('callbackUrl') as string) || '/dashboard';
+  const callbackUrl = safeRedirectPath(
+    String(formData.get('callbackUrl') ?? ''),
+  );
 
   if (!email || !password) {
     return data({ error: 'Email and password are required' }, { status: 400 });
