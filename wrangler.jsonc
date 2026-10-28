@@ -12,7 +12,7 @@
   },
   "triggers": {
     "crons": [
-      "0 * * * *"
+      "*/5 * * * *"
     ],
   },
   "d1_databases": [
@@ -51,7 +51,7 @@
       "name": "prod-supplyflow",
       "triggers": {
         "crons": [
-          "0 * * * *"
+          "*/5 * * * *"
         ],
       },
       "d1_databases": [
@@ -81,7 +81,7 @@
       "routes": [],
       "triggers": {
         "crons": [
-          "0 * * * *"
+          "*/5 * * * *"
         ],
       },
       "d1_databases": [
