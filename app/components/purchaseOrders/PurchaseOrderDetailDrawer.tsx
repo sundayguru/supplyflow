@@ -2,7 +2,9 @@ import { startTransition, useEffect, useState } from 'react';
 import { Link, useFetcher, useNavigate } from 'react-router';
 import {
   CalendarDays,
+  Check,
   CircleDollarSign,
+  Clipboard,
   ClipboardList,
   CreditCard,
   Download,
@@ -53,6 +55,7 @@ type PurchaseOrderDetailDrawerProps = {
   manufacturers: ManufacturerRecord[];
   addresses: AddressRecord[];
   templates: RfqPdfTemplateOption[];
+  llmUsageEnabled: boolean;
   onClose: () => void;
   onEdit: () => void;
 };
@@ -68,9 +71,10 @@ type ValidationMutationResponse =
 type ProformaDraftResponse =
   | {
       success: true;
-      draft: { id: string; url: string };
+      draft?: { id: string; url: string };
       generatedReply: string;
       purchaseOrder: PurchaseOrderRecord;
+      textOnly?: boolean;
     }
   | { error: string };
 
@@ -90,6 +94,7 @@ export const PurchaseOrderDetailDrawer = ({
   manufacturers,
   addresses,
   templates,
+  llmUsageEnabled,
   onClose,
   onEdit,
 }: PurchaseOrderDetailDrawerProps) => {
@@ -112,6 +117,7 @@ export const PurchaseOrderDetailDrawer = ({
   );
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isVendorPoModalOpen, setIsVendorPoModalOpen] = useState(false);
+  const [copiedDraft, setCopiedDraft] = useState(false);
 
   useEffect(() => {
     if (
@@ -181,7 +187,7 @@ export const PurchaseOrderDetailDrawer = ({
     purchaseOrder.status === 'validated' ||
     purchaseOrder.status === 'review_email' ||
     purchaseOrder.status === 'awaiting_payment';
-  const canDraftProforma = canGenerateProforma && !!purchaseOrder.sourceEmail;
+  const canDraftProforma = canGenerateProforma && llmUsageEnabled;
   const canConfirmPayment =
     currentPurchaseOrder.status === 'awaiting_payment' ||
     currentPurchaseOrder.status === 'partial_payment';
@@ -207,12 +213,12 @@ export const PurchaseOrderDetailDrawer = ({
   const statusReportUrl = `/api/purchase-orders/${encodeURIComponent(purchaseOrder.id)}/status-report`;
   const draftUrl =
     proformaDraft.data && 'success' in proformaDraft.data
-      ? proformaDraft.data.draft.url
+      ? (proformaDraft.data.draft?.url ?? null)
       : null;
   const generatedReply =
     proformaDraft.data && 'success' in proformaDraft.data
       ? proformaDraft.data.generatedReply
-      : null;
+      : currentPurchaseOrder.proformaDraftText;
   const validatePurchaseOrder = () => {
     validationMutation.submit(
       { id: purchaseOrder.id, intent: 'validate' },
@@ -229,7 +235,7 @@ export const PurchaseOrderDetailDrawer = ({
       return;
     }
     proformaDraft.submit(
-      { templateId: activeTemplateId },
+      { templateId: activeTemplateId, textOnly: !purchaseOrder.sourceEmail },
       {
         method: 'post',
         action: `/api/purchase-orders/${encodeURIComponent(purchaseOrder.id)}/proforma-draft`,
@@ -475,9 +481,9 @@ export const PurchaseOrderDetailDrawer = ({
                       !canDraftProforma || proformaDraft.state !== 'idle'
                     }
                     title={
-                      canDraftProforma
+                      llmUsageEnabled
                         ? undefined
-                        : 'This PO must come from a connected email before a draft can be created.'
+                        : 'AI drafting is not included in your organization plan.'
                     }
                     className='inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60'
                   >
@@ -486,7 +492,9 @@ export const PurchaseOrderDetailDrawer = ({
                     ) : (
                       <Send size={15} />
                     )}
-                    Draft email
+                    {purchaseOrder.sourceEmail
+                      ? 'Draft email'
+                      : 'Draft reply text'}
                   </button>
                 </div>
               </div>
@@ -523,11 +531,6 @@ export const PurchaseOrderDetailDrawer = ({
                       Open draft <ExternalLink size={14} />
                     </a>
                   </div>
-                  {generatedReply && (
-                    <p className='mt-3 text-sm leading-6 whitespace-pre-wrap text-slate-700'>
-                      {generatedReply}
-                    </p>
-                  )}
                 </div>
               )}
             </section>
@@ -812,6 +815,35 @@ export const PurchaseOrderDetailDrawer = ({
             reason={purchaseOrder.statusReason}
             className='mt-5'
           />
+          {generatedReply && (
+            <details className='mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white'>
+              <summary className='cursor-pointer px-4 py-3 text-sm font-semibold text-slate-800'>
+                Reply draft
+              </summary>
+              <div className='border-t border-slate-100 p-4'>
+                <div className='flex justify-end'>
+                  <button
+                    type='button'
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(generatedReply);
+                      setCopiedDraft(true);
+                    }}
+                    className='inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50'
+                  >
+                    {copiedDraft ? (
+                      <Check size={15} />
+                    ) : (
+                      <Clipboard size={15} />
+                    )}
+                    {copiedDraft ? 'Copied' : 'Copy draft'}
+                  </button>
+                </div>
+                <p className='mt-3 text-sm leading-6 whitespace-pre-wrap text-slate-700'>
+                  {generatedReply}
+                </p>
+              </div>
+            </details>
+          )}
         </div>
 
         <footer className='space-y-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-7'>

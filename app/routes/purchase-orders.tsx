@@ -105,6 +105,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
         ...purchaseOrder,
         sourceEmail: emailSources.get(purchaseOrder.id) ?? null,
       })),
+      llmUsageEnabled: user.planFeatures.llmUsage === true,
       rfqs,
       productPrices,
       manufacturers,
@@ -124,6 +125,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       templates: [],
       vatRate: organization.vat,
       loadError: 'Unable to load purchase orders',
+      llmUsageEnabled: user.planFeatures.llmUsage === true,
     });
   }
 };
@@ -393,6 +395,7 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
           manufacturers={loaderData.manufacturers}
           addresses={loaderData.addresses}
           templates={loaderData.templates}
+          llmUsageEnabled={loaderData.llmUsageEnabled}
           onClose={closeDetails}
           onEdit={editFromDetails}
         />

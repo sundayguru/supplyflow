@@ -36,6 +36,7 @@ type RfqDetailDrawerProps = {
   vatRate: number;
   productPrices: ProductPriceRecord[];
   manufacturers: ManufacturerRecord[];
+  llmUsageEnabled: boolean;
   onClose: () => void;
   onEdit: () => void;
 };
@@ -47,9 +48,10 @@ type ItemMutationResponse =
 type CustomerDraftResponse =
   | {
       success: true;
-      draft: { id: string; url: string };
+      draft?: { id: string; url: string };
       generatedReply: string;
       intent: 'regenerate' | 'updatePdf';
+      textOnly?: boolean;
     }
   | { error: string };
 
@@ -60,6 +62,7 @@ export const RfqDetailDrawer = ({
   vatRate,
   productPrices,
   manufacturers,
+  llmUsageEnabled,
   onClose,
   onEdit,
 }: RfqDetailDrawerProps) => {
@@ -82,11 +85,11 @@ export const RfqDetailDrawer = ({
   const sourcePdfUrl = rfq.sourcePdfKey
     ? `/api/rfqs/${encodeURIComponent(rfq.id)}/source-pdf`
     : null;
-  const canDraftReply = !!rfq.sourceEmail;
+  const canDraftReply = llmUsageEnabled;
   const isDraftingReply = customerDraft.state !== 'idle';
   const draftUrl =
     customerDraft.data && 'success' in customerDraft.data
-      ? customerDraft.data.draft.url
+      ? (customerDraft.data.draft?.url ?? null)
       : null;
   const draftAction =
     customerDraft.data && 'success' in customerDraft.data
@@ -130,9 +133,6 @@ export const RfqDetailDrawer = ({
   };
 
   const createCustomerDraft = (intent: 'regenerate' | 'updatePdf') => {
-    if (!canDraftReply) {
-      return;
-    }
     setIsDraftMenuOpen(false);
     customerDraft.submit(
       { intent },
@@ -260,32 +260,6 @@ export const RfqDetailDrawer = ({
                 <ExternalLink size={14} /> Open draft
               </a>
             </p>
-          )}
-          {generatedReply && (
-            <section className='mb-5 rounded-xl border border-slate-200 bg-white p-4'>
-              <div className='flex flex-wrap items-center justify-between gap-3'>
-                <div>
-                  <p className='text-xs font-bold tracking-[0.14em] text-emerald-700 uppercase'>
-                    Email draft
-                  </p>
-                  <p className='mt-1 text-sm text-slate-500'>
-                    Generated reply saved for this RFQ.
-                  </p>
-                </div>
-                <button
-                  type='button'
-                  onClick={copyGeneratedReply}
-                  className='inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
-                >
-                  {hasCopiedDraft ? (
-                    <Check size={16} className='text-emerald-600' />
-                  ) : (
-                    <Clipboard size={16} />
-                  )}
-                  {hasCopiedDraft ? 'Copied' : 'Copy draft'}
-                </button>
-              </div>
-            </section>
           )}
           <section
             className='grid gap-3 sm:grid-cols-2'
@@ -475,6 +449,32 @@ export const RfqDetailDrawer = ({
             reason={rfq.statusReason}
             className='mt-5'
           />
+          {generatedReply && (
+            <details className='mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white'>
+              <summary className='cursor-pointer px-4 py-3 text-sm font-semibold text-slate-800'>
+                Reply draft
+              </summary>
+              <div className='border-t border-slate-100 p-4'>
+                <div className='flex justify-end'>
+                  <button
+                    type='button'
+                    onClick={copyGeneratedReply}
+                    className='inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
+                  >
+                    {hasCopiedDraft ? (
+                      <Check size={16} className='text-emerald-600' />
+                    ) : (
+                      <Clipboard size={16} />
+                    )}
+                    {hasCopiedDraft ? 'Copied' : 'Copy draft'}
+                  </button>
+                </div>
+                <p className='mt-3 text-sm leading-6 whitespace-pre-wrap text-slate-700'>
+                  {generatedReply}
+                </p>
+              </div>
+            </details>
+          )}
         </div>
 
         <footer className='border-t border-slate-200 bg-white px-5 py-4 sm:px-7'>
@@ -509,7 +509,13 @@ export const RfqDetailDrawer = ({
                 ) : (
                   <Send size={17} />
                 )}
-                {generatedReply ? 'Update reply' : 'Draft reply'}
+                {generatedReply
+                  ? rfq.sourceEmail
+                    ? 'Update reply'
+                    : 'Update reply text'
+                  : rfq.sourceEmail
+                    ? 'Draft reply'
+                    : 'Draft reply text'}
                 {generatedReply && <ChevronDown size={15} />}
               </button>
               {isDraftMenuOpen && generatedReply && (
@@ -521,13 +527,15 @@ export const RfqDetailDrawer = ({
                   >
                     <Send size={15} /> Regenerate
                   </button>
-                  <button
-                    type='button'
-                    onClick={() => submitDraftUpdate('updatePdf')}
-                    className='flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
-                  >
-                    <FileText size={15} /> Update PDF
-                  </button>
+                  {rfq.sourceEmail && (
+                    <button
+                      type='button'
+                      onClick={() => submitDraftUpdate('updatePdf')}
+                      className='flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
+                    >
+                      <FileText size={15} /> Update PDF
+                    </button>
+                  )}
                 </div>
               )}
             </div>

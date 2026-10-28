@@ -116,6 +116,7 @@ export type PurchaseOrderRecord = Omit<PurchaseOrderInput, 'items'> & {
   linkedRfq: LinkedPurchaseOrderRfq | null;
   linkedVendorPurchaseOrders: LinkedPurchaseOrderVendorPurchaseOrderSummary[];
   validationSummary: string | null;
+  proformaDraftText: string | null;
   proformaInvoiceDraftId: string | null;
   proformaInvoiceDraftUpdatedAt: string | null;
   proformaInvoiceSentAt: string | null;

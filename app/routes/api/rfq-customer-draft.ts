@@ -57,26 +57,26 @@ export const action = async ({
   if (!organization) {
     return data({ error: 'Organization required' }, { status: 409 });
   }
+  if (!user.planFeatures.llmUsage) {
+    return data(
+      { error: 'AI drafting is not included in your organization plan.' },
+      { status: 403 },
+    );
+  }
 
   const rfq = await getRfq(params.rfqId, organization.id, organization.vat);
   if (!rfq) {
     return data({ error: 'RFQ not found' }, { status: 404 });
   }
   const source = await getEmailSourceForRfq(rfq.id, organization.id);
-  if (!source) {
-    return data(
-      { error: 'This RFQ was not created from a connected email.' },
-      { status: 400 },
-    );
-  }
-  if (source.accountProvider !== 'gmail') {
+  if (source && source.accountProvider !== 'gmail') {
     return data(
       { error: 'Draft replies are only supported for Gmail accounts.' },
       { status: 400 },
     );
   }
-  const recipient = source.fromAddress ?? rfq.customerEmail;
-  if (!recipient) {
+  const recipient = source?.fromAddress ?? rfq.customerEmail;
+  if (source && !recipient) {
     return data(
       { error: 'The original email did not include a reply address.' },
       { status: 400 },
@@ -86,15 +86,124 @@ export const action = async ({
   try {
     const { env } = context.get(cloudflareContext);
     if (
-      !('GOOGLE_CLIENT_ID' in env) ||
-      !('GOOGLE_CLIENT_SECRET' in env) ||
-      !('TOKEN_ENCRYPTION_KEY' in env) ||
       !('AI_API_URL' in env) ||
       !('AI_API_KEY' in env) ||
       !('AI_MODEL' in env)
     ) {
       return data(
         { error: 'Connected email or AI settings are not configured.' },
+        { status: 500 },
+      );
+    }
+    const intent = await parseDraftIntent(request);
+    if (intent === 'updatePdf' && !rfq.generatedReply) {
+      return data(
+        { error: 'Generate an email draft before updating only the PDF.' },
+        { status: 400 },
+      );
+    }
+    const bodyText =
+      intent === 'updatePdf' && rfq.generatedReply
+        ? rfq.generatedReply
+        : await (async () => {
+            const originalMessage = source
+              ? await (async () => {
+                  const refreshToken = await decryptToken(
+                    source.encryptedRefreshToken,
+                    requireSetting(
+                      'TOKEN_ENCRYPTION_KEY',
+                      'TOKEN_ENCRYPTION_KEY' in env
+                        ? env.TOKEN_ENCRYPTION_KEY
+                        : undefined,
+                    ),
+                  );
+                  const emailClient = createEmailClient({
+                    provider: 'gmail',
+                    clientId: requireSetting(
+                      'GOOGLE_CLIENT_ID',
+                      'GOOGLE_CLIENT_ID' in env
+                        ? env.GOOGLE_CLIENT_ID
+                        : undefined,
+                    ),
+                    clientSecret: requireSetting(
+                      'GOOGLE_CLIENT_SECRET',
+                      'GOOGLE_CLIENT_SECRET' in env
+                        ? env.GOOGLE_CLIENT_SECRET
+                        : undefined,
+                    ),
+                    refreshToken,
+                  });
+                  if (!emailClient.getMessage) {
+                    throw new Error(
+                      'This email provider cannot load the original message.',
+                    );
+                  }
+                  return emailClient.getMessage(source.externalId);
+                })()
+              : null;
+            return await generateRfqReplyDraft({
+              config: {
+                ...getOpenAICompatibleAiConfig(env),
+                usage: {
+                  organizationId: organization.id,
+                  userId: user.id,
+                  feature: 'rfq-reply-draft',
+                },
+              },
+              rfq,
+              organizationName: organization.name,
+              customerName: rfq.customerName,
+              originalEmail: originalMessage
+                ? {
+                    subject: originalMessage.subject,
+                    fromName: originalMessage.from.name,
+                    fromAddress: originalMessage.from.address,
+                    text: originalMessage.text,
+                  }
+                : null,
+            });
+          })();
+
+    if (!source) {
+      const updatedRfq = await updateRfqGeneratedReply(
+        rfq.id,
+        organization.id,
+        bodyText,
+        null,
+        organization.vat,
+      );
+      if (!updatedRfq) {
+        return data(
+          { error: 'Reply text generated, but RFQ could not be updated.' },
+          { status: 500 },
+        );
+      }
+      await logUpdatedActivity(
+        {
+          organizationId: organization.id,
+          actorUserId: user.id,
+          sourceType: 'rfq',
+          sourceId: updatedRfq.id,
+          sourceReference: updatedRfq.reference,
+        },
+        rfq as unknown as Record<string, unknown>,
+        updatedRfq as unknown as Record<string, unknown>,
+      );
+      return data({
+        success: true,
+        generatedReply: bodyText,
+        intent,
+        textOnly: true,
+      });
+    }
+
+    if (
+      !('GOOGLE_CLIENT_ID' in env) ||
+      !('GOOGLE_CLIENT_SECRET' in env) ||
+      !('TOKEN_ENCRYPTION_KEY' in env)
+    ) {
+      return data(
+        { error: 'Connected email settings are not configured.' },
         { status: 500 },
       );
     }
@@ -123,40 +232,6 @@ export const action = async ({
         { status: 400 },
       );
     }
-    const getOriginalMessage = emailClient.getMessage;
-
-    const intent = await parseDraftIntent(request);
-    if (intent === 'updatePdf' && !rfq.generatedReply) {
-      return data(
-        { error: 'Generate an email draft before updating only the PDF.' },
-        { status: 400 },
-      );
-    }
-    const bodyText =
-      intent === 'updatePdf' && rfq.generatedReply
-        ? rfq.generatedReply
-        : await (async () => {
-            const originalMessage = await getOriginalMessage(source.externalId);
-            return await generateRfqReplyDraft({
-              config: {
-                ...getOpenAICompatibleAiConfig(env),
-                usage: {
-                  organizationId: organization.id,
-                  userId: user.id,
-                  feature: 'rfq-reply-draft',
-                },
-              },
-              rfq,
-              organizationName: organization.name,
-              customerName: rfq.customerName,
-              originalEmail: {
-                subject: originalMessage.subject,
-                fromName: originalMessage.from.name,
-                fromAddress: originalMessage.from.address,
-                text: originalMessage.text,
-              },
-            });
-          })();
 
     const template = rfq.templateId
       ? await getRfqPdfTemplate(rfq.templateId, organization.id)
@@ -166,7 +241,7 @@ export const action = async ({
       originalMessageId: source.externalId,
       threadId: source.threadId,
       accountEmail: source.accountEmail,
-      to: recipient,
+      to: recipient!,
       subject: source.subject ?? rfq.reference,
       bodyText,
       attachment: {

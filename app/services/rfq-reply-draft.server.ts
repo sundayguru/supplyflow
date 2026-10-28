@@ -25,14 +25,14 @@ type GenerateRfqReplyDraftInput = {
     fromName: string | null;
     fromAddress: string;
     text: string;
-  };
+  } | null;
 };
 
 type ReplyDraftEnvelope = {
   bodyText?: unknown;
 };
 
-const RFQ_REPLY_SYSTEM_PROMPT = `You draft concise, professional RFQ email replies for a supplier.
+const RFQ_REPLY_SYSTEM_PROMPT = `You draft concise, professional RFQ reply text for a supplier.
 Return only JSON with this shape:
 {
   "bodyText": "plain text email body"
@@ -41,7 +41,7 @@ Return only JSON with this shape:
 Rules:
 - Write only the email body, not the subject.
 - Address the customer by name.
-- Say the quotation PDF is attached.
+- If replying to an email, say the quotation PDF is attached.
 - Explicitly ask the customer to mention the RFQ number in their purchase order.
 - Use the original email only as context; do not invent promises, availability, lead times, or discounts.
 - Keep the tone warm, clear, and businesslike.`;
@@ -78,10 +78,15 @@ ${rfq.items
   .join('\n')}
 
 Original email context:
+${
+  originalEmail
+    ? `
 Subject: ${originalEmail.subject}
 From: ${originalEmail.fromName ?? originalEmail.fromAddress} <${originalEmail.fromAddress}>
 Body:
-${originalEmail.text.slice(0, 12000)}`;
+${originalEmail.text.slice(0, 12000)}`
+    : 'No originating email is available. Draft a standalone reply using the RFQ details.'
+}`;
 
 const generate = async (
   config: RfqReplyDraftConfig,

@@ -51,6 +51,7 @@ export const vendorPurchaseOrders = sqliteTable(
     expectedDate: text('expected_date'),
     currency: text('currency', { length: 3 }).notNull().default('EUR'),
     notes: text('notes'),
+    generatedEmailDraftText: text('generated_email_draft_text'),
     generatedEmailDraftId: text('generated_email_draft_id', { length: 255 }),
     generatedEmailDraftUpdatedAt: text('generated_email_draft_updated_at'),
     generatedEmailDraftThreadId: text('generated_email_draft_thread_id', {

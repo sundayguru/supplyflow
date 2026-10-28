@@ -291,6 +291,7 @@ export const updateVendorPurchaseOrderEmailDraft = async (
   id: string,
   organizationId: string,
   draftId: string,
+  draftText: string,
   draftAccountId: string,
   draftThreadId: string | null,
 ) => {
@@ -300,6 +301,7 @@ export const updateVendorPurchaseOrderEmailDraft = async (
     .set({
       status: 'review_email',
       generatedEmailDraftId: draftId,
+      generatedEmailDraftText: draftText,
       generatedEmailDraftUpdatedAt: new Date().toISOString(),
       generatedEmailDraftAccountId: draftAccountId,
       generatedEmailDraftThreadId: draftThreadId,
@@ -313,6 +315,31 @@ export const updateVendorPurchaseOrderEmailDraft = async (
     )
     .returning({ id: vendorPurchaseOrders.id });
   return record ? await getVendorPurchaseOrder(id, organizationId) : null;
+};
+
+export const updateVendorPurchaseOrderDraftText = async (
+  id: string,
+  organizationId: string,
+  draftText: string,
+) => {
+  const db = getDb();
+  const updatedAt = new Date().toISOString();
+  const [record] = await db
+    .update(vendorPurchaseOrders)
+    .set({
+      status: 'review_email',
+      generatedEmailDraftText: draftText,
+      generatedEmailDraftUpdatedAt: updatedAt,
+      updatedAt,
+    })
+    .where(
+      and(
+        eq(vendorPurchaseOrders.id, id),
+        eq(vendorPurchaseOrders.organizationId, organizationId),
+      ),
+    )
+    .returning({ id: vendorPurchaseOrders.id });
+  return record ? getVendorPurchaseOrder(record.id, organizationId) : null;
 };
 
 export const hasOrganizationPurchaseOrder = async (

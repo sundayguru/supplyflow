@@ -257,7 +257,7 @@ export const updateRfqGeneratedReply = async (
   id: string,
   organizationId: string,
   generatedReply: string,
-  generatedReplyDraftId: string,
+  generatedReplyDraftId: string | null,
   vatRate: number,
 ) => {
   const db = getDb();

@@ -47,6 +47,7 @@ export const purchaseOrders = sqliteTable(
     deliveryTerms: text('delivery_terms'),
     notes: text('notes'),
     validationSummary: text('validation_summary'),
+    proformaDraftText: text('proforma_draft_text'),
     proformaInvoiceDraftId: text('proforma_invoice_draft_id', {
       length: 255,
     }),

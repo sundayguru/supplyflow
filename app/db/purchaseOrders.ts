@@ -381,6 +381,7 @@ export const updatePurchaseOrderProformaDraft = async (
   id: string,
   organizationId: string,
   draftId: string,
+  draftText: string,
   vatRate: number,
 ) => {
   const db = getDb();
@@ -391,6 +392,32 @@ export const updatePurchaseOrderProformaDraft = async (
       status: 'review_email',
       proformaInvoiceDraftId: draftId,
       proformaInvoiceDraftUpdatedAt: updatedAt,
+      proformaDraftText: draftText,
+      updatedAt,
+    })
+    .where(
+      and(
+        eq(purchaseOrders.id, id),
+        eq(purchaseOrders.organizationId, organizationId),
+      ),
+    )
+    .returning({ id: purchaseOrders.id });
+  return updated ? getPurchaseOrder(updated.id, organizationId, vatRate) : null;
+};
+
+export const updatePurchaseOrderProformaDraftText = async (
+  id: string,
+  organizationId: string,
+  draftText: string,
+  vatRate: number,
+) => {
+  const db = getDb();
+  const updatedAt = new Date().toISOString();
+  const [updated] = await db
+    .update(purchaseOrders)
+    .set({
+      status: 'review_email',
+      proformaDraftText: draftText,
       updatedAt,
     })
     .where(

@@ -6,6 +6,7 @@ import { getOrganizationForUser } from '~/db/organizations';
 import {
   getPurchaseOrder,
   updatePurchaseOrderProformaDraft,
+  updatePurchaseOrderProformaDraftText,
 } from '~/db/purchaseOrders';
 import { getRfqPdfTemplate } from '~/db/rfqPdfTemplates';
 import { createEmailClient } from '~/services/email/index.server';
@@ -42,6 +43,12 @@ export const action = async ({
   if (!organization) {
     return data({ error: 'Organization required' }, { status: 409 });
   }
+  if (!user.planFeatures.llmUsage) {
+    return data(
+      { error: 'AI drafting is not included in your organization plan.' },
+      { status: 403 },
+    );
+  }
 
   const purchaseOrder = await getPurchaseOrder(
     params.purchaseOrderId,
@@ -65,21 +72,15 @@ export const action = async ({
     purchaseOrder.id,
     organization.id,
   );
-  if (!source) {
-    return data(
-      { error: 'This PO was not created from a connected email.' },
-      { status: 400 },
-    );
-  }
-  if (source.accountProvider !== 'gmail') {
+  if (source && source.accountProvider !== 'gmail') {
     return data(
       { error: 'Draft replies are only supported for Gmail accounts.' },
       { status: 400 },
     );
   }
 
-  const recipient = source.fromAddress ?? purchaseOrder.supplierEmail;
-  if (!recipient) {
+  const recipient = source?.fromAddress ?? purchaseOrder.supplierEmail;
+  if (source && !recipient) {
     return data(
       { error: 'The original email did not include a reply address.' },
       { status: 400 },
@@ -89,7 +90,9 @@ export const action = async ({
   try {
     const body = (await request.json().catch(() => ({}))) as {
       templateId?: unknown;
+      textOnly?: unknown;
     };
+    const textOnly = body.textOnly === true || !source;
     const templateId =
       typeof body.templateId === 'string' && body.templateId
         ? body.templateId
@@ -103,12 +106,128 @@ export const action = async ({
 
     const { env } = context.get(cloudflareContext);
     if (
-      !('GOOGLE_CLIENT_ID' in env) ||
-      !('GOOGLE_CLIENT_SECRET' in env) ||
-      !('TOKEN_ENCRYPTION_KEY' in env) ||
       !('AI_API_URL' in env) ||
       !('AI_API_KEY' in env) ||
       !('AI_MODEL' in env)
+    ) {
+      return data(
+        { error: 'Connected email settings are not configured.' },
+        { status: 500 },
+      );
+    }
+    const originalMessage =
+      source && !textOnly
+        ? await (async () => {
+            if (
+              !('GOOGLE_CLIENT_ID' in env) ||
+              !('GOOGLE_CLIENT_SECRET' in env) ||
+              !('TOKEN_ENCRYPTION_KEY' in env)
+            ) {
+              throw new Error('Connected email settings are not configured.');
+            }
+            const refreshToken = await decryptToken(
+              source.encryptedRefreshToken,
+              requireSetting('TOKEN_ENCRYPTION_KEY', env.TOKEN_ENCRYPTION_KEY),
+            );
+            const emailClient = createEmailClient({
+              provider: 'gmail',
+              clientId: requireSetting(
+                'GOOGLE_CLIENT_ID',
+                env.GOOGLE_CLIENT_ID,
+              ),
+              clientSecret: requireSetting(
+                'GOOGLE_CLIENT_SECRET',
+                env.GOOGLE_CLIENT_SECRET,
+              ),
+              refreshToken,
+            });
+            if (!emailClient.getMessage) {
+              throw new Error(
+                'This email provider cannot load the original message.',
+              );
+            }
+            return emailClient.getMessage(source.externalId);
+          })()
+        : null;
+    const generatedReply = await generateDocumentEmailDraft({
+      config: {
+        ...getOpenAICompatibleAiConfig(env),
+        usage: {
+          organizationId: organization.id,
+          userId: user.id,
+          feature: 'purchase-order-email-draft',
+        },
+      },
+      purpose: originalMessage
+        ? 'Reply to the customer about their purchase order and mention that the proforma invoice PDF is attached. Acknowledge receipt without asserting that the order has shipped or been accepted.'
+        : 'Draft reply text for the purchase order. Acknowledge receipt without asserting that the order has shipped or been accepted. Do not mention an attachment.',
+      context: {
+        organizationName: organization.name,
+        recipientName: purchaseOrder.supplierName,
+        purchaseOrder: {
+          reference: purchaseOrder.reference,
+          orderDate: purchaseOrder.orderDate,
+          expectedDate: purchaseOrder.expectedDate,
+          currency: purchaseOrder.currency,
+          deliveryTerms: purchaseOrder.deliveryTerms,
+          incoterms: purchaseOrder.incoterms,
+          notes: purchaseOrder.notes,
+          items: purchaseOrder.items.map((item) => ({
+            quantity: item.quantity,
+            unit: item.unit,
+            description: item.description,
+            manufacturerPartNumber: item.manufacturerPartNumber,
+          })),
+        },
+        originalEmail: originalMessage
+          ? {
+              subject: originalMessage.subject,
+              fromName: originalMessage.from.name,
+              fromAddress: originalMessage.from.address,
+              body: originalMessage.text.slice(0, 12000),
+            }
+          : null,
+        attachment: originalMessage ? 'Proforma invoice PDF' : null,
+      },
+    });
+    if (textOnly) {
+      const updatedPurchaseOrder = await updatePurchaseOrderProformaDraftText(
+        purchaseOrder.id,
+        organization.id,
+        generatedReply,
+        organization.vat,
+      );
+      if (!updatedPurchaseOrder) {
+        return data(
+          { error: 'Reply text generated, but PO could not be updated.' },
+          { status: 500 },
+        );
+      }
+      await logUpdatedActivity(
+        {
+          organizationId: organization.id,
+          actorUserId: user.id,
+          sourceType: 'purchase_order',
+          sourceId: updatedPurchaseOrder.id,
+          sourceReference: updatedPurchaseOrder.reference,
+        },
+        purchaseOrder as unknown as Record<string, unknown>,
+        updatedPurchaseOrder as unknown as Record<string, unknown>,
+      );
+      return data({
+        success: true,
+        generatedReply,
+        purchaseOrder: updatedPurchaseOrder,
+        textOnly: true,
+      });
+    }
+
+    if (
+      !source ||
+      !originalMessage ||
+      !('GOOGLE_CLIENT_ID' in env) ||
+      !('GOOGLE_CLIENT_SECRET' in env) ||
+      !('TOKEN_ENCRYPTION_KEY' in env)
     ) {
       return data(
         { error: 'Connected email settings are not configured.' },
@@ -134,62 +253,16 @@ export const action = async ({
         { status: 400 },
       );
     }
-    if (!emailClient.getMessage) {
-      return data(
-        { error: 'This email provider cannot load the original message.' },
-        { status: 400 },
-      );
-    }
-
-    const originalMessage = await emailClient.getMessage(source.externalId);
     const pdf = await generateProformaInvoicePdf(
       purchaseOrder,
       template,
       organization,
     );
-    const generatedReply = await generateDocumentEmailDraft({
-      config: {
-        ...getOpenAICompatibleAiConfig(env),
-        usage: {
-          organizationId: organization.id,
-          userId: user.id,
-          feature: 'purchase-order-email-draft',
-        },
-      },
-      purpose:
-        'Reply to the customer about their purchase order and mention that the proforma invoice PDF is attached. Acknowledge receipt without asserting that the order has shipped or been accepted.',
-      context: {
-        organizationName: organization.name,
-        recipientName: purchaseOrder.supplierName,
-        purchaseOrder: {
-          reference: purchaseOrder.reference,
-          orderDate: purchaseOrder.orderDate,
-          expectedDate: purchaseOrder.expectedDate,
-          currency: purchaseOrder.currency,
-          deliveryTerms: purchaseOrder.deliveryTerms,
-          incoterms: purchaseOrder.incoterms,
-          notes: purchaseOrder.notes,
-          items: purchaseOrder.items.map((item) => ({
-            quantity: item.quantity,
-            unit: item.unit,
-            description: item.description,
-            manufacturerPartNumber: item.manufacturerPartNumber,
-          })),
-        },
-        originalEmail: {
-          subject: originalMessage.subject,
-          fromName: originalMessage.from.name,
-          fromAddress: originalMessage.from.address,
-          body: originalMessage.text.slice(0, 12000),
-        },
-        attachment: 'Proforma invoice PDF',
-      },
-    });
     const draft = await emailClient.createDraftReply({
       originalMessageId: source.externalId,
       threadId: source.threadId,
       accountEmail: source.accountEmail,
-      to: recipient,
+      to: recipient!,
       subject: source.subject ?? purchaseOrder.reference,
       bodyText: generatedReply,
       attachment: {
@@ -202,6 +275,7 @@ export const action = async ({
       purchaseOrder.id,
       organization.id,
       draft.id,
+      generatedReply,
       organization.vat,
     );
     if (!updatedPurchaseOrder) {

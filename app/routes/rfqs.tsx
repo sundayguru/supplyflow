@@ -106,6 +106,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       productPrices,
       manufacturers,
       loadError: null,
+      llmUsageEnabled: user.planFeatures.llmUsage === true,
     });
   } catch (error) {
     console.error('Unable to load RFQs', error);
@@ -118,6 +119,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       productPrices: [],
       manufacturers: [],
       loadError: 'Unable to load RFQs',
+      llmUsageEnabled: user.planFeatures.llmUsage === true,
     });
   }
 };
@@ -594,6 +596,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
           vatRate={loaderData.vatRate}
           productPrices={loaderData.productPrices}
           manufacturers={loaderData.manufacturers}
+          llmUsageEnabled={loaderData.llmUsageEnabled}
           onClose={closeDetails}
           onEdit={editFromDetails}
         />

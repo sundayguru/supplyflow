@@ -1,7 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useFetcher } from 'react-router';
 import {
   CalendarDays,
+  Check,
+  Clipboard,
   ClipboardList,
   CircleDollarSign,
   Download,
@@ -30,6 +32,7 @@ type VendorPurchaseOrderDetailDrawerProps = {
   vendorPurchaseOrder: VendorPurchaseOrderRecord;
   templates: RfqPdfTemplateOption[];
   manufacturers: ManufacturerRecord[];
+  llmUsageEnabled: boolean;
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -38,9 +41,10 @@ type VendorPurchaseOrderDetailDrawerProps = {
 type DraftVendorPurchaseOrderResponse =
   | {
       success: true;
-      draft: { id: string; url: string };
+      draft?: { id: string; url: string };
       generatedReply: string;
       vendorPurchaseOrder: VendorPurchaseOrderRecord;
+      textOnly?: boolean;
     }
   | { error: string };
 
@@ -50,11 +54,13 @@ export const VendorPurchaseOrderDetailDrawer = ({
   vendorPurchaseOrder,
   templates,
   manufacturers,
+  llmUsageEnabled,
   onClose,
   onEdit,
   onDelete,
 }: VendorPurchaseOrderDetailDrawerProps) => {
   const draftEmail = useFetcher<DraftVendorPurchaseOrderResponse>();
+  const [copiedDraft, setCopiedDraft] = useState(false);
   const currentVendorPurchaseOrder =
     draftEmail.data &&
     'success' in draftEmail.data &&
@@ -71,8 +77,12 @@ export const VendorPurchaseOrderDetailDrawer = ({
     : null;
   const draftUrl =
     draftEmail.data && 'success' in draftEmail.data
-      ? draftEmail.data.draft.url
+      ? (draftEmail.data.draft?.url ?? null)
       : null;
+  const generatedReply =
+    draftEmail.data && 'success' in draftEmail.data
+      ? draftEmail.data.generatedReply
+      : currentVendorPurchaseOrder.generatedEmailDraftText;
 
   const createDraftEmail = () => {
     draftEmail.submit(
@@ -82,6 +92,17 @@ export const VendorPurchaseOrderDetailDrawer = ({
         action: `/api/vendor-purchase-orders/${encodeURIComponent(
           currentVendorPurchaseOrder.id,
         )}/draft`,
+        encType: 'application/json',
+      },
+    );
+  };
+
+  const createDraftText = () => {
+    draftEmail.submit(
+      { textOnly: true },
+      {
+        method: 'post',
+        action: `/api/vendor-purchase-orders/${encodeURIComponent(currentVendorPurchaseOrder.id)}/draft`,
         encType: 'application/json',
       },
     );
@@ -392,6 +413,35 @@ export const VendorPurchaseOrderDetailDrawer = ({
             reason={currentVendorPurchaseOrder.statusReason}
             className='mt-5'
           />
+          {generatedReply && (
+            <details className='mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white'>
+              <summary className='cursor-pointer px-4 py-3 text-sm font-semibold text-slate-800'>
+                Reply draft
+              </summary>
+              <div className='border-t border-slate-100 p-4'>
+                <div className='flex justify-end'>
+                  <button
+                    type='button'
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(generatedReply);
+                      setCopiedDraft(true);
+                    }}
+                    className='inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50'
+                  >
+                    {copiedDraft ? (
+                      <Check size={15} />
+                    ) : (
+                      <Clipboard size={15} />
+                    )}
+                    {copiedDraft ? 'Copied' : 'Copy draft'}
+                  </button>
+                </div>
+                <p className='mt-3 text-sm leading-6 whitespace-pre-wrap text-slate-700'>
+                  {generatedReply}
+                </p>
+              </div>
+            </details>
+          )}
         </div>
 
         <footer className='space-y-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-7'>
@@ -421,7 +471,8 @@ export const VendorPurchaseOrderDetailDrawer = ({
             onClick={createDraftEmail}
             disabled={
               draftEmail.state !== 'idle' ||
-              !currentVendorPurchaseOrder.vendorEmail
+              !currentVendorPurchaseOrder.vendorEmail ||
+              !llmUsageEnabled
             }
             className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60'
           >
@@ -429,6 +480,21 @@ export const VendorPurchaseOrderDetailDrawer = ({
             {draftEmail.state !== 'idle'
               ? 'Drafting vendor email'
               : 'Draft email to vendor'}
+          </button>
+          <button
+            type='button'
+            onClick={createDraftText}
+            disabled={draftEmail.state !== 'idle' || !llmUsageEnabled}
+            title={
+              llmUsageEnabled
+                ? undefined
+                : 'AI drafting is not included in your organization plan.'
+            }
+            className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60'
+          >
+            {draftEmail.state !== 'idle'
+              ? 'Drafting reply text'
+              : 'Draft reply text'}
           </button>
           <a
             href={downloadPdfUrl}

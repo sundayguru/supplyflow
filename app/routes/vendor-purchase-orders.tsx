@@ -68,6 +68,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     ]);
     return data({
       vendorPurchaseOrders,
+      llmUsageEnabled: user.planFeatures.llmUsage === true,
       purchaseOrders,
       manufacturers,
       addresses,
@@ -85,6 +86,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       templates: [],
       vatRate: organization.vat,
       loadError: 'Unable to load vendor POs',
+      llmUsageEnabled: user.planFeatures.llmUsage === true,
     });
   }
 };
@@ -334,6 +336,7 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
           vendorPurchaseOrder={selectedVendorPurchaseOrder}
           templates={loaderData.templates}
           manufacturers={loaderData.manufacturers}
+          llmUsageEnabled={loaderData.llmUsageEnabled}
           onClose={closeDetails}
           onEdit={editFromDetails}
           onDelete={deleteFromDetails}
