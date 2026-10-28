@@ -70,12 +70,12 @@ export const Header = ({
       : []),
     ...(user?.planFeatures?.vendorPurchaseOrderAcknowledgements
       ? [
-        {
-          to: '/vendor-purchase-order-acknowledgements',
-          label: 'Vendor PO acks',
-          icon: MailCheck,
-        },
-      ]
+          {
+            to: '/vendor-purchase-order-acknowledgements',
+            label: 'Vendor PO acks',
+            icon: MailCheck,
+          },
+        ]
       : []),
     ...(user?.planFeatures?.activities
       ? [{ to: '/activities', label: 'Activity logs', icon: History }]
@@ -94,12 +94,12 @@ export const Header = ({
       : []),
     ...(user?.planFeatures?.emailAutomation
       ? [
-        {
-          to: '/connected-accounts',
-          label: 'Connected accounts',
-          icon: MailCheck,
-        },
-      ]
+          {
+            to: '/connected-accounts',
+            label: 'Connected accounts',
+            icon: MailCheck,
+          },
+        ]
       : []),
     {
       to: '/notifications',
@@ -154,8 +154,9 @@ export const Header = ({
       )}
 
       <aside
-        className={`fixed top-16 left-0 z-40 flex h-[calc(100dvh-4rem)] min-h-0 w-72 flex-col overflow-hidden border-r border-slate-200 bg-white px-4 shadow-xl shadow-slate-950/5 transition-[width,transform,padding] duration-300 lg:translate-x-0 lg:shadow-none ${showSidebar ? 'translate-x-0' : '-translate-x-full'
-          } ${isSidebarCollapsed ? 'lg:w-20 lg:px-2' : 'lg:w-72'}`}
+        className={`fixed top-16 left-0 z-40 flex h-[calc(100dvh-4rem)] min-h-0 w-72 flex-col overflow-hidden border-r border-slate-200 bg-white px-4 shadow-xl shadow-slate-950/5 transition-[width,transform,padding] duration-300 lg:translate-x-0 lg:shadow-none ${
+          showSidebar ? 'translate-x-0' : '-translate-x-full'
+        } ${isSidebarCollapsed ? 'lg:w-20 lg:px-2' : 'lg:w-72'}`}
       >
         <div
           className={`flex shrink-0 items-center pt-5 pb-4 ${isSidebarCollapsed ? 'justify-center px-0' : 'justify-between px-3'}`}
@@ -217,17 +218,20 @@ export const Header = ({
                   }
                 }}
                 onBlur={() => setHoveredNavItem(null)}
-                className={`flex items-center gap-3 rounded-xl py-3 text-sm font-medium transition ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'
-                  } ${active
+                className={`flex items-center gap-3 rounded-xl py-3 text-sm font-medium transition ${
+                  isSidebarCollapsed ? 'justify-center px-0' : 'px-3'
+                } ${
+                  active
                     ? 'bg-emerald-50 text-emerald-800'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'
-                  }`}
+                }`}
               >
                 <span
-                  className={`flex h-9 w-9 items-center justify-center rounded-lg ${active
+                  className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+                    active
                       ? 'bg-emerald-600 text-white'
                       : 'bg-slate-100 text-slate-500'
-                    }`}
+                  }`}
                 >
                   <Icon size={17} aria-hidden='true' />
                 </span>
@@ -251,6 +255,7 @@ export const Header = ({
             className={`flex w-full items-center rounded-xl p-2 text-left transition hover:bg-slate-50 ${isSidebarCollapsed ? 'justify-center' : 'gap-3'}`}
             title={isSidebarCollapsed ? user?.name : undefined}
             aria-label='Open user menu'
+            data-profile-menu-trigger
             aria-expanded={showProfileMenu}
           >
             {user?.avatarUrl ? (
