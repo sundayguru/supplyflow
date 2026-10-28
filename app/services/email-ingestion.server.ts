@@ -27,6 +27,7 @@ import type {
 import { calculateRfqItemAmounts } from '~/utils/rfq';
 import { uploadRfqSourcePdf } from '~/utils/rfqSourcePdf.server';
 import { notifyOrganizationMembers } from '~/db/notifications';
+import { getAutoResponseAddress } from '~/utils/forwardedEmail';
 
 type AccountResult = {
   accountId: string;
@@ -120,13 +121,14 @@ const sendRfqAcknowledgement = async ({
   template: string | null;
   rfq: RfqRecord;
 }) => {
-  if (!emailClient.sendReply || !message.from.address) {
+  const recipient = getAutoResponseAddress(message).address;
+  if (!emailClient.sendReply || !recipient) {
     return;
   }
   await emailClient.sendReply({
     originalMessageId: message.id,
     threadId: message.threadId,
-    to: message.from.address,
+    to: recipient,
     subject: message.subject || rfq.reference,
     bodyText: renderAutoResponse('rfqAcknowledgementTemplate', template, {
       reference: rfq.reference,
@@ -150,13 +152,14 @@ const sendPurchaseOrderAcknowledgement = async ({
   template: string | null;
   purchaseOrder: PurchaseOrderRecord;
 }) => {
-  if (!emailClient.sendReply || !message.from.address) {
+  const recipient = getAutoResponseAddress(message).address;
+  if (!emailClient.sendReply || !recipient) {
     return;
   }
   await emailClient.sendReply({
     originalMessageId: message.id,
     threadId: message.threadId,
-    to: message.from.address,
+    to: recipient,
     subject: message.subject || purchaseOrder.reference,
     bodyText: renderAutoResponse(
       'purchaseOrderAcknowledgementTemplate',
