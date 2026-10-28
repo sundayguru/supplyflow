@@ -5,6 +5,7 @@ import type {
   EmailClient,
   EmailMessage,
   ListMessagesOptions,
+  SendReplyInput,
 } from './types';
 
 export type YahooClientConfig = {
@@ -438,6 +439,150 @@ class ImapConnection {
   }
 }
 
+class SmtpConnection {
+  private readonly reader: ReadableStreamDefaultReader<Uint8Array>;
+  private readonly writer: WritableStreamDefaultWriter<Uint8Array>;
+  private buffer = new Uint8Array();
+
+  private constructor(private readonly socket: Socket) {
+    this.reader = socket.readable.getReader();
+    this.writer = socket.writable.getWriter();
+  }
+
+  static async open(host: string) {
+    const socket = connect(
+      { hostname: host, port: 465 },
+      { secureTransport: 'on', allowHalfOpen: false },
+    );
+    await socket.opened;
+    const connection = new SmtpConnection(socket);
+    try {
+      await connection.expect([220]);
+      return connection;
+    } catch (error) {
+      await connection.close();
+      throw error;
+    }
+  }
+
+  async close() {
+    await this.writer.close().catch(() => undefined);
+    await this.socket.close().catch(() => undefined);
+  }
+
+  async authenticate(email: string, appPassword: string) {
+    await this.command('EHLO supplyflow.app', [250]);
+    await this.command('AUTH LOGIN', [334]);
+    await this.command(encodeBase64String(email), [334]);
+    await this.command(encodeBase64String(appPassword), [235]);
+  }
+
+  async send(input: SendReplyInput & { from: string }) {
+    await this.command(`MAIL FROM:${formatSmtpAddress(input.from)}`, [250]);
+    await this.command(`RCPT TO:${formatSmtpAddress(input.to)}`, [250, 251]);
+    await this.command('DATA', [354]);
+    const messageId = `<${crypto.randomUUID()}@supplyflow.app>`;
+    const body = [
+      `From: ${formatSmtpAddress(input.from)}`,
+      `To: ${formatSmtpAddress(input.to)}`,
+      `Subject: ${encodeMimeHeader(input.subject)}`,
+      `Message-ID: ${messageId}`,
+      ...(input.originalMessageId
+        ? [
+            `In-Reply-To: ${input.originalMessageId}`,
+            `References: ${input.originalMessageId}`,
+          ]
+        : []),
+      'MIME-Version: 1.0',
+      'Content-Type: text/plain; charset=UTF-8',
+      'Content-Transfer-Encoding: 8bit',
+      '',
+      dotStuff(input.bodyText),
+      '.',
+      '',
+    ].join(CRLF);
+    await this.writer.write(textEncoder.encode(body));
+    await this.expect([250]);
+    await this.command('QUIT', [221]);
+  }
+
+  private async command(command: string, expected: number[]) {
+    await this.writer.write(textEncoder.encode(`${command}${CRLF}`));
+    return await this.expect(expected);
+  }
+
+  private async expect(expected: number[]) {
+    const lines: string[] = [];
+    while (true) {
+      const line = await this.readLine();
+      lines.push(line);
+      const match = /^(\d{3})([ -])/.exec(line);
+      if (!match || match[2] === '-') {
+        continue;
+      }
+      const code = Number(match[1]);
+      if (!expected.includes(code)) {
+        throw new Error(`SMTP command failed with status ${code}`);
+      }
+      return lines.join(CRLF);
+    }
+  }
+
+  private async readLine() {
+    while (true) {
+      const text = textDecoder.decode(this.buffer);
+      const end = text.indexOf(CRLF);
+      if (end >= 0) {
+        const line = text.slice(0, end);
+        this.buffer = this.buffer.slice(end + CRLF.length);
+        return line;
+      }
+      const { value, done } = await this.reader.read();
+      if (done || !value) {
+        throw new Error('SMTP server closed the connection');
+      }
+      this.buffer = concatBytes(this.buffer, value);
+    }
+  }
+}
+
+const formatSmtpAddress = (address: string) => {
+  if (/[\r\n<>]/.test(address)) {
+    throw new Error('Invalid email address');
+  }
+  return `<${address}>`;
+};
+
+const encodeMimeHeader = (value: string) => {
+  if (/[\r\n]/.test(value)) {
+    throw new Error('Invalid email subject');
+  }
+  return /^[\x20-\x7e]*$/.test(value)
+    ? value
+    : `=?UTF-8?B?${encodeBase64String(value)}?=`;
+};
+
+const dotStuff = (value: string) =>
+  value.replace(/\r?\n/g, CRLF).replace(/(^|\r\n)\./g, '$1..');
+
+const sendYahooReply = async (
+  config: YahooClientConfig,
+  input: SendReplyInput,
+) => {
+  if (config.authType !== 'app_password' || !config.appPassword) {
+    throw new Error('Yahoo and AOL replies require an app password connection');
+  }
+  const host =
+    config.provider === 'aol' ? 'smtp.aol.com' : 'smtp.mail.yahoo.com';
+  const connection = await SmtpConnection.open(host);
+  try {
+    await connection.authenticate(config.accountEmail, config.appPassword);
+    await connection.send({ ...input, from: config.accountEmail });
+  } finally {
+    await connection.close();
+  }
+};
+
 const findCrlf = (bytes: Uint8Array) => {
   for (let index = 0; index < bytes.byteLength - 1; index += 1) {
     if (bytes[index] === 13 && bytes[index + 1] === 10) {
@@ -765,6 +910,9 @@ export const createYahooClient = (config: YahooClientConfig): EmailClient => ({
   provider: config.provider ?? 'yahoo',
   async listMessages(options) {
     return await listYahooMessages(config, options);
+  },
+  async sendReply(input) {
+    await sendYahooReply(config, input);
   },
 });
 
