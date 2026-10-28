@@ -9,20 +9,12 @@ import {
   updateVendorPurchaseOrderDraftText,
   updateVendorPurchaseOrderEmailDraft,
 } from '~/db/vendorPurchaseOrders';
-import { createEmailClient } from '~/services/email/index.server';
+import { createConnectedEmailClient } from '~/services/email-schedule.server';
 import { generateDocumentEmailDraft } from '~/services/document-email-draft.server';
 import { generateVendorPurchaseOrderPdf } from '~/utils/rfqPdf.server';
 import { getOpenAICompatibleAiConfig } from '~/utils/organization-ai.server';
 import { getUserFromRequest } from '~/utils/session.server';
-import { decryptToken } from '~/utils/tokenEncryption.server';
 import type { Route } from './+types/vendor-purchase-order-draft';
-
-const requireSetting = (name: string, value: string | undefined) => {
-  if (!value) {
-    throw new Error(`Missing required email setting: ${name}`);
-  }
-  return value;
-};
 
 const safeFilename = (value: string) =>
   value.replace(/[^a-z0-9.-]+/gi, '-').replace(/^-|-$/g, '') || 'vendor-po';
@@ -76,14 +68,17 @@ export const action = async ({
   }
 
   const [account] = (await listActiveConnectedEmailAccounts(organization.id))
-    .filter((candidate) => candidate.provider === 'gmail')
+    .filter(
+      (candidate) =>
+        candidate.authType === 'app_password' || candidate.provider === 'gmail',
+    )
     .sort((left, right) =>
       left.userId === user.id ? -1 : right.userId === user.id ? 1 : 0,
     );
   if (!account && !textOnly) {
     return data(
       {
-        error: 'Connect an active Gmail account before drafting vendor emails.',
+        error: 'Connect an active email account before drafting vendor emails.',
       },
       { status: 400 },
     );
@@ -171,30 +166,13 @@ export const action = async ({
       });
     }
 
-    if (
-      !account ||
-      !('GOOGLE_CLIENT_ID' in env) ||
-      !('GOOGLE_CLIENT_SECRET' in env) ||
-      !('TOKEN_ENCRYPTION_KEY' in env)
-    ) {
+    if (!account || !('TOKEN_ENCRYPTION_KEY' in env)) {
       return data(
         { error: 'Connected email settings are not configured.' },
         { status: 500 },
       );
     }
-    const refreshToken = await decryptToken(
-      account.encryptedRefreshToken,
-      requireSetting('TOKEN_ENCRYPTION_KEY', env.TOKEN_ENCRYPTION_KEY),
-    );
-    const emailClient = createEmailClient({
-      provider: 'gmail',
-      clientId: requireSetting('GOOGLE_CLIENT_ID', env.GOOGLE_CLIENT_ID),
-      clientSecret: requireSetting(
-        'GOOGLE_CLIENT_SECRET',
-        env.GOOGLE_CLIENT_SECRET,
-      ),
-      refreshToken,
-    });
+    const emailClient = await createConnectedEmailClient(account, env as Env);
     if (!emailClient.createDraftEmail) {
       return data(
         { error: 'This email provider cannot create draft emails yet.' },

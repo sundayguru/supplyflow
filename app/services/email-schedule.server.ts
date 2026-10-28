@@ -54,7 +54,10 @@ const getEmailProviderEnv = (env: Env, name: string) =>
   (env as Env & Record<string, string | undefined>)[name];
 
 const getClientConfig = (
-  account: SelectConnectedEmailAccount,
+  account: Pick<
+    SelectConnectedEmailAccount,
+    'provider' | 'email' | 'authType' | 'emailFolder'
+  >,
   env: Env,
   refreshToken: string,
 ) => {
@@ -119,6 +122,29 @@ const getClientConfig = (
   }
 };
 
+export const createConnectedEmailClient = async (
+  account: Pick<
+    SelectConnectedEmailAccount,
+    'provider' | 'authType' | 'encryptedRefreshToken' | 'emailFolder'
+  > & { email?: string; accountEmail?: string },
+  env: Env,
+) => {
+  const refreshToken = await decryptToken(
+    account.encryptedRefreshToken,
+    requireEmailSetting('TOKEN_ENCRYPTION_KEY', env.TOKEN_ENCRYPTION_KEY),
+  );
+  return createEmailClient(
+    getClientConfig(
+      {
+        ...account,
+        email: account.email ?? account.accountEmail ?? '',
+      },
+      env,
+      refreshToken,
+    ),
+  );
+};
+
 const isEmailAuthenticationError = (error: unknown, provider: EmailProvider) =>
   provider === 'gmail'
     ? isGmailAuthenticationError(error)
@@ -168,13 +194,7 @@ const loadMailbox = async (
     };
   }
 
-  const refreshToken = await decryptToken(
-    account.encryptedRefreshToken,
-    requireEmailSetting('TOKEN_ENCRYPTION_KEY', env.TOKEN_ENCRYPTION_KEY),
-  );
-  const emailClient = createEmailClient(
-    getClientConfig(account, env, refreshToken),
-  );
+  const emailClient = await createConnectedEmailClient(account, env);
   const startOfToday = getStartOfUtcDay(startedAt);
   const messages = (
     await emailClient.listMessages({

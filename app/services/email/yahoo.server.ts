@@ -5,6 +5,9 @@ import type {
   EmailClient,
   EmailMessage,
   ListMessagesOptions,
+  CreateDraftEmailInput,
+  CreateDraftReplyInput,
+  UpdateDraftReplyInput,
   SendReplyInput,
 } from './types';
 
@@ -19,6 +22,7 @@ export type YahooClientConfig = {
   tokenUrl?: string;
   userinfoUrl?: string;
   imapHost?: string;
+  imapFolder?: string | null;
   provider?: 'yahoo' | 'aol';
 };
 
@@ -309,6 +313,35 @@ class ImapConnection {
     await this.command(`SELECT ${quoteImapString(folder || 'INBOX')}`);
   }
 
+  async appendDraft(folder: string, message: Uint8Array) {
+    this.tagNumber += 1;
+    const tag = `A${String(this.tagNumber).padStart(4, '0')}`;
+    await this.writer.write(
+      textEncoder.encode(
+        `${tag} APPEND ${quoteImapString(folder)} (\\Draft) {${message.byteLength}}${CRLF}`,
+      ),
+    );
+    const continuation = await this.readLine();
+    if (!continuation.startsWith('+')) {
+      throw new Error('IMAP server rejected draft upload');
+    }
+    await this.writer.write(concatBytes(message, textEncoder.encode(CRLF)));
+    const result = await this.readUntilTag(tag);
+    if (!result.startsWith(`${tag} OK`)) {
+      throw new Error('IMAP server could not save the draft');
+    }
+    return /\[APPENDUID\s+\d+\s+(\d+)\]/i.exec(result)?.[1] ?? null;
+  }
+
+  async deleteDraft(folder: string, uid: string) {
+    if (!/^\d+$/.test(uid)) {
+      return;
+    }
+    await this.select(folder);
+    await this.command(`UID STORE ${uid} +FLAGS (\\Deleted)`);
+    await this.command(`UID EXPUNGE ${uid}`).catch(() => undefined);
+  }
+
   async capability() {
     const result = await this.command('CAPABILITY');
     const capabilityLine = result.text
@@ -403,6 +436,17 @@ class ImapConnection {
           }
           throw new Error(`Yahoo IMAP command failed: ${line}`);
         }
+      }
+    }
+  }
+
+  private async readUntilTag(tag: string) {
+    const lines: string[] = [];
+    while (true) {
+      const line = await this.readLine();
+      lines.push(line);
+      if (line.startsWith(`${tag} `)) {
+        return lines.join(CRLF);
       }
     }
   }
@@ -578,6 +622,82 @@ const sendYahooReply = async (
   try {
     await connection.authenticate(config.accountEmail, config.appPassword);
     await connection.send({ ...input, from: config.accountEmail });
+  } finally {
+    await connection.close();
+  }
+};
+
+const encodeBase64Lines = (bytes: Uint8Array) => {
+  const encoded = encodeBase64Bytes(bytes);
+  return encoded.match(/.{1,76}/g)?.join(CRLF) ?? '';
+};
+
+const createImapDraftMessage = (
+  input: CreateDraftEmailInput | CreateDraftReplyInput,
+  isReply: boolean,
+) => {
+  const boundary = `supplyflow-${crypto.randomUUID()}`;
+  const headers = [
+    `From: ${formatSmtpAddress(input.accountEmail)}`,
+    `To: ${formatSmtpAddress(input.to)}`,
+    `Subject: ${encodeMimeHeader(input.subject)}`,
+    `Message-ID: <${crypto.randomUUID()}@supplyflow.app>`,
+    ...(isReply && 'originalMessageId' in input && input.originalMessageId
+      ? [
+          `In-Reply-To: ${input.originalMessageId}`,
+          `References: ${input.originalMessageId}`,
+        ]
+      : []),
+    'MIME-Version: 1.0',
+    `Content-Type: multipart/mixed; boundary="${boundary}"`,
+    '',
+    `--${boundary}`,
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: 8bit',
+    '',
+    input.bodyText,
+    `--${boundary}`,
+    `Content-Type: ${input.attachment.contentType}; name="${input.attachment.filename}"`,
+    `Content-Disposition: attachment; filename="${input.attachment.filename}"`,
+    'Content-Transfer-Encoding: base64',
+    '',
+    encodeBase64Lines(input.attachment.bytes),
+    `--${boundary}--`,
+    '',
+  ];
+  return textEncoder.encode(headers.join(CRLF));
+};
+
+const saveYahooDraft = async (
+  config: YahooClientConfig,
+  input: CreateDraftEmailInput | CreateDraftReplyInput,
+  isReply: boolean,
+  previousDraftId?: string,
+) => {
+  if (config.authType !== 'app_password' || !config.appPassword) {
+    throw new Error('Yahoo and AOL drafts require an app password connection');
+  }
+  const host = config.provider === 'aol' ? 'imap.aol.com' : YAHOO_IMAP_HOST;
+  const connection = await ImapConnection.open(
+    host,
+    config.provider ?? 'yahoo',
+  );
+  try {
+    await connection.authenticatePassword(
+      config.accountEmail,
+      config.appPassword,
+    );
+    const folder = config.provider === 'aol' ? 'Drafts' : 'Draft';
+    const rawMessage = createImapDraftMessage(input, isReply);
+    const uid = await connection.appendDraft(folder, rawMessage);
+    if (previousDraftId) {
+      await connection.deleteDraft(folder, previousDraftId);
+    }
+    return {
+      id: uid ?? crypto.randomUUID(),
+      url: `https://mail.${config.provider === 'aol' ? 'aol' : 'yahoo'}.com/d/folders/${encodeURIComponent(folder)}`,
+      ...(isReply && 'threadId' in input ? { threadId: input.threadId } : {}),
+    };
   } finally {
     await connection.close();
   }
@@ -892,6 +1012,29 @@ const listYahooMessages = async (
   }
 };
 
+const getYahooMessage = async (config: YahooClientConfig, uid: string) => {
+  const host = config.imapHost ?? YAHOO_IMAP_HOST;
+  const connection = await ImapConnection.open(
+    host,
+    config.provider ?? 'yahoo',
+  );
+  try {
+    if (config.authType === 'app_password' && config.appPassword) {
+      await connection.authenticatePassword(
+        config.accountEmail,
+        config.appPassword,
+      );
+    } else {
+      const accessToken = await getAccessToken(config);
+      await connection.authenticate(config.accountEmail, accessToken);
+    }
+    await connection.select(config.imapFolder || 'INBOX');
+    return await connection.fetchMessage(uid);
+  } finally {
+    await connection.close();
+  }
+};
+
 export const verifyYahooImapCredentials = async (input: {
   provider: 'yahoo' | 'aol';
   email: string;
@@ -911,8 +1054,20 @@ export const createYahooClient = (config: YahooClientConfig): EmailClient => ({
   async listMessages(options) {
     return await listYahooMessages(config, options);
   },
+  async getMessage(id) {
+    return await getYahooMessage(config, id);
+  },
   async sendReply(input) {
     await sendYahooReply(config, input);
+  },
+  async createDraftReply(input) {
+    return await saveYahooDraft(config, input, true);
+  },
+  async createDraftEmail(input) {
+    return await saveYahooDraft(config, input, false);
+  },
+  async updateDraftReply(input: UpdateDraftReplyInput) {
+    return await saveYahooDraft(config, input, true, input.draftId);
   },
 });
 

@@ -78,7 +78,7 @@ export const listEmailIngestions = async ({
   const rowsQuery = db
     .select({
       id: emailIngestions.id,
-      provider: emailIngestions.provider,
+      provider: connectedEmailAccounts.provider,
       externalId: emailIngestions.externalId,
       status: emailIngestions.status,
       subject: emailIngestions.subject,
@@ -148,7 +148,7 @@ export const listEmailSourcesForRfqs = async (
     .select({
       rfqId: emailIngestions.rfqId,
       ingestionId: emailIngestions.id,
-      provider: emailIngestions.provider,
+      provider: connectedEmailAccounts.provider,
       subject: emailIngestions.subject,
       fromAddress: emailIngestions.fromAddress,
       accountEmail: connectedEmailAccounts.email,
@@ -193,7 +193,7 @@ export const listEmailSourcesForPurchaseOrders = async (
     .select({
       purchaseOrderId: emailIngestions.purchaseOrderId,
       ingestionId: emailIngestions.id,
-      provider: emailIngestions.provider,
+      provider: connectedEmailAccounts.provider,
       subject: emailIngestions.subject,
       fromAddress: emailIngestions.fromAddress,
       accountEmail: connectedEmailAccounts.email,
@@ -234,13 +234,15 @@ export const getEmailSourceForRfq = async (
   const [source] = await db
     .select({
       ingestionId: emailIngestions.id,
-      provider: emailIngestions.provider,
+      provider: connectedEmailAccounts.provider,
       externalId: emailIngestions.externalId,
       threadId: emailIngestions.threadId,
       subject: emailIngestions.subject,
       fromAddress: emailIngestions.fromAddress,
       accountEmail: connectedEmailAccounts.email,
       accountProvider: connectedEmailAccounts.provider,
+      authType: connectedEmailAccounts.authType,
+      emailFolder: connectedEmailAccounts.emailFolder,
       encryptedRefreshToken: connectedEmailAccounts.encryptedRefreshToken,
     })
     .from(emailIngestions)
@@ -267,13 +269,15 @@ export const getEmailSourceForPurchaseOrder = async (
   const [source] = await db
     .select({
       ingestionId: emailIngestions.id,
-      provider: emailIngestions.provider,
+      provider: connectedEmailAccounts.provider,
       externalId: emailIngestions.externalId,
       threadId: emailIngestions.threadId,
       subject: emailIngestions.subject,
       fromAddress: emailIngestions.fromAddress,
       accountEmail: connectedEmailAccounts.email,
       accountProvider: connectedEmailAccounts.provider,
+      authType: connectedEmailAccounts.authType,
+      emailFolder: connectedEmailAccounts.emailFolder,
       encryptedRefreshToken: connectedEmailAccounts.encryptedRefreshToken,
     })
     .from(emailIngestions)

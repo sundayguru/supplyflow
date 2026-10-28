@@ -9,20 +9,12 @@ import {
   updatePurchaseOrderProformaDraftText,
 } from '~/db/purchaseOrders';
 import { getRfqPdfTemplate } from '~/db/rfqPdfTemplates';
-import { createEmailClient } from '~/services/email/index.server';
+import { createConnectedEmailClient } from '~/services/email-schedule.server';
 import { generateDocumentEmailDraft } from '~/services/document-email-draft.server';
 import { generateProformaInvoicePdf } from '~/utils/rfqPdf.server';
 import { getOpenAICompatibleAiConfig } from '~/utils/organization-ai.server';
 import { getUserFromRequest } from '~/utils/session.server';
-import { decryptToken } from '~/utils/tokenEncryption.server';
 import type { Route } from './+types/purchase-order-proforma-draft';
-
-const requireSetting = (name: string, value: string | undefined) => {
-  if (!value) {
-    throw new Error(`Missing required email setting: ${name}`);
-  }
-  return value;
-};
 
 const safeFilename = (value: string) =>
   value.replace(/[^a-z0-9.-]+/gi, '-').replace(/^-|-$/g, '') || 'invoice';
@@ -72,13 +64,6 @@ export const action = async ({
     purchaseOrder.id,
     organization.id,
   );
-  if (source && source.accountProvider !== 'gmail') {
-    return data(
-      { error: 'Draft replies are only supported for Gmail accounts.' },
-      { status: 400 },
-    );
-  }
-
   const recipient = source?.fromAddress ?? purchaseOrder.supplierEmail;
   if (source && !recipient) {
     return data(
@@ -118,29 +103,10 @@ export const action = async ({
     const originalMessage =
       source && !textOnly
         ? await (async () => {
-            if (
-              !('GOOGLE_CLIENT_ID' in env) ||
-              !('GOOGLE_CLIENT_SECRET' in env) ||
-              !('TOKEN_ENCRYPTION_KEY' in env)
-            ) {
-              throw new Error('Connected email settings are not configured.');
-            }
-            const refreshToken = await decryptToken(
-              source.encryptedRefreshToken,
-              requireSetting('TOKEN_ENCRYPTION_KEY', env.TOKEN_ENCRYPTION_KEY),
+            const emailClient = await createConnectedEmailClient(
+              source,
+              env as Env,
             );
-            const emailClient = createEmailClient({
-              provider: 'gmail',
-              clientId: requireSetting(
-                'GOOGLE_CLIENT_ID',
-                env.GOOGLE_CLIENT_ID,
-              ),
-              clientSecret: requireSetting(
-                'GOOGLE_CLIENT_SECRET',
-                env.GOOGLE_CLIENT_SECRET,
-              ),
-              refreshToken,
-            });
             if (!emailClient.getMessage) {
               throw new Error(
                 'This email provider cannot load the original message.',
@@ -222,31 +188,13 @@ export const action = async ({
       });
     }
 
-    if (
-      !source ||
-      !originalMessage ||
-      !('GOOGLE_CLIENT_ID' in env) ||
-      !('GOOGLE_CLIENT_SECRET' in env) ||
-      !('TOKEN_ENCRYPTION_KEY' in env)
-    ) {
+    if (!source || !originalMessage || !('TOKEN_ENCRYPTION_KEY' in env)) {
       return data(
         { error: 'Connected email settings are not configured.' },
         { status: 500 },
       );
     }
-    const refreshToken = await decryptToken(
-      source.encryptedRefreshToken,
-      requireSetting('TOKEN_ENCRYPTION_KEY', env.TOKEN_ENCRYPTION_KEY),
-    );
-    const emailClient = createEmailClient({
-      provider: 'gmail',
-      clientId: requireSetting('GOOGLE_CLIENT_ID', env.GOOGLE_CLIENT_ID),
-      clientSecret: requireSetting(
-        'GOOGLE_CLIENT_SECRET',
-        env.GOOGLE_CLIENT_SECRET,
-      ),
-      refreshToken,
-    });
+    const emailClient = await createConnectedEmailClient(source, env as Env);
     if (!emailClient.createDraftReply) {
       return data(
         { error: 'This email provider cannot create draft replies yet.' },
