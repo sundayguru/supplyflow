@@ -478,75 +478,92 @@ export const RfqDetailDrawer = ({
         </div>
 
         <footer className='border-t border-slate-200 bg-white px-5 py-4 sm:px-7'>
-          <div className='grid gap-3 sm:grid-cols-2'>
-            <a
-              href={`/api/rfqs/${encodeURIComponent(rfq.id)}/customer-pdf`}
-              download
-              className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:col-span-2'
-            >
-              <Download size={17} /> Download customer PDF
-            </a>
-            <Link
-              to={`/activities?sourceType=rfq&sourceId=${encodeURIComponent(rfq.id)}`}
-              className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
-            >
-              <History size={17} /> View activity
-            </Link>
-            <div className='relative' data-rfq-draft-menu>
-              <button
-                type='button'
-                onClick={handleDraftAction}
-                disabled={!canDraftReply || isDraftingReply}
-                title={
-                  canDraftReply
-                    ? undefined
-                    : 'Only RFQs created from connected email can draft a reply'
-                }
-                className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400'
+          <details className='group'>
+            <summary className='cursor-pointer list-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700'>
+              <span className='flex items-center justify-between gap-3'>
+                <span>Actions</span>
+                <span className='flex items-center gap-2 text-xs font-medium text-slate-500'>
+                  <span className='group-open:hidden'>Open action list</span>
+                  <span className='hidden group-open:inline'>
+                    Close action list
+                  </span>
+                  <ChevronDown
+                    size={16}
+                    className='transition-transform group-open:rotate-180'
+                  />
+                </span>
+              </span>
+            </summary>
+            <div className='mt-3 grid gap-3 sm:grid-cols-2'>
+              <a
+                href={`/api/rfqs/${encodeURIComponent(rfq.id)}/customer-pdf`}
+                download
+                className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:col-span-2'
               >
-                {isDraftingReply ? (
-                  <LoaderCircle size={17} className='animate-spin' />
-                ) : (
-                  <Send size={17} />
-                )}
-                {generatedReply
-                  ? rfq.sourceEmail
-                    ? 'Update reply'
-                    : 'Update reply text'
-                  : rfq.sourceEmail
-                    ? 'Draft reply'
-                    : 'Draft reply text'}
-                {generatedReply && <ChevronDown size={15} />}
-              </button>
-              {isDraftMenuOpen && generatedReply && (
-                <div className='absolute bottom-full left-0 z-[130] mb-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl'>
-                  <button
-                    type='button'
-                    onClick={() => submitDraftUpdate('regenerate')}
-                    className='flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
-                  >
-                    <Send size={15} /> Regenerate
-                  </button>
-                  {rfq.sourceEmail && (
+                <Download size={17} /> Download customer PDF
+              </a>
+              <Link
+                to={`/activities?sourceType=rfq&sourceId=${encodeURIComponent(rfq.id)}`}
+                className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
+              >
+                <History size={17} /> View activity
+              </Link>
+              <div className='relative' data-rfq-draft-menu>
+                <button
+                  type='button'
+                  onClick={handleDraftAction}
+                  disabled={!canDraftReply || isDraftingReply}
+                  title={
+                    canDraftReply
+                      ? undefined
+                      : 'Only RFQs created from connected email can draft a reply'
+                  }
+                  className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400'
+                >
+                  {isDraftingReply ? (
+                    <LoaderCircle size={17} className='animate-spin' />
+                  ) : (
+                    <Send size={17} />
+                  )}
+                  {generatedReply
+                    ? rfq.sourceEmail
+                      ? 'Update reply'
+                      : 'Update reply text'
+                    : rfq.sourceEmail
+                      ? 'Draft reply'
+                      : 'Draft reply text'}
+                  {generatedReply && <ChevronDown size={15} />}
+                </button>
+                {isDraftMenuOpen && generatedReply && (
+                  <div className='absolute bottom-full left-0 z-[130] mb-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl'>
                     <button
                       type='button'
-                      onClick={() => submitDraftUpdate('updatePdf')}
+                      onClick={() => submitDraftUpdate('regenerate')}
                       className='flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
                     >
-                      <FileText size={15} /> Update PDF
+                      <Send size={15} /> Regenerate
                     </button>
-                  )}
-                </div>
-              )}
+                    {rfq.sourceEmail && (
+                      <button
+                        type='button'
+                        onClick={() => submitDraftUpdate('updatePdf')}
+                        className='flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
+                      >
+                        <FileText size={15} /> Update PDF
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+              <button
+                type='button'
+                onClick={onEdit}
+                className='inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-500 sm:col-span-2'
+              >
+                <Pencil size={17} /> Edit RFQ
+              </button>
             </div>
-            <button
-              type='button'
-              onClick={onEdit}
-              className='inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-500 sm:col-span-2'
-            >
-              <Pencil size={17} /> Edit RFQ
-            </button>
-          </div>
+          </details>
         </footer>
       </aside>
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useFetcher } from 'react-router';
 import {
   CalendarDays,
+  ChevronDown,
   Check,
   Clipboard,
   ClipboardList,
@@ -445,77 +446,96 @@ export const VendorPurchaseOrderDetailDrawer = ({
         </div>
 
         <footer className='space-y-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-7'>
-          <Link
-            to={`/activities?sourceType=vendor_purchase_order&sourceId=${encodeURIComponent(currentVendorPurchaseOrder.id)}`}
-            className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
-          >
-            <History size={17} /> View activity
-          </Link>
-          {draftEmail.data && 'error' in draftEmail.data && (
-            <p className='rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'>
-              {draftEmail.data.error}
-            </p>
-          )}
-          {draftUrl && (
-            <a
-              href={draftUrl}
-              target='_blank'
-              rel='noreferrer'
-              className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-5 py-3 text-sm font-semibold text-sky-700 transition hover:bg-sky-100'
-            >
-              <ExternalLink size={17} /> Open draft in Gmail
-            </a>
-          )}
-          <button
-            type='button'
-            onClick={createDraftEmail}
-            disabled={
-              draftEmail.state !== 'idle' ||
-              !currentVendorPurchaseOrder.vendorEmail ||
-              !llmUsageEnabled
-            }
-            className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60'
-          >
-            <MailPlus size={17} />
-            {draftEmail.state !== 'idle'
-              ? 'Drafting vendor email'
-              : 'Draft email to vendor'}
-          </button>
-          <button
-            type='button'
-            onClick={createDraftText}
-            disabled={draftEmail.state !== 'idle' || !llmUsageEnabled}
-            title={
-              llmUsageEnabled
-                ? undefined
-                : 'AI drafting is not included in your organization plan.'
-            }
-            className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60'
-          >
-            {draftEmail.state !== 'idle'
-              ? 'Drafting reply text'
-              : 'Draft reply text'}
-          </button>
-          <a
-            href={downloadPdfUrl}
-            className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100'
-          >
-            <Download size={17} /> Download vendor PO PDF
-          </a>
-          <button
-            type='button'
-            onClick={onEdit}
-            className='inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-500'
-          >
-            <Pencil size={17} /> Edit vendor PO
-          </button>
-          <button
-            type='button'
-            onClick={onDelete}
-            className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-100'
-          >
-            <Trash2 size={17} /> Delete vendor PO
-          </button>
+          <details className='group'>
+            <summary className='cursor-pointer list-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700'>
+              <span className='flex items-center justify-between gap-3'>
+                <span>Actions</span>
+                <span className='flex items-center gap-2 text-xs font-medium text-slate-500'>
+                  <span className='group-open:hidden'>Open action list</span>
+                  <span className='hidden group-open:inline'>
+                    Close action list
+                  </span>
+                  <ChevronDown
+                    size={16}
+                    className='transition-transform group-open:rotate-180'
+                  />
+                </span>
+              </span>
+            </summary>
+            <div className='mt-3 space-y-3'>
+              <Link
+                to={`/activities?sourceType=vendor_purchase_order&sourceId=${encodeURIComponent(currentVendorPurchaseOrder.id)}`}
+                className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
+              >
+                <History size={17} /> View activity
+              </Link>
+              {draftEmail.data && 'error' in draftEmail.data && (
+                <p className='rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'>
+                  {draftEmail.data.error}
+                </p>
+              )}
+              {draftUrl && (
+                <a
+                  href={draftUrl}
+                  target='_blank'
+                  rel='noreferrer'
+                  className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-5 py-3 text-sm font-semibold text-sky-700 transition hover:bg-sky-100'
+                >
+                  <ExternalLink size={17} /> Open draft in Gmail
+                </a>
+              )}
+              <button
+                type='button'
+                onClick={createDraftEmail}
+                disabled={
+                  draftEmail.state !== 'idle' ||
+                  !currentVendorPurchaseOrder.vendorEmail ||
+                  !llmUsageEnabled
+                }
+                className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60'
+              >
+                <MailPlus size={17} />
+                {draftEmail.state !== 'idle'
+                  ? 'Drafting vendor email'
+                  : 'Draft email to vendor'}
+              </button>
+              <button
+                type='button'
+                onClick={createDraftText}
+                disabled={draftEmail.state !== 'idle' || !llmUsageEnabled}
+                title={
+                  llmUsageEnabled
+                    ? undefined
+                    : 'AI drafting is not included in your organization plan.'
+                }
+                className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60'
+              >
+                {draftEmail.state !== 'idle'
+                  ? 'Drafting reply text'
+                  : 'Draft reply text'}
+              </button>
+              <a
+                href={downloadPdfUrl}
+                className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100'
+              >
+                <Download size={17} /> Download vendor PO PDF
+              </a>
+              <button
+                type='button'
+                onClick={onEdit}
+                className='inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-500'
+              >
+                <Pencil size={17} /> Edit vendor PO
+              </button>
+              <button
+                type='button'
+                onClick={onDelete}
+                className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-100'
+              >
+                <Trash2 size={17} /> Delete vendor PO
+              </button>
+            </div>
+          </details>
         </footer>
       </aside>
     </div>

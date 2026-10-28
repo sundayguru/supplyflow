@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router';
 import {
+  ChevronDown,
   CalendarDays,
   ClipboardList,
   FileText,
@@ -290,26 +291,45 @@ export const VendorPurchaseOrderAcknowledgementDetailDrawer = ({
         </div>
 
         <footer className='flex flex-col-reverse gap-3 border-t border-slate-200 bg-white px-5 py-4 sm:flex-row sm:justify-end sm:px-7'>
-          <button
-            type='button'
-            onClick={onDelete}
-            className='inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-semibold text-rose-700 transition hover:bg-rose-50'
-          >
-            <Trash2 size={16} /> Delete
-          </button>
-          <Link
-            to={`/activities?sourceType=vendor_purchase_order_acknowledgement&sourceId=${encodeURIComponent(acknowledgement.id)}`}
-            className='inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
-          >
-            <History size={16} /> View activity
-          </Link>
-          <button
-            type='button'
-            onClick={onEdit}
-            className='inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500'
-          >
-            <Pencil size={16} /> Edit
-          </button>
+          <details className='group w-full'>
+            <summary className='cursor-pointer list-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700'>
+              <span className='flex items-center justify-between gap-3'>
+                <span>Actions</span>
+                <span className='flex items-center gap-2 text-xs font-medium text-slate-500'>
+                  <span className='group-open:hidden'>Open action list</span>
+                  <span className='hidden group-open:inline'>
+                    Close action list
+                  </span>
+                  <ChevronDown
+                    size={16}
+                    className='transition-transform group-open:rotate-180'
+                  />
+                </span>
+              </span>
+            </summary>
+            <div className='mt-3 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end'>
+              <button
+                type='button'
+                onClick={onDelete}
+                className='inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-semibold text-rose-700 transition hover:bg-rose-50'
+              >
+                <Trash2 size={16} /> Delete
+              </button>
+              <Link
+                to={`/activities?sourceType=vendor_purchase_order_acknowledgement&sourceId=${encodeURIComponent(acknowledgement.id)}`}
+                className='inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
+              >
+                <History size={16} /> View activity
+              </Link>
+              <button
+                type='button'
+                onClick={onEdit}
+                className='inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500'
+              >
+                <Pencil size={16} /> Edit
+              </button>
+            </div>
+          </details>
         </footer>
       </aside>
     </div>
