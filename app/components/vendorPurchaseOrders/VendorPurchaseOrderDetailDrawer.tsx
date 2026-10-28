@@ -216,7 +216,7 @@ export const VendorPurchaseOrderDetailDrawer = ({
               <ClipboardList size={14} /> Linked customer PO
             </p>
             <Link
-              to={`/purchase-orders?po=${encodeURIComponent(currentVendorPurchaseOrder.linkedPurchaseOrder.id)}`}
+              to={`/purchase-orders?id=${encodeURIComponent(currentVendorPurchaseOrder.linkedPurchaseOrder.id)}`}
               className='mt-2 inline-flex font-semibold text-slate-900 hover:text-emerald-700'
             >
               {currentVendorPurchaseOrder.linkedPurchaseOrder.reference} ·{' '}
@@ -232,7 +232,7 @@ export const VendorPurchaseOrderDetailDrawer = ({
                     (acknowledgement) => (
                       <Link
                         key={acknowledgement.id}
-                        to={`/vendor-purchase-order-acknowledgements?vendorPoAck=${encodeURIComponent(acknowledgement.id)}`}
+                        to={`/vendor-purchase-order-acknowledgements?id=${encodeURIComponent(acknowledgement.id)}`}
                         className='flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 font-semibold text-slate-900 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700'
                       >
                         <span>

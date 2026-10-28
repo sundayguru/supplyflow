@@ -1,5 +1,11 @@
 import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
-import { data, redirect, useFetcher, useSearchParams } from 'react-router';
+import {
+  data,
+  redirect,
+  useFetcher,
+  useNavigate,
+  useSearchParams,
+} from 'react-router';
 import { FileText, Plus, Search } from 'lucide-react';
 import type { Route } from './+types/purchase-orders';
 import { ConfirmModal } from '~/components/ConfirmModal';
@@ -20,7 +26,6 @@ import { getPurchaseOrders } from '~/db/purchaseOrders';
 import { listProductPrices } from '~/db/productPrices';
 import { listRfqPdfTemplates } from '~/db/rfqPdfTemplates';
 import { getRfqs } from '~/db/rfqs';
-import { RfqDetailDrawer } from '~/components/rfqs/RfqDetailDrawer';
 import type {
   PurchaseOrderRecord,
   PurchaseOrderStatus,
@@ -127,6 +132,7 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
   const { purchaseOrders } = loaderData;
   const mutation = useFetcher<ApiResponse>();
   const formMutation = useFetcher<ApiResponse>();
+  const navigate = useNavigate();
   const handledFormResponse = useRef<ApiResponse | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
@@ -139,22 +145,18 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
     null,
   );
   const selectedPurchaseOrder = purchaseOrders.find(
-    (purchaseOrder) => purchaseOrder.id === searchParams.get('po'),
-  );
-  const selectedRfq = loaderData.rfqs.find(
-    (rfq) => rfq.id === searchParams.get('rfq'),
+    (purchaseOrder) => purchaseOrder.id === searchParams.get('id'),
   );
 
   const closeDetails = () => {
     const next = new URLSearchParams(searchParams);
-    next.delete('po');
+    next.delete('id');
     setSearchParams(next, { replace: true });
   };
 
   const openPurchaseOrderDetails = (purchaseOrder: PurchaseOrderRecord) => {
     const next = new URLSearchParams(searchParams);
-    next.delete('rfq');
-    next.set('po', purchaseOrder.id);
+    next.set('id', purchaseOrder.id);
     setSearchParams(next);
   };
 
@@ -173,23 +175,13 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
     startTransition(() => setFormPurchaseOrder(null));
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
-      next.delete('rfq');
-      next.set('po', result.purchaseOrder!.id);
+      next.set('id', result.purchaseOrder!.id);
       return next;
     });
   }, [formMutation.data, formMutation.state, setSearchParams]);
 
-  const closeRfqDetails = () => {
-    const next = new URLSearchParams(searchParams);
-    next.delete('rfq');
-    setSearchParams(next, { replace: true });
-  };
-
   const openRfqDetails = (rfqId: string) => {
-    const next = new URLSearchParams(searchParams);
-    next.delete('po');
-    next.set('rfq', rfqId);
-    setSearchParams(next);
+    navigate(`/rfqs?id=${encodeURIComponent(rfqId)}`);
   };
 
   const editFromDetails = () => {
@@ -403,19 +395,6 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
           templates={loaderData.templates}
           onClose={closeDetails}
           onEdit={editFromDetails}
-        />
-      )}
-
-      {selectedRfq && (
-        <RfqDetailDrawer
-          rfq={selectedRfq}
-          vatRate={loaderData.vatRate}
-          productPrices={loaderData.productPrices}
-          manufacturers={loaderData.manufacturers}
-          onClose={closeRfqDetails}
-          onEdit={() => {
-            window.location.href = `/rfqs?rfq=${encodeURIComponent(selectedRfq.id)}`;
-          }}
         />
       )}
 

@@ -24,7 +24,10 @@ const sendNotificationEmails = async (
     organizationName,
     title: notification.title,
     message: notification.message,
-    actorLabel: notification.actorType === 'system' ? 'System' : 'Team member',
+    actorLabel:
+      notification.actorType === 'system'
+        ? 'System'
+        : (notification.actorName ?? 'Team member'),
     actionUrl: notification.actionUrl,
   });
   await Promise.all(
@@ -61,6 +64,7 @@ export const createNotification = async (
 export const notifyOrganizationMembers = async (
   organizationId: string,
   notification: Omit<InsertNotification, 'id' | 'userId'>,
+  actorUserId?: string,
 ) => {
   try {
     const db = getDb();
@@ -81,10 +85,22 @@ export const notifyOrganizationMembers = async (
     if (organization) {
       recipientIds.add(organization.ownerId);
     }
+    let actorName = notification.actorName ?? null;
+    if (actorUserId) {
+      recipientIds.delete(actorUserId);
+      const [actor] = await db
+        .select({ firstName: users.firstName, lastName: users.lastName })
+        .from(users)
+        .where(eq(users.id, actorUserId));
+      actorName = actor
+        ? `${actor.firstName} ${actor.lastName}`.trim()
+        : actorName;
+    }
+    const notificationWithActor = { ...notification, actorName };
     if (recipientIds.size) {
       const notificationsInsert = [...recipientIds].map((userId) => {
         return {
-          ...notification,
+          ...notificationWithActor,
           userId,
           isRead: false,
           id: uuidv4(),
@@ -109,7 +125,7 @@ export const notifyOrganizationMembers = async (
         await sendNotificationEmails(
           recipients,
           organization.name,
-          notification,
+          notificationWithActor,
         );
       }
       return created;
@@ -123,6 +139,7 @@ export const notifyOrganizationMembers = async (
 export const notifyOrganizationOwner = async (
   organizationId: string,
   notification: Omit<InsertNotification, 'id' | 'userId'>,
+  actorUserId?: string,
 ) => {
   try {
     const db = getDb();
@@ -139,14 +156,26 @@ export const notifyOrganizationOwner = async (
       .innerJoin(plans, eq(organizations.planId, plans.id))
       .innerJoin(users, eq(organizations.createdBy, users.id))
       .where(eq(organizations.id, organizationId));
-    if (!organization) {
+    if (!organization || organization.ownerId === actorUserId) {
       return null;
     }
+
+    let actorName = notification.actorName ?? null;
+    if (actorUserId) {
+      const [actor] = await db
+        .select({ firstName: users.firstName, lastName: users.lastName })
+        .from(users)
+        .where(eq(users.id, actorUserId));
+      actorName = actor
+        ? `${actor.firstName} ${actor.lastName}`.trim()
+        : actorName;
+    }
+    const notificationWithActor = { ...notification, actorName };
 
     const [created] = await db
       .insert(notifications)
       .values({
-        ...notification,
+        ...notificationWithActor,
         id: uuidv4(),
         userId: organization.ownerId,
         isRead: false,
@@ -160,7 +189,7 @@ export const notifyOrganizationOwner = async (
       await sendNotificationEmails(
         [{ email: organization.ownerEmail }],
         organization.name,
-        notification,
+        notificationWithActor,
       );
     }
     return created ?? null;

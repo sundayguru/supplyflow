@@ -48,7 +48,7 @@ export const RfqPipeline = ({ rfqs, onStatusChange }: RfqPipelineProps) => {
       getId={(rfq) => rfq.id}
       getStatus={(rfq) => rfq.status}
       getDragLabel={(rfq) => rfq.reference}
-      onItemClick={(rfq) => navigate(`?rfq=${encodeURIComponent(rfq.id)}`)}
+      onItemClick={(rfq) => navigate(`?id=${encodeURIComponent(rfq.id)}`)}
       onStatusChange={onStatusChange}
       emptyLabel='No RFQs in this stage'
       renderCard={(rfq) => (
@@ -61,7 +61,7 @@ export const RfqPipeline = ({ rfqs, onStatusChange }: RfqPipelineProps) => {
           value={formatRfqMoney(rfq.totalValue, rfq.currency)}
           referenceControl={
             <Link
-              to={`?rfq=${encodeURIComponent(rfq.id)}`}
+              to={`?id=${encodeURIComponent(rfq.id)}`}
               className='block truncate hover:text-emerald-700'
             >
               {rfq.reference}

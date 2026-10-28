@@ -342,7 +342,7 @@ export const RfqDetailDrawer = ({
                 {rfq.linkedPurchaseOrders.map((purchaseOrder) => (
                   <Link
                     key={purchaseOrder.id}
-                    to={`/purchase-orders?po=${encodeURIComponent(purchaseOrder.id)}`}
+                    to={`/purchase-orders?id=${encodeURIComponent(purchaseOrder.id)}`}
                     className='flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 font-semibold text-slate-900 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700'
                   >
                     <span>

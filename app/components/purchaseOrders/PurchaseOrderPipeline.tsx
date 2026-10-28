@@ -79,7 +79,7 @@ export const PurchaseOrderPipeline = ({
       getStatus={(purchaseOrder) => purchaseOrder.status}
       getDragLabel={(purchaseOrder) => purchaseOrder.reference}
       onItemClick={(purchaseOrder) =>
-        navigate(`?po=${encodeURIComponent(purchaseOrder.id)}`)
+        navigate(`?id=${encodeURIComponent(purchaseOrder.id)}`)
       }
       onStatusChange={onStatusChange}
       emptyLabel='No POs in this stage'
@@ -96,7 +96,7 @@ export const PurchaseOrderPipeline = ({
           )}
           referenceControl={
             <Link
-              to={`?po=${encodeURIComponent(purchaseOrder.id)}`}
+              to={`?id=${encodeURIComponent(purchaseOrder.id)}`}
               className='block truncate hover:text-emerald-700'
             >
               {purchaseOrder.reference}

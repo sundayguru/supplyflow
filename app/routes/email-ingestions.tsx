@@ -42,7 +42,9 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
-  if (!user.planFeatures.emailIngestions) {return redirect('/billing');}
+  if (!user.planFeatures.emailIngestions) {
+    return redirect('/billing');
+  }
   if (organization.createdBy !== user.id) {
     throw new Response(
       'Only the organization owner can view email ingestions',
@@ -267,14 +269,14 @@ const EmailIngestionsPage = ({ loaderData }: Route.ComponentProps) => {
                     <td className='max-w-xs px-5 py-4 text-sm'>
                       {ingestion.rfqId ? (
                         <Link
-                          to={`/rfqs?rfq=${encodeURIComponent(ingestion.rfqId)}`}
+                          to={`/rfqs?id=${encodeURIComponent(ingestion.rfqId)}`}
                           className='font-semibold text-emerald-700 hover:text-emerald-600'
                         >
                           {ingestion.rfqReference ?? 'View RFQ'}
                         </Link>
                       ) : ingestion.purchaseOrderId ? (
                         <Link
-                          to={`/purchase-orders?po=${encodeURIComponent(
+                          to={`/purchase-orders?id=${encodeURIComponent(
                             ingestion.purchaseOrderId,
                           )}`}
                           className='font-semibold text-emerald-700 hover:text-emerald-600'

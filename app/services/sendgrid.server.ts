@@ -22,6 +22,7 @@ export const renderBaseEmailTemplate = (input: {
 }) => {
   const title = escapeHtml(input.title);
   const message = escapeHtml(input.message);
+  const actorLabel = escapeHtml(input.actorLabel);
   const organizationName = escapeHtml(input.organizationName);
   const appBaseUrl = env.BASE_URL?.replace(/\/$/, '');
   const actionHref =
@@ -33,7 +34,7 @@ export const renderBaseEmailTemplate = (input: {
     ? `<p style="margin:28px 0 0"><a href="${escapeHtml(actionHref)}" style="display:inline-block;background:#5a5a40;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">${actionLabel}</a></p>`
     : '';
 
-  return `<!doctype html><html><body style="margin:0;background:#f5f5f2;font-family:Arial,sans-serif;color:#1a1a1a"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:32px 12px"><tr><td align="center"><table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden"><tr><td style="background:#5a5a40;padding:20px 28px;color:#fff;font-size:18px;font-weight:700">${organizationName}</td></tr><tr><td style="padding:32px 28px"><h1 style="margin:0 0 16px;font-size:22px">${title}</h1><p style="margin:0;color:#454545;font-size:15px;line-height:1.6">${message}</p>${action}</td></tr><tr><td style="border-top:1px solid #eee;padding:18px 28px;color:#888;font-size:12px">You received this email because you are a member of ${organizationName}.</td></tr></table></td></tr></table></body></html>`;
+  return `<!doctype html><html><body style="margin:0;background:#f5f5f2;font-family:Arial,sans-serif;color:#1a1a1a"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:32px 12px"><tr><td align="center"><table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden"><tr><td style="background:#5a5a40;padding:20px 28px;color:#fff;font-size:18px;font-weight:700">${organizationName}</td></tr><tr><td style="padding:32px 28px"><h1 style="margin:0 0 16px;font-size:22px">${title}</h1><p style="margin:0 0 8px;color:#454545;font-size:13px">By ${actorLabel}</p><p style="margin:0;color:#454545;font-size:15px;line-height:1.6">${message}</p>${action}</td></tr><tr><td style="border-top:1px solid #eee;padding:18px 28px;color:#888;font-size:12px">You received this email because you are a member of ${organizationName}.</td></tr></table></td></tr></table></body></html>`;
 };
 
 export const sendEmailWithSendGrid = async (input: {

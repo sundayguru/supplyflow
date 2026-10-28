@@ -16,7 +16,7 @@ type RfqTableProps = {
   onDelete: (rfq: RfqRecord) => void;
 };
 
-const detailHref = (rfq: RfqRecord) => `?rfq=${encodeURIComponent(rfq.id)}`;
+const detailHref = (rfq: RfqRecord) => `?id=${encodeURIComponent(rfq.id)}`;
 
 export const RfqTable = ({ rfqs, onOpen, onEdit, onDelete }: RfqTableProps) => {
   const actions = (rfq: RfqRecord) => (

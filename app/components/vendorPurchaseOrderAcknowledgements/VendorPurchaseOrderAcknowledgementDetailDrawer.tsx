@@ -140,7 +140,7 @@ export const VendorPurchaseOrderAcknowledgementDetailDrawer = ({
               <ClipboardList size={14} /> Linked vendor PO
             </p>
             <Link
-              to={`/vendor-purchase-orders?vendorPo=${encodeURIComponent(
+              to={`/vendor-purchase-orders?id=${encodeURIComponent(
                 acknowledgement.linkedVendorPurchaseOrder.id,
               )}`}
               className='mt-2 inline-flex font-semibold text-slate-900 hover:text-emerald-700'

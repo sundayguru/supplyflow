@@ -12,6 +12,7 @@ export const notifications = sqliteTable('notifications', {
   actorType: text('actor_type', { enum: ['user', 'system'] })
     .notNull()
     .default('user'),
+  actorName: text('actor_name', { length: 511 }),
   actionUrl: text('action_url'),
   isRead: integer('is_read', { mode: 'boolean' }).notNull().default(false),
   createdAt: text('created_at')

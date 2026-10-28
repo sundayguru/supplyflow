@@ -99,12 +99,16 @@ export const action = async ({ request }: Route.ActionArgs) => {
         organization.priceMarkup,
       );
       if (rfq) {
-        await notifyOrganizationMembers(organization.id, {
-          title: 'New RFQ',
-          message: `RFQ ${rfq.reference} was created by a team member.`,
-          actorType: 'user',
-          actionUrl: `/rfqs?id=${rfq.id}`,
-        });
+        await notifyOrganizationMembers(
+          organization.id,
+          {
+            title: 'New RFQ',
+            message: `RFQ ${rfq.reference} was created by a team member.`,
+            actorType: 'user',
+            actionUrl: `/rfqs?id=${rfq.id}`,
+          },
+          user.id,
+        );
         await logCreatedActivity(
           {
             organizationId: organization.id,
@@ -178,12 +182,16 @@ export const action = async ({ request }: Route.ActionArgs) => {
           rfq as unknown as Record<string, unknown>,
         );
         if (existing.status !== rfq.status) {
-          await notifyOrganizationMembers(organization.id, {
-            title: 'RFQ status changed',
-            message: `RFQ ${rfq.reference} status changed from ${existing.status} to ${rfq.status} by a team member.`,
-            actorType: 'user',
-            actionUrl: `/rfqs?id=${rfq.id}`,
-          });
+          await notifyOrganizationMembers(
+            organization.id,
+            {
+              title: 'RFQ status changed',
+              message: `RFQ ${rfq.reference} status changed from ${existing.status} to ${rfq.status} by a team member.`,
+              actorType: 'user',
+              actionUrl: `/rfqs?id=${rfq.id}`,
+            },
+            user.id,
+          );
         }
         return data({ success: true, rfq });
       }

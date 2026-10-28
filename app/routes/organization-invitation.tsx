@@ -51,14 +51,18 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
       user.email,
     );
     if (organization) {
-      await notifyOrganizationOwner(organization.id, {
-        title: 'Invitation accepted',
-        message: `${user.name} (${user.email}) accepted your invitation to join ${organization.name}.`,
-        actorType: 'user',
-        actionUrl: '/organization/users',
-        isRead: false,
-        createdAt: new Date().toISOString(),
-      });
+      await notifyOrganizationOwner(
+        organization.id,
+        {
+          title: 'Invitation accepted',
+          message: `${user.name} (${user.email}) accepted your invitation to join ${organization.name}.`,
+          actorType: 'user',
+          actionUrl: '/organization/users',
+          isRead: false,
+          createdAt: new Date().toISOString(),
+        },
+        user.id,
+      );
     }
     return redirect('/organization/users');
   } catch (error) {

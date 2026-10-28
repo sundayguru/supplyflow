@@ -255,7 +255,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
   const [view, setView] = useState<'table' | 'pipeline'>('table');
   const [formRfq, setFormRfq] = useState<RfqRecord | 'new' | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<RfqRecord | null>(null);
-  const selectedRfq = rfqs.find((rfq) => rfq.id === searchParams.get('rfq'));
+  const selectedRfq = rfqs.find((rfq) => rfq.id === searchParams.get('id'));
   const isUploadingPdf = pdfUpload.state !== 'idle';
 
   useEffect(() => {
@@ -275,13 +275,13 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
 
   const closeDetails = () => {
     const next = new URLSearchParams(searchParams);
-    next.delete('rfq');
+    next.delete('id');
     setSearchParams(next, { replace: true });
   };
 
   const openDetails = (rfq: RfqRecord) => {
     const next = new URLSearchParams(searchParams);
-    next.set('rfq', rfq.id);
+    next.set('id', rfq.id);
     setSearchParams(next);
   };
 
@@ -300,7 +300,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
     startTransition(() => setFormRfq(null));
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
-      next.set('rfq', result.rfq!.id);
+      next.set('id', result.rfq!.id);
       return next;
     });
   }, [formMutation.data, formMutation.state, setSearchParams]);
@@ -517,7 +517,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
                 <article key={rfq.id} className='p-4'>
                   <div className='flex items-start justify-between gap-3'>
                     <Link
-                      to={`?rfq=${encodeURIComponent(rfq.id)}`}
+                      to={`?id=${encodeURIComponent(rfq.id)}`}
                       className='min-w-0 font-semibold text-slate-900 hover:text-emerald-700'
                     >
                       <span className='block'>{rfq.reference}</span>
@@ -551,7 +551,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
                     </div>
                     <div className='flex gap-1'>
                       <Link
-                        to={`?rfq=${encodeURIComponent(rfq.id)}`}
+                        to={`?id=${encodeURIComponent(rfq.id)}`}
                         className='rounded-lg p-2 text-slate-400 hover:bg-sky-50 hover:text-sky-700'
                         aria-label={`View ${rfq.reference}`}
                       >

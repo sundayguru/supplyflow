@@ -115,12 +115,16 @@ export const action = async ({ request }: Route.ActionArgs) => {
         organization.vat,
       );
       if (purchaseOrder) {
-        await notifyOrganizationMembers(organization.id, {
-          title: 'New purchase order',
-          message: `Purchase order ${purchaseOrder.reference} was created by a team member.`,
-          actorType: 'user',
-          actionUrl: `/purchase-orders?id=${purchaseOrder.id}`,
-        });
+        await notifyOrganizationMembers(
+          organization.id,
+          {
+            title: 'New purchase order',
+            message: `Purchase order ${purchaseOrder.reference} was created by a team member.`,
+            actorType: 'user',
+            actionUrl: `/purchase-orders?id=${purchaseOrder.id}`,
+          },
+          user.id,
+        );
         await logCreatedActivity(
           {
             organizationId: organization.id,
@@ -200,12 +204,16 @@ export const action = async ({ request }: Route.ActionArgs) => {
           purchaseOrder as unknown as Record<string, unknown>,
         );
         if (existing.status !== purchaseOrder.status) {
-          await notifyOrganizationMembers(organization.id, {
-            title: 'Purchase order status changed',
-            message: `Purchase order ${purchaseOrder.reference} status changed from ${existing.status} to ${purchaseOrder.status} by a team member.`,
-            actorType: 'user',
-            actionUrl: `/purchase-orders?id=${purchaseOrder.id}`,
-          });
+          await notifyOrganizationMembers(
+            organization.id,
+            {
+              title: 'Purchase order status changed',
+              message: `Purchase order ${purchaseOrder.reference} status changed from ${existing.status} to ${purchaseOrder.status} by a team member.`,
+              actorType: 'user',
+              actionUrl: `/purchase-orders?id=${purchaseOrder.id}`,
+            },
+            user.id,
+          );
         }
         return data({ success: true, purchaseOrder });
       }

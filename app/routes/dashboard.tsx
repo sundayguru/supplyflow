@@ -385,7 +385,7 @@ const DashboardPage = ({ loaderData }: Route.ComponentProps) => {
                     <tr key={id} className='transition hover:bg-slate-50/60'>
                       <td className='px-6 py-4 font-semibold text-slate-900'>
                         <Link
-                          to={`/rfqs?rfq=${id}`}
+                          to={`/rfqs?id=${id}`}
                           className='hover:text-emerald-700 hover:underline'
                         >
                           {reference}

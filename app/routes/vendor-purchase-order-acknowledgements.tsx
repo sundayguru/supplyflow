@@ -82,15 +82,14 @@ const VendorPurchaseOrderAcknowledgementsPage = ({
     useState<VendorPurchaseOrderAcknowledgementRecord | null>(null);
   const selectedAcknowledgement =
     loaderData.vendorPurchaseOrderAcknowledgements.find(
-      (acknowledgement) =>
-        acknowledgement.id === searchParams.get('vendorPoAck'),
+      (acknowledgement) => acknowledgement.id === searchParams.get('id'),
     );
 
   const openDetails = (
     acknowledgement: VendorPurchaseOrderAcknowledgementRecord,
   ) => {
     const next = new URLSearchParams(searchParams);
-    next.set('vendorPoAck', acknowledgement.id);
+    next.set('id', acknowledgement.id);
     setSearchParams(next);
   };
 
@@ -109,14 +108,14 @@ const VendorPurchaseOrderAcknowledgementsPage = ({
     startTransition(() => setFormTarget(null));
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
-      next.set('vendorPoAck', result.vendorPurchaseOrderAcknowledgement!.id);
+      next.set('id', result.vendorPurchaseOrderAcknowledgement!.id);
       return next;
     });
   }, [formMutation.data, formMutation.state, setSearchParams]);
 
   const closeDetails = () => {
     const next = new URLSearchParams(searchParams);
-    next.delete('vendorPoAck');
+    next.delete('id');
     setSearchParams(next, { replace: true });
   };
 

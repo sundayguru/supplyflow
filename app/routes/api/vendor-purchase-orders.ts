@@ -163,12 +163,16 @@ export const action = async ({ request }: Route.ActionArgs) => {
         resolved.value,
       );
       if (vendorPurchaseOrder) {
-        await notifyOrganizationMembers(organization.id, {
-          title: 'New vendor purchase order',
-          message: `Vendor PO ${vendorPurchaseOrder.reference} was created by a team member.`,
-          actorType: 'user',
-          actionUrl: `/vendor-purchase-orders?id=${vendorPurchaseOrder.id}`,
-        });
+        await notifyOrganizationMembers(
+          organization.id,
+          {
+            title: 'New vendor purchase order',
+            message: `Vendor PO ${vendorPurchaseOrder.reference} was created by a team member.`,
+            actorType: 'user',
+            actionUrl: `/vendor-purchase-orders?id=${vendorPurchaseOrder.id}`,
+          },
+          user.id,
+        );
         await logCreatedActivity(
           {
             organizationId: organization.id,
@@ -242,12 +246,16 @@ export const action = async ({ request }: Route.ActionArgs) => {
           vendorPurchaseOrder as unknown as Record<string, unknown>,
         );
         if (existing.status !== vendorPurchaseOrder.status) {
-          await notifyOrganizationMembers(organization.id, {
-            title: 'Vendor PO status changed',
-            message: `Vendor PO ${vendorPurchaseOrder.reference} status changed from ${existing.status} to ${vendorPurchaseOrder.status} by a team member.`,
-            actorType: 'user',
-            actionUrl: `/vendor-purchase-orders?id=${vendorPurchaseOrder.id}`,
-          });
+          await notifyOrganizationMembers(
+            organization.id,
+            {
+              title: 'Vendor PO status changed',
+              message: `Vendor PO ${vendorPurchaseOrder.reference} status changed from ${existing.status} to ${vendorPurchaseOrder.status} by a team member.`,
+              actorType: 'user',
+              actionUrl: `/vendor-purchase-orders?id=${vendorPurchaseOrder.id}`,
+            },
+            user.id,
+          );
         }
         return data({ success: true, vendorPurchaseOrder });
       }

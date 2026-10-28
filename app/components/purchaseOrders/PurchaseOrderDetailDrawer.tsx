@@ -139,7 +139,7 @@ export const PurchaseOrderDetailDrawer = ({
       'success' in vendorPurchaseOrderMutation.data
     ) {
       navigate(
-        `/vendor-purchase-orders?vendorPo=${encodeURIComponent(
+        `/vendor-purchase-orders?id=${encodeURIComponent(
           vendorPurchaseOrderMutation.data.vendorPurchaseOrder.id,
         )}`,
       );
@@ -612,7 +612,7 @@ export const PurchaseOrderDetailDrawer = ({
                     <ClipboardList size={14} /> Linked RFQ
                   </p>
                   <Link
-                    to={`/rfqs?rfq=${encodeURIComponent(currentPurchaseOrder.linkedRfq.id)}`}
+                    to={`/rfqs?id=${encodeURIComponent(currentPurchaseOrder.linkedRfq.id)}`}
                     className='mt-2 inline-flex font-semibold text-slate-900 hover:text-emerald-700'
                   >
                     {currentPurchaseOrder.linkedRfq.reference} ·{' '}
@@ -636,7 +636,7 @@ export const PurchaseOrderDetailDrawer = ({
                       (vendorPurchaseOrder) => (
                         <Link
                           key={vendorPurchaseOrder.id}
-                          to={`/vendor-purchase-orders?vendorPo=${encodeURIComponent(vendorPurchaseOrder.id)}`}
+                          to={`/vendor-purchase-orders?id=${encodeURIComponent(vendorPurchaseOrder.id)}`}
                           className='flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 font-semibold text-slate-900 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700'
                         >
                           <span>

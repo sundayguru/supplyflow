@@ -18,7 +18,7 @@ type PurchaseOrderTableProps = {
 };
 
 const detailHref = (purchaseOrder: PurchaseOrderRecord) =>
-  `?po=${encodeURIComponent(purchaseOrder.id)}`;
+  `?id=${encodeURIComponent(purchaseOrder.id)}`;
 
 export const PurchaseOrderTable = ({
   purchaseOrders,

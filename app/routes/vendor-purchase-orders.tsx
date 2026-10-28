@@ -1,9 +1,14 @@
 import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
-import { data, redirect, useFetcher, useSearchParams } from 'react-router';
+import {
+  data,
+  redirect,
+  useFetcher,
+  useNavigate,
+  useSearchParams,
+} from 'react-router';
 import { Eye, Plus, Search } from 'lucide-react';
 import type { Route } from './+types/vendor-purchase-orders';
 import { ConfirmModal } from '~/components/ConfirmModal';
-import { PurchaseOrderDetailDrawer } from '~/components/purchaseOrders/PurchaseOrderDetailDrawer';
 import {
   VendorPurchaseOrderFormModal,
   type VendorPurchaseOrderFormValue,
@@ -87,6 +92,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
   const mutation = useFetcher<ApiResponse>();
   const formMutation = useFetcher<ApiResponse>();
+  const navigate = useNavigate();
   const handledFormResponse = useRef<ApiResponse | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState('');
@@ -100,17 +106,12 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
   const [deleteTarget, setDeleteTarget] =
     useState<VendorPurchaseOrderRecord | null>(null);
   const selectedVendorPurchaseOrder = loaderData.vendorPurchaseOrders.find(
-    (vendorPurchaseOrder) =>
-      vendorPurchaseOrder.id === searchParams.get('vendorPo'),
-  );
-  const selectedPurchaseOrder = loaderData.purchaseOrders.find(
-    (purchaseOrder) => purchaseOrder.id === searchParams.get('po'),
+    (vendorPurchaseOrder) => vendorPurchaseOrder.id === searchParams.get('id'),
   );
 
   const openDetails = (vendorPurchaseOrder: VendorPurchaseOrderRecord) => {
     const next = new URLSearchParams(searchParams);
-    next.delete('po');
-    next.set('vendorPo', vendorPurchaseOrder.id);
+    next.set('id', vendorPurchaseOrder.id);
     setSearchParams(next);
   };
 
@@ -129,28 +130,18 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
     startTransition(() => setFormTarget(null));
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
-      next.delete('po');
-      next.set('vendorPo', result.vendorPurchaseOrder!.id);
+      next.set('id', result.vendorPurchaseOrder!.id);
       return next;
     });
   }, [formMutation.data, formMutation.state, setSearchParams]);
 
   const openPurchaseOrderDetails = (purchaseOrderId: string) => {
-    const next = new URLSearchParams(searchParams);
-    next.delete('vendorPo');
-    next.set('po', purchaseOrderId);
-    setSearchParams(next);
+    navigate(`/purchase-orders?id=${encodeURIComponent(purchaseOrderId)}`);
   };
 
   const closeDetails = () => {
     const next = new URLSearchParams(searchParams);
-    next.delete('vendorPo');
-    setSearchParams(next, { replace: true });
-  };
-
-  const closePurchaseOrderDetails = () => {
-    const next = new URLSearchParams(searchParams);
-    next.delete('po');
+    next.delete('id');
     setSearchParams(next, { replace: true });
   };
 
@@ -346,20 +337,6 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
           onClose={closeDetails}
           onEdit={editFromDetails}
           onDelete={deleteFromDetails}
-        />
-      )}
-
-      {selectedPurchaseOrder && (
-        <PurchaseOrderDetailDrawer
-          purchaseOrder={selectedPurchaseOrder}
-          vatRate={loaderData.vatRate}
-          manufacturers={loaderData.manufacturers}
-          addresses={loaderData.addresses}
-          templates={loaderData.templates}
-          onClose={closePurchaseOrderDetails}
-          onEdit={() => {
-            window.location.href = `/purchase-orders?po=${encodeURIComponent(selectedPurchaseOrder.id)}`;
-          }}
         />
       )}
 

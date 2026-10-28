@@ -28,11 +28,11 @@ const actionLabels: Record<ActivityLogAction, string> = {
 };
 
 const sourceTypePaths: Record<ActivityLogSourceType, string> = {
-  rfq: '/rfqs?rfq=',
-  purchase_order: '/purchase-orders?po=',
-  vendor_purchase_order: '/vendor-purchase-orders?vendorPo=',
+  rfq: '/rfqs?id=',
+  purchase_order: '/purchase-orders?id=',
+  vendor_purchase_order: '/vendor-purchase-orders?id=',
   vendor_purchase_order_acknowledgement:
-    '/vendor-purchase-order-acknowledgements?vendorPoAck=',
+    '/vendor-purchase-order-acknowledgements?id=',
 };
 
 const isSourceType = (value: string | null): value is ActivityLogSourceType =>
