@@ -185,7 +185,12 @@ export const OrganizationFormModal = ({
           )}
         </div>
         <div className='flex shrink-0 flex-col-reverse gap-3 border-t border-black/10 pt-4 sm:flex-row sm:justify-end'>
-          <Button type='button' variant='secondary' onClick={onClose}>
+          <Button
+            type='button'
+            variant='secondary'
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
           <Button type='submit' isLoading={isSubmitting}>

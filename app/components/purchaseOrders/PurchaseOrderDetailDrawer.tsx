@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { startTransition, useEffect, useState } from 'react';
 import { Link, useFetcher, useNavigate } from 'react-router';
 import {
   CalendarDays,
@@ -115,6 +115,26 @@ export const PurchaseOrderDetailDrawer = ({
 
   useEffect(() => {
     if (
+      itemMutation.state === 'idle' &&
+      itemMutation.data &&
+      'success' in itemMutation.data
+    ) {
+      startTransition(() => setEditItem(null));
+    }
+  }, [itemMutation.data, itemMutation.state]);
+
+  useEffect(() => {
+    if (
+      paymentMutation.state === 'idle' &&
+      paymentMutation.data &&
+      'success' in paymentMutation.data
+    ) {
+      startTransition(() => setIsPaymentModalOpen(false));
+    }
+  }, [paymentMutation.data, paymentMutation.state]);
+
+  useEffect(() => {
+    if (
       vendorPurchaseOrderMutation.data &&
       'success' in vendorPurchaseOrderMutation.data
     ) {
@@ -138,7 +158,6 @@ export const PurchaseOrderDetailDrawer = ({
         encType: 'application/json',
       },
     );
-    setEditItem(null);
   };
 
   const confirmDeleteItem = () => {
@@ -228,7 +247,6 @@ export const PurchaseOrderDetailDrawer = ({
         encType: 'application/json',
       },
     );
-    setIsPaymentModalOpen(false);
   };
 
   const submitVendorPurchaseOrder = (value: VendorPurchaseOrderFromPoValue) => {
@@ -237,7 +255,6 @@ export const PurchaseOrderDetailDrawer = ({
       action: '/api/vendor-purchase-orders',
       encType: 'application/json',
     });
-    setIsVendorPoModalOpen(false);
   };
 
   useEffect(() => {
@@ -846,6 +863,11 @@ export const PurchaseOrderDetailDrawer = ({
           item={editItem}
           manufacturers={manufacturers}
           isSaving={itemMutation.state !== 'idle'}
+          error={
+            itemMutation.data && 'error' in itemMutation.data
+              ? itemMutation.data.error
+              : null
+          }
           onClose={() => setEditItem(null)}
           onSubmit={submitItem}
         />
@@ -863,6 +885,12 @@ export const PurchaseOrderDetailDrawer = ({
         <PurchaseOrderPaymentModal
           currency={currentPurchaseOrder.currency}
           outstandingValue={currentPurchaseOrder.outstandingValue}
+          isSaving={paymentMutation.state !== 'idle'}
+          error={
+            paymentMutation.data && 'error' in paymentMutation.data
+              ? paymentMutation.data.error
+              : null
+          }
           onClose={() => setIsPaymentModalOpen(false)}
           onSubmit={submitPayment}
         />
@@ -873,6 +901,13 @@ export const PurchaseOrderDetailDrawer = ({
           manufacturers={manufacturers}
           addresses={addresses}
           templates={templates}
+          isSaving={vendorPurchaseOrderMutation.state !== 'idle'}
+          error={
+            vendorPurchaseOrderMutation.data &&
+            'error' in vendorPurchaseOrderMutation.data
+              ? vendorPurchaseOrderMutation.data.error
+              : null
+          }
           onClose={() => setIsVendorPoModalOpen(false)}
           onSubmit={submitVendorPurchaseOrder}
         />

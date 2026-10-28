@@ -49,7 +49,7 @@ export const Modal = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={closeOnBackdrop ? onClose : undefined}
+            onClick={closeOnBackdrop && !isLoading ? onClose : undefined}
             className='absolute inset-0 bg-black/70 backdrop-blur-sm'
           />
           <motion.div

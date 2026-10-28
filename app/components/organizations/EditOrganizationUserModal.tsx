@@ -58,7 +58,12 @@ export const EditOrganizationUserModal = ({
             </p>
           )}
           <div className='flex justify-end gap-3'>
-            <Button type='button' variant='secondary' onClick={onClose}>
+            <Button
+              type='button'
+              variant='secondary'
+              onClick={onClose}
+              disabled={fetcher.state !== 'idle'}
+            >
               Cancel
             </Button>
             <Button type='submit' isLoading={fetcher.state !== 'idle'}>

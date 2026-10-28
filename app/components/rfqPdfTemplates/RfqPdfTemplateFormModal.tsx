@@ -198,7 +198,12 @@ export const RfqPdfTemplateFormModal = ({
                 <Download size={16} /> Sample PDF
               </a>
             )}
-            <Button type='button' variant='secondary' onClick={onClose}>
+            <Button
+              type='button'
+              variant='secondary'
+              onClick={onClose}
+              disabled={fetcher.state !== 'idle'}
+            >
               Cancel
             </Button>
             <Button type='submit' isLoading={fetcher.state !== 'idle'}>

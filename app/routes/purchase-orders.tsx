@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import { data, redirect, useFetcher, useSearchParams } from 'react-router';
 import { FileText, Plus, Search } from 'lucide-react';
 import type { Route } from './+types/purchase-orders';
@@ -71,7 +71,9 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
-  if (!user.planFeatures.purchaseOrders) {return redirect('/billing');}
+  if (!user.planFeatures.purchaseOrders) {
+    return redirect('/billing');
+  }
 
   try {
     const [
@@ -124,6 +126,8 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
   const { purchaseOrders } = loaderData;
   const mutation = useFetcher<ApiResponse>();
+  const formMutation = useFetcher<ApiResponse>();
+  const handledFormResponse = useRef<ApiResponse | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | PurchaseOrderStatus>('all');
@@ -153,6 +157,27 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
     next.set('po', purchaseOrder.id);
     setSearchParams(next);
   };
+
+  useEffect(() => {
+    const result = formMutation.data;
+    if (
+      formMutation.state !== 'idle' ||
+      !result ||
+      handledFormResponse.current === result ||
+      !('success' in result) ||
+      !result.purchaseOrder
+    ) {
+      return;
+    }
+    handledFormResponse.current = result;
+    startTransition(() => setFormPurchaseOrder(null));
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete('rfq');
+      next.set('po', result.purchaseOrder!.id);
+      return next;
+    });
+  }, [formMutation.data, formMutation.state, setSearchParams]);
 
   const closeRfqDetails = () => {
     const next = new URLSearchParams(searchParams);
@@ -200,12 +225,11 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
 
   const submitPurchaseOrder = (value: PurchaseOrderFormValue) => {
     const method = value.id ? 'patch' : 'post';
-    mutation.submit(value, {
+    formMutation.submit(value, {
       method,
       action: '/api/purchase-orders',
       encType: 'application/json',
     });
-    setFormPurchaseOrder(null);
   };
 
   const confirmDelete = () => {
@@ -406,6 +430,12 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
           templates={loaderData.templates}
           onClose={() => setFormPurchaseOrder(null)}
           onSubmit={submitPurchaseOrder}
+          isSaving={formMutation.state !== 'idle'}
+          error={
+            formMutation.data && 'error' in formMutation.data
+              ? formMutation.data.error
+              : null
+          }
         />
       )}
       <ConfirmModal

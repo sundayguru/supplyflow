@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import {
   data,
   Link,
@@ -81,7 +81,9 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
-  if (!user.planFeatures.rfqs) {return redirect('/billing');}
+  if (!user.planFeatures.rfqs) {
+    return redirect('/billing');
+  }
 
   try {
     const templates = await listRfqPdfTemplates(organization.id);
@@ -129,11 +131,12 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   if (!organization) {
     return data({ error: 'Organization required' }, { status: 409 });
   }
-  if (!user.planFeatures.rfqs)
-    {return data(
+  if (!user.planFeatures.rfqs) {
+    return data(
       { error: 'Your plan does not include RFQ management' },
       { status: 403 },
-    );}
+    );
+  }
 
   try {
     const formData = await request.formData();
@@ -242,7 +245,10 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
   const { rfqs } = loaderData;
   const mutation = useFetcher<ApiResponse>();
+  const formMutation = useFetcher<ApiResponse>();
   const pdfUpload = useFetcher<ApiResponse>();
+  const handledFormResponse = useRef<ApiResponse | null>(null);
+  const handledPdfResponse = useRef<ApiResponse | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | RfqStatus>('all');
@@ -253,7 +259,11 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
   const isUploadingPdf = pdfUpload.state !== 'idle';
 
   useEffect(() => {
+    if (pdfUpload.data && handledPdfResponse.current === pdfUpload.data) {
+      return;
+    }
     if (pdfUpload.data && 'success' in pdfUpload.data && pdfUpload.data.rfq) {
+      handledPdfResponse.current = pdfUpload.data;
       setSearchParams(
         { rfq: pdfUpload.data.rfq.id },
         {
@@ -274,6 +284,26 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
     next.set('rfq', rfq.id);
     setSearchParams(next);
   };
+
+  useEffect(() => {
+    const result = formMutation.data;
+    if (
+      formMutation.state !== 'idle' ||
+      !result ||
+      handledFormResponse.current === result ||
+      !('success' in result) ||
+      !result.rfq
+    ) {
+      return;
+    }
+    handledFormResponse.current = result;
+    startTransition(() => setFormRfq(null));
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.set('rfq', result.rfq!.id);
+      return next;
+    });
+  }, [formMutation.data, formMutation.state, setSearchParams]);
 
   const editFromDetails = () => {
     if (!selectedRfq) {
@@ -307,12 +337,11 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
 
   const submitRfq = (value: RfqFormValue) => {
     const method = value.id ? 'patch' : 'post';
-    mutation.submit(value, {
+    formMutation.submit(value, {
       method,
       action: '/api/rfqs',
       encType: 'application/json',
     });
-    setFormRfq(null);
   };
 
   const confirmDelete = () => {
@@ -581,6 +610,12 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
           manufacturers={loaderData.manufacturers}
           onClose={() => setFormRfq(null)}
           onSubmit={submitRfq}
+          isSaving={formMutation.state !== 'idle'}
+          error={
+            formMutation.data && 'error' in formMutation.data
+              ? formMutation.data.error
+              : null
+          }
         />
       )}
       <ConfirmModal

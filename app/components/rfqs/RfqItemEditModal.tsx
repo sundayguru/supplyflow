@@ -11,6 +11,7 @@ type RfqItemEditModalProps = {
   productPrices: ProductPriceRecord[];
   manufacturers: ManufacturerRecord[];
   isSaving: boolean;
+  error: string | null;
   onClose: () => void;
   onSubmit: (value: RfqItemFormValue) => void;
 };
@@ -21,6 +22,7 @@ export const RfqItemEditModal = ({
   productPrices,
   manufacturers,
   isSaving,
+  error,
   onClose,
   onSubmit,
 }: RfqItemEditModalProps) => {
@@ -35,7 +37,7 @@ export const RfqItemEditModal = ({
     <div className='fixed inset-0 z-[110] flex items-center justify-center p-4'>
       <button
         type='button'
-        onClick={onClose}
+        onClick={isSaving ? undefined : onClose}
         className='absolute inset-0 bg-slate-950/55 backdrop-blur-sm'
         aria-label='Close item editor'
       />
@@ -59,7 +61,8 @@ export const RfqItemEditModal = ({
           </div>
           <button
             type='button'
-            onClick={onClose}
+            onClick={isSaving ? undefined : onClose}
+            disabled={isSaving}
             className='rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700'
             aria-label='Close'
           >
@@ -68,6 +71,11 @@ export const RfqItemEditModal = ({
         </div>
 
         <form onSubmit={handleSubmit} className='mt-6'>
+          {error && (
+            <p className='mb-4 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700'>
+              {error}
+            </p>
+          )}
           <RfqItemFields
             index={item.position}
             value={value}

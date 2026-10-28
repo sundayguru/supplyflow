@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import { data, redirect, useFetcher, useSearchParams } from 'react-router';
 import { Eye, Plus, Search } from 'lucide-react';
 import type { Route } from './+types/vendor-purchase-orders';
@@ -43,7 +43,9 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
-  if (!user.planFeatures.vendorPurchaseOrders) {return redirect('/billing');}
+  if (!user.planFeatures.vendorPurchaseOrders) {
+    return redirect('/billing');
+  }
 
   try {
     const [
@@ -84,6 +86,8 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
 const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
   const mutation = useFetcher<ApiResponse>();
+  const formMutation = useFetcher<ApiResponse>();
+  const handledFormResponse = useRef<ApiResponse | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<'all' | VendorPurchaseOrderStatus>(
@@ -109,6 +113,27 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
     next.set('vendorPo', vendorPurchaseOrder.id);
     setSearchParams(next);
   };
+
+  useEffect(() => {
+    const result = formMutation.data;
+    if (
+      formMutation.state !== 'idle' ||
+      !result ||
+      handledFormResponse.current === result ||
+      !('success' in result) ||
+      !result.vendorPurchaseOrder
+    ) {
+      return;
+    }
+    handledFormResponse.current = result;
+    startTransition(() => setFormTarget(null));
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete('po');
+      next.set('vendorPo', result.vendorPurchaseOrder!.id);
+      return next;
+    });
+  }, [formMutation.data, formMutation.state, setSearchParams]);
 
   const openPurchaseOrderDetails = (purchaseOrderId: string) => {
     const next = new URLSearchParams(searchParams);
@@ -176,12 +201,11 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
   ]);
 
   const submitVendorPurchaseOrder = (value: VendorPurchaseOrderFormValue) => {
-    mutation.submit(value, {
+    formMutation.submit(value, {
       method: value.id ? 'patch' : 'post',
       action: '/api/vendor-purchase-orders',
       encType: 'application/json',
     });
-    setFormTarget(null);
   };
 
   const confirmDelete = () => {
@@ -349,6 +373,12 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
           templates={loaderData.templates}
           onClose={() => setFormTarget(null)}
           onSubmit={submitVendorPurchaseOrder}
+          isSaving={formMutation.state !== 'idle'}
+          error={
+            formMutation.data && 'error' in formMutation.data
+              ? formMutation.data.error
+              : null
+          }
         />
       )}
       <ConfirmModal

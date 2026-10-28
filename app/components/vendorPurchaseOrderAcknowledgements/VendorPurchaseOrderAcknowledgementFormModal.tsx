@@ -24,6 +24,8 @@ type VendorPurchaseOrderAcknowledgementFormModalProps = {
   vendorPurchaseOrders: VendorPurchaseOrderRecord[];
   onClose: () => void;
   onSubmit: (value: VendorPurchaseOrderAcknowledgementFormValue) => void;
+  isSaving: boolean;
+  error: string | null;
 };
 
 const emptyItem = (): VendorPurchaseOrderAcknowledgementItemInput => ({
@@ -57,6 +59,8 @@ export const VendorPurchaseOrderAcknowledgementFormModal = ({
   vendorPurchaseOrders,
   onClose,
   onSubmit,
+  isSaving,
+  error,
 }: VendorPurchaseOrderAcknowledgementFormModalProps) => {
   const [vendorPurchaseOrderId, setVendorPurchaseOrderId] = useState(
     initialValue?.vendorPurchaseOrderId ?? vendorPurchaseOrders[0]?.id ?? '',
@@ -131,7 +135,8 @@ export const VendorPurchaseOrderAcknowledgementFormModal = ({
     <div className='fixed inset-0 z-[100] flex items-center justify-center p-4'>
       <button
         type='button'
-        onClick={onClose}
+        onClick={isSaving ? undefined : onClose}
+        disabled={isSaving}
         className='absolute inset-0 bg-slate-950/45 backdrop-blur-sm'
         aria-label='Close vendor PO acknowledgement form'
       />
@@ -148,6 +153,7 @@ export const VendorPurchaseOrderAcknowledgementFormModal = ({
           <button
             type='button'
             onClick={onClose}
+            disabled={isSaving}
             className='rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700'
             aria-label='Close'
           >
@@ -156,6 +162,11 @@ export const VendorPurchaseOrderAcknowledgementFormModal = ({
         </div>
 
         <form onSubmit={handleSubmit} className='mt-7 space-y-5'>
+          {error && (
+            <p className='rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700'>
+              {error}
+            </p>
+          )}
           <label className='block text-sm font-semibold text-slate-700'>
             Linked vendor PO
             <select
@@ -245,6 +256,7 @@ export const VendorPurchaseOrderAcknowledgementFormModal = ({
               </div>
               <button
                 type='button'
+                disabled={isSaving}
                 onClick={() => setItems((current) => [...current, emptyItem()])}
                 className='inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100'
               >
@@ -263,12 +275,12 @@ export const VendorPurchaseOrderAcknowledgementFormModal = ({
                     </p>
                     <button
                       type='button'
+                      disabled={isSaving || items.length === 1}
                       onClick={() =>
                         setItems((current) =>
                           current.filter((_, itemIndex) => itemIndex !== index),
                         )
                       }
-                      disabled={items.length === 1}
                       className='rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-40'
                       aria-label='Remove item'
                     >
@@ -455,15 +467,17 @@ export const VendorPurchaseOrderAcknowledgementFormModal = ({
             <button
               type='button'
               onClick={onClose}
+              disabled={isSaving}
               className='rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50'
             >
               Cancel
             </button>
             <button
               type='submit'
+              disabled={isSaving}
               className='rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-500'
             >
-              Save acknowledgement
+              {isSaving ? 'Saving…' : 'Save acknowledgement'}
             </button>
           </div>
         </form>

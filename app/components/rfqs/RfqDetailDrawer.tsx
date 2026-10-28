@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { startTransition, useEffect, useState } from 'react';
 import { Link, useFetcher } from 'react-router';
 import {
   CalendarDays,
@@ -69,6 +69,16 @@ export const RfqDetailDrawer = ({
   const [deleteItem, setDeleteItem] = useState<RfqItemRecord | null>(null);
   const [copiedDraft, setCopiedDraft] = useState<string | null>(null);
   const [isDraftMenuOpen, setIsDraftMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (
+      itemMutation.state === 'idle' &&
+      itemMutation.data &&
+      'success' in itemMutation.data
+    ) {
+      startTransition(() => setEditItem(null));
+    }
+  }, [itemMutation.data, itemMutation.state]);
   const sourcePdfUrl = rfq.sourcePdfKey
     ? `/api/rfqs/${encodeURIComponent(rfq.id)}/source-pdf`
     : null;
@@ -102,7 +112,6 @@ export const RfqDetailDrawer = ({
         encType: 'application/json',
       },
     );
-    setEditItem(null);
   };
 
   const confirmDeleteItem = () => {
@@ -535,6 +544,11 @@ export const RfqDetailDrawer = ({
           productPrices={productPrices}
           manufacturers={manufacturers}
           isSaving={itemMutation.state !== 'idle'}
+          error={
+            itemMutation.data && 'error' in itemMutation.data
+              ? itemMutation.data.error
+              : null
+          }
           onClose={() => setEditItem(null)}
           onSubmit={submitItem}
         />

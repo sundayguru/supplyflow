@@ -16,6 +16,8 @@ type VendorPurchaseOrderFromPoModalProps = {
   manufacturers: ManufacturerRecord[];
   addresses: AddressRecord[];
   templates: RfqPdfTemplateOption[];
+  isSaving: boolean;
+  error: string | null;
   onClose: () => void;
   onSubmit: (value: VendorPurchaseOrderFromPoValue) => void;
 };
@@ -25,6 +27,8 @@ export const VendorPurchaseOrderFromPoModal = ({
   manufacturers,
   addresses,
   templates,
+  isSaving,
+  error,
   onClose,
   onSubmit,
 }: VendorPurchaseOrderFromPoModalProps) => {
@@ -121,7 +125,7 @@ export const VendorPurchaseOrderFromPoModal = ({
     <div className='fixed inset-0 z-[110] flex items-center justify-center p-4'>
       <button
         type='button'
-        onClick={onClose}
+        onClick={isSaving ? undefined : onClose}
         className='absolute inset-0 bg-slate-950/45 backdrop-blur-sm'
         aria-label='Close vendor PO form'
       />
@@ -140,7 +144,8 @@ export const VendorPurchaseOrderFromPoModal = ({
           </div>
           <button
             type='button'
-            onClick={onClose}
+            onClick={isSaving ? undefined : onClose}
+            disabled={isSaving}
             className='rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700'
             aria-label='Close'
           >
@@ -149,6 +154,11 @@ export const VendorPurchaseOrderFromPoModal = ({
         </div>
 
         <form onSubmit={handleSubmit} className='mt-7 space-y-5'>
+          {error && (
+            <p className='rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700'>
+              {error}
+            </p>
+          )}
           <div className='grid gap-5 sm:grid-cols-2'>
             <label className='text-sm font-semibold text-slate-700'>
               Vendor manufacturer
@@ -393,16 +403,17 @@ export const VendorPurchaseOrderFromPoModal = ({
             <button
               type='button'
               onClick={onClose}
+              disabled={isSaving}
               className='rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50'
             >
               Cancel
             </button>
             <button
               type='submit'
-              disabled={selectedItemIds.size === 0}
+              disabled={selectedItemIds.size === 0 || isSaving}
               className='rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60'
             >
-              Create vendor PO
+              {isSaving ? 'Saving…' : 'Create vendor PO'}
             </button>
           </div>
         </form>
