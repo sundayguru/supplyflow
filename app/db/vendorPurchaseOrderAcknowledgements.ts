@@ -108,6 +108,46 @@ export const getVendorPurchaseOrderAcknowledgement = async (
   return record ? withLinkedVendorPurchaseOrder(record) : null;
 };
 
+export const updateVendorPurchaseOrderAcknowledgementItem = async (
+  itemId: string,
+  organizationId: string,
+  input: VendorPurchaseOrderAcknowledgementItemInput,
+) => {
+  const db = getDb();
+  const existing =
+    await db.query.vendorPurchaseOrderAcknowledgementItems.findFirst({
+      where: eq(vendorPurchaseOrderAcknowledgementItems.id, itemId),
+    });
+  if (!existing) {
+    return null;
+  }
+  const parent = await getVendorPurchaseOrderAcknowledgement(
+    existing.acknowledgementId,
+    organizationId,
+  );
+  if (!parent) {
+    return null;
+  }
+  const updatedAt = new Date().toISOString();
+  const statusReason =
+    existing.status !== input.status && input.statusReason?.trim()
+      ? appendStatusChange(existing.statusReason, {
+          fromStatus: existing.status,
+          toStatus: input.status,
+          reason: input.statusReason.trim(),
+          changedAt: updatedAt,
+        })
+      : (input.statusReason ?? existing.statusReason);
+  await db
+    .update(vendorPurchaseOrderAcknowledgementItems)
+    .set({ ...input, statusReason, updatedAt })
+    .where(eq(vendorPurchaseOrderAcknowledgementItems.id, itemId));
+  return await getVendorPurchaseOrderAcknowledgement(
+    existing.acknowledgementId,
+    organizationId,
+  );
+};
+
 export const getVendorPurchaseOrderAcknowledgementBySourceEmail = async (
   sourceEmailIngestionId: string,
   organizationId: string,

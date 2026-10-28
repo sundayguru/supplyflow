@@ -22,7 +22,12 @@ import {
 } from 'lucide-react';
 import type { ManufacturerRecord } from '~/types/manufacturer';
 import type { RfqPdfTemplateOption } from '~/types/rfqPdfTemplate';
-import type { VendorPurchaseOrderRecord } from '~/types/vendorPurchaseOrder';
+import type {
+  VendorPurchaseOrderItemInput,
+  VendorPurchaseOrderItemRecord,
+  VendorPurchaseOrderRecord,
+} from '~/types/vendorPurchaseOrder';
+import { VendorPurchaseOrderItemEditModal } from './VendorPurchaseOrderItemEditModal';
 import { findManufacturerName } from '~/utils/manufacturers';
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
 import { PurchaseOrderItemStatusBadge } from '../purchaseOrders/PurchaseOrderStatusBadge';
@@ -49,6 +54,8 @@ type DraftVendorPurchaseOrderResponse =
     }
   | { error: string };
 
+type ItemUpdateResponse = { success: true } | { error: string };
+
 const formatDate = (value: string) => new Date(value).toLocaleDateString();
 
 export const VendorPurchaseOrderDetailDrawer = ({
@@ -61,7 +68,10 @@ export const VendorPurchaseOrderDetailDrawer = ({
   onDelete,
 }: VendorPurchaseOrderDetailDrawerProps) => {
   const draftEmail = useFetcher<DraftVendorPurchaseOrderResponse>();
+  const itemMutation = useFetcher<ItemUpdateResponse>();
   const [copiedDraft, setCopiedDraft] = useState(false);
+  const [editItem, setEditItem] =
+    useState<VendorPurchaseOrderItemRecord | null>(null);
   const currentVendorPurchaseOrder =
     draftEmail.data &&
     'success' in draftEmail.data &&
@@ -124,6 +134,24 @@ export const VendorPurchaseOrderDetailDrawer = ({
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose]);
+
+  const saveItem = (value: VendorPurchaseOrderItemInput) => {
+    if (!editItem) {
+      return;
+    }
+    itemMutation.submit(
+      {
+        ...value,
+        id: editItem.id,
+        vendorPurchaseOrderId: currentVendorPurchaseOrder.id,
+      },
+      {
+        method: 'patch',
+        action: '/api/vendor-purchase-order-items',
+        encType: 'application/json',
+      },
+    );
+  };
 
   return (
     <div className='fixed inset-0 z-[90]'>
@@ -331,6 +359,16 @@ export const VendorPurchaseOrderDetailDrawer = ({
                           )}
                         </p>
                         <PurchaseOrderItemStatusBadge status={item.status} />
+                        <button
+                          type='button'
+                          onClick={() => {
+                            itemMutation.reset();
+                            setEditItem(item);
+                          }}
+                          className='inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50'
+                        >
+                          <Pencil size={13} /> Edit item
+                        </button>
                       </div>
                       {item.manufacturerPartNumber && (
                         <span className='mt-3 inline-flex rounded-lg bg-slate-100 px-2.5 py-1 font-mono text-xs text-slate-600'>
@@ -538,6 +576,26 @@ export const VendorPurchaseOrderDetailDrawer = ({
           </details>
         </footer>
       </aside>
+      {editItem &&
+        !(
+          itemMutation.state === 'idle' &&
+          itemMutation.data &&
+          'success' in itemMutation.data
+        ) && (
+          <VendorPurchaseOrderItemEditModal
+            key={editItem.id}
+            item={editItem}
+            manufacturers={manufacturers}
+            isSaving={itemMutation.state !== 'idle'}
+            error={
+              itemMutation.data && 'error' in itemMutation.data
+                ? itemMutation.data.error
+                : null
+            }
+            onClose={() => setEditItem(null)}
+            onSubmit={saveItem}
+          />
+        )}
     </div>
   );
 };

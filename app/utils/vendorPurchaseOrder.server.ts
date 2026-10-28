@@ -21,7 +21,9 @@ type ParseItemResult =
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
-const parseItem = (value: unknown): ParseItemResult => {
+export const parseVendorPurchaseOrderItemInput = (
+  value: unknown,
+): ParseItemResult => {
   if (!isRecord(value)) {
     return { success: false, error: 'Invalid vendor PO item' };
   }
@@ -168,7 +170,7 @@ export const parseVendorPurchaseOrderInput = (value: unknown): ParseResult => {
 
   const items: VendorPurchaseOrderItemInput[] = [];
   for (const rawItem of rawItems) {
-    const parsed = parseItem(rawItem);
+    const parsed = parseVendorPurchaseOrderItemInput(rawItem);
     if (!parsed.success) {
       return parsed;
     }

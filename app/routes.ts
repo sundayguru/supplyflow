@@ -61,6 +61,14 @@ export default [
     ),
     route('api/vendor-purchase-orders', 'routes/api/vendor-purchase-orders.ts'),
     route(
+      'api/vendor-purchase-order-items',
+      'routes/api/vendor-purchase-order-items.ts',
+    ),
+    route(
+      'api/vendor-purchase-order-acknowledgement-items',
+      'routes/api/vendor-purchase-order-acknowledgement-items.ts',
+    ),
+    route(
       'api/vendor-purchase-order-acknowledgements',
       'routes/api/vendor-purchase-order-acknowledgements.ts',
     ),

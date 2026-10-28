@@ -1,0 +1,266 @@
+import { useState, type FormEvent } from 'react';
+import { X } from 'lucide-react';
+import type {
+  VendorPurchaseOrderItemInput,
+  VendorPurchaseOrderItemRecord,
+} from '~/types/vendorPurchaseOrder';
+import { purchaseOrderItemStatuses } from '~/types/purchaseOrder';
+import type { ManufacturerRecord } from '~/types/manufacturer';
+
+type VendorPurchaseOrderItemEditModalProps = {
+  item: VendorPurchaseOrderItemRecord;
+  manufacturers: ManufacturerRecord[];
+  isSaving: boolean;
+  error: string | null;
+  onClose: () => void;
+  onSubmit: (value: VendorPurchaseOrderItemInput) => void;
+};
+
+export const VendorPurchaseOrderItemEditModal = ({
+  item,
+  manufacturers,
+  isSaving,
+  error,
+  onClose,
+  onSubmit,
+}: VendorPurchaseOrderItemEditModalProps) => {
+  const [value, setValue] = useState<VendorPurchaseOrderItemInput>({
+    quantity: item.quantity,
+    price: item.price,
+    discountType: item.discountType,
+    discountValue: item.discountValue,
+    unit: item.unit,
+    description: item.description,
+    status: item.status,
+    statusReason: null,
+    manufacturerId: item.manufacturerId,
+    manufacturerPartNumber: item.manufacturerPartNumber,
+    specifications: item.specifications,
+  });
+  const inputClass =
+    'mt-2 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500';
+  const update = <Key extends keyof VendorPurchaseOrderItemInput>(
+    key: Key,
+    next: VendorPurchaseOrderItemInput[Key],
+  ) => setValue((current) => ({ ...current, [key]: next }));
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    onSubmit(value);
+  };
+
+  return (
+    <div className='fixed inset-0 z-[150] flex items-center justify-center p-4'>
+      <button
+        type='button'
+        disabled={isSaving}
+        onClick={onClose}
+        className='absolute inset-0 bg-slate-950/45 backdrop-blur-sm'
+        aria-label='Close item editor'
+      />
+      <div
+        role='dialog'
+        aria-modal='true'
+        aria-labelledby='vendor-po-item-edit-title'
+        className='relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8'
+      >
+        <div className='flex items-start justify-between gap-4'>
+          <div>
+            <p className='text-xs font-bold tracking-[0.16em] text-emerald-700 uppercase'>
+              Vendor purchase order item
+            </p>
+            <h2
+              id='vendor-po-item-edit-title'
+              className='mt-2 font-serif text-3xl font-semibold text-slate-950'
+            >
+              Edit item
+            </h2>
+          </div>
+          <button
+            type='button'
+            disabled={isSaving}
+            onClick={onClose}
+            aria-label='Close'
+            className='rounded-xl p-2 text-slate-400 hover:bg-slate-100'
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <form onSubmit={submit} className='mt-6 space-y-4'>
+          {error && (
+            <p className='rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700'>
+              {error}
+            </p>
+          )}
+          <label className='block text-sm font-semibold text-slate-700'>
+            Description
+            <input
+              required
+              value={value.description}
+              onChange={(event) => update('description', event.target.value)}
+              className={inputClass}
+            />
+          </label>
+          <div className='grid gap-4 sm:grid-cols-2'>
+            <label className='text-sm font-semibold text-slate-700'>
+              Quantity
+              <input
+                required
+                type='number'
+                min='0.01'
+                step='any'
+                value={value.quantity}
+                onChange={(event) =>
+                  update('quantity', Number(event.target.value))
+                }
+                className={inputClass}
+              />
+            </label>
+            <label className='text-sm font-semibold text-slate-700'>
+              Unit
+              <input
+                required
+                value={value.unit}
+                onChange={(event) => update('unit', event.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <label className='text-sm font-semibold text-slate-700'>
+              Unit price
+              <input
+                type='number'
+                min='0'
+                step='0.01'
+                value={value.price / 100}
+                onChange={(event) =>
+                  update(
+                    'price',
+                    Math.round(Number(event.target.value || 0) * 100),
+                  )
+                }
+                className={inputClass}
+              />
+            </label>
+            <label className='text-sm font-semibold text-slate-700'>
+              Status
+              <select
+                value={value.status}
+                onChange={(event) =>
+                  update(
+                    'status',
+                    event.target
+                      .value as VendorPurchaseOrderItemInput['status'],
+                  )
+                }
+                className={inputClass}
+              >
+                {purchaseOrderItemStatuses.map((status) => (
+                  <option key={status} value={status}>
+                    {status.replaceAll('_', ' ')}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className='text-sm font-semibold text-slate-700'>
+              Discount type
+              <select
+                value={value.discountType ?? 'percentage'}
+                onChange={(event) =>
+                  update(
+                    'discountType',
+                    event.target.value as 'percentage' | 'fixed',
+                  )
+                }
+                className={inputClass}
+              >
+                <option value='percentage'>Percentage</option>
+                <option value='fixed'>Fixed amount</option>
+              </select>
+            </label>
+            <label className='text-sm font-semibold text-slate-700'>
+              Discount value
+              <input
+                type='number'
+                min='0'
+                step='any'
+                max={value.discountType === 'percentage' ? 100 : undefined}
+                value={value.discountValue ?? 0}
+                onChange={(event) =>
+                  update('discountValue', Number(event.target.value || 0))
+                }
+                className={inputClass}
+              />
+            </label>
+            <label className='text-sm font-semibold text-slate-700'>
+              Manufacturer part number
+              <input
+                value={value.manufacturerPartNumber ?? ''}
+                onChange={(event) =>
+                  update('manufacturerPartNumber', event.target.value || null)
+                }
+                className={inputClass}
+              />
+            </label>
+            <label className='text-sm font-semibold text-slate-700'>
+              Manufacturer
+              <select
+                value={value.manufacturerId ?? ''}
+                onChange={(event) =>
+                  update('manufacturerId', event.target.value || null)
+                }
+                className={inputClass}
+              >
+                <option value=''>No manufacturer</option>
+                {manufacturers.map((manufacturer) => (
+                  <option key={manufacturer.id} value={manufacturer.id}>
+                    {manufacturer.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <label className='block text-sm font-semibold text-slate-700'>
+            Specifications
+            <textarea
+              rows={3}
+              value={value.specifications ?? ''}
+              onChange={(event) =>
+                update('specifications', event.target.value || null)
+              }
+              className={inputClass}
+            />
+          </label>
+          {value.status !== item.status && (
+            <label className='block text-sm font-semibold text-slate-700'>
+              Status change reason
+              <textarea
+                required
+                rows={3}
+                value={value.statusReason ?? ''}
+                onChange={(event) => update('statusReason', event.target.value)}
+                className={inputClass}
+              />
+            </label>
+          )}
+          <div className='flex justify-end gap-3 border-t border-slate-100 pt-5'>
+            <button
+              type='button'
+              disabled={isSaving}
+              onClick={onClose}
+              className='rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600'
+            >
+              Cancel
+            </button>
+            <button
+              type='submit'
+              disabled={isSaving}
+              className='rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60'
+            >
+              {isSaving ? 'Saving…' : 'Save item'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};

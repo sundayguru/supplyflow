@@ -22,13 +22,18 @@ export const middleware: Route.MiddlewareFunction[] = [
       ['purchaseOrders', ['/purchase-orders', '/api/purchase-orders']],
       [
         'vendorPurchaseOrders',
-        ['/vendor-purchase-orders', '/api/vendor-purchase-orders'],
+        [
+          '/vendor-purchase-orders',
+          '/api/vendor-purchase-orders',
+          '/api/vendor-purchase-order-items',
+        ],
       ],
       [
         'vendorPurchaseOrderAcknowledgements',
         [
           '/vendor-purchase-order-acknowledgements',
           '/api/vendor-purchase-order-acknowledgements',
+          '/api/vendor-purchase-order-acknowledgement-items',
         ],
       ],
       ['activities', ['/activities']],

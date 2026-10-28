@@ -167,6 +167,45 @@ export const getVendorPurchaseOrder = async (
   });
 };
 
+export const updateVendorPurchaseOrderItem = async (
+  itemId: string,
+  organizationId: string,
+  input: VendorPurchaseOrderItemInput,
+) => {
+  const db = getDb();
+  const existing = await db.query.vendorPurchaseOrderItems.findFirst({
+    where: eq(vendorPurchaseOrderItems.id, itemId),
+  });
+  if (!existing) {
+    return null;
+  }
+  const parent = await getVendorPurchaseOrder(
+    existing.vendorPurchaseOrderId,
+    organizationId,
+  );
+  if (!parent) {
+    return null;
+  }
+  const updatedAt = new Date().toISOString();
+  const statusReason =
+    existing.status !== input.status && input.statusReason?.trim()
+      ? appendStatusChange(existing.statusReason, {
+          fromStatus: existing.status,
+          toStatus: input.status,
+          reason: input.statusReason.trim(),
+          changedAt: updatedAt,
+        })
+      : (input.statusReason ?? existing.statusReason);
+  await db
+    .update(vendorPurchaseOrderItems)
+    .set({ ...input, statusReason, updatedAt })
+    .where(eq(vendorPurchaseOrderItems.id, itemId));
+  return await getVendorPurchaseOrder(
+    existing.vendorPurchaseOrderId,
+    organizationId,
+  );
+};
+
 export const createVendorPurchaseOrder = async (
   organizationId: string,
   userId: string,

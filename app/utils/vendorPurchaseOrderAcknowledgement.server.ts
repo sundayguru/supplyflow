@@ -21,7 +21,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const parseOptionalString = (value: unknown) =>
   typeof value === 'string' && value.trim() ? value.trim() : null;
 
-const parseItem = (value: unknown): ParseItemResult => {
+export const parseVendorPurchaseOrderAcknowledgementItemInput = (
+  value: unknown,
+): ParseItemResult => {
   if (!isRecord(value)) {
     return { success: false, error: 'Invalid acknowledgement item' };
   }
@@ -111,7 +113,7 @@ export const parseVendorPurchaseOrderAcknowledgementInput = (
 
   const items: VendorPurchaseOrderAcknowledgementItemInput[] = [];
   for (const rawItem of rawItems) {
-    const parsed = parseItem(rawItem);
+    const parsed = parseVendorPurchaseOrderAcknowledgementItemInput(rawItem);
     if (!parsed.success) {
       return parsed;
     }

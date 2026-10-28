@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Link } from 'react-router';
+import { useEffect, useState } from 'react';
+import { Link, useFetcher } from 'react-router';
 import {
   ChevronDown,
   CalendarDays,
@@ -12,13 +12,20 @@ import {
   Truck,
   X,
 } from 'lucide-react';
-import type { VendorPurchaseOrderAcknowledgementRecord } from '~/types/vendorPurchaseOrderAcknowledgement';
+import type {
+  VendorPurchaseOrderAcknowledgementItemInput,
+  VendorPurchaseOrderAcknowledgementItemRecord,
+  VendorPurchaseOrderAcknowledgementRecord,
+} from '~/types/vendorPurchaseOrderAcknowledgement';
 import { StatusChangeReasonDetails } from '~/components/status/StatusChangeReasonDetails';
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
 import {
   VendorPurchaseOrderAcknowledgementItemStatusBadge,
   VendorPurchaseOrderAcknowledgementStatusBadge,
 } from './VendorPurchaseOrderAcknowledgementStatusBadge';
+import { VendorPurchaseOrderAcknowledgementItemEditModal } from './VendorPurchaseOrderAcknowledgementItemEditModal';
+
+type ItemUpdateResponse = { success: true } | { error: string };
 
 type VendorPurchaseOrderAcknowledgementDetailDrawerProps = {
   acknowledgement: VendorPurchaseOrderAcknowledgementRecord;
@@ -38,6 +45,9 @@ export const VendorPurchaseOrderAcknowledgementDetailDrawer = ({
   onEdit,
   onDelete,
 }: VendorPurchaseOrderAcknowledgementDetailDrawerProps) => {
+  const itemMutation = useFetcher<ItemUpdateResponse>();
+  const [editItem, setEditItem] =
+    useState<VendorPurchaseOrderAcknowledgementItemRecord | null>(null);
   const totalQuantity = acknowledgement.items.reduce(
     (total, item) => total + item.quantity,
     0,
@@ -63,6 +73,20 @@ export const VendorPurchaseOrderAcknowledgementDetailDrawer = ({
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose]);
+
+  const saveItem = (value: VendorPurchaseOrderAcknowledgementItemInput) => {
+    if (!editItem) {
+      return;
+    }
+    itemMutation.submit(
+      { ...value, id: editItem.id, acknowledgementId: acknowledgement.id },
+      {
+        method: 'patch',
+        action: '/api/vendor-purchase-order-acknowledgement-items',
+        encType: 'application/json',
+      },
+    );
+  };
 
   return (
     <div className='fixed inset-0 z-[90]'>
@@ -212,6 +236,16 @@ export const VendorPurchaseOrderAcknowledgementDetailDrawer = ({
                         <VendorPurchaseOrderAcknowledgementItemStatusBadge
                           status={item.status}
                         />
+                        <button
+                          type='button'
+                          onClick={() => {
+                            itemMutation.reset();
+                            setEditItem(item);
+                          }}
+                          className='inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50'
+                        >
+                          <Pencil size={13} /> Edit item
+                        </button>
                       </div>
                       <dl className='mt-3 grid gap-2 text-sm sm:grid-cols-2'>
                         <div className='rounded-xl bg-slate-50 px-3 py-2'>
@@ -332,6 +366,25 @@ export const VendorPurchaseOrderAcknowledgementDetailDrawer = ({
           </details>
         </footer>
       </aside>
+      {editItem &&
+        !(
+          itemMutation.state === 'idle' &&
+          itemMutation.data &&
+          'success' in itemMutation.data
+        ) && (
+          <VendorPurchaseOrderAcknowledgementItemEditModal
+            key={editItem.id}
+            item={editItem}
+            isSaving={itemMutation.state !== 'idle'}
+            error={
+              itemMutation.data && 'error' in itemMutation.data
+                ? itemMutation.data.error
+                : null
+            }
+            onClose={() => setEditItem(null)}
+            onSubmit={saveItem}
+          />
+        )}
     </div>
   );
 };
