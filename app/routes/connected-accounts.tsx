@@ -3,32 +3,44 @@ import {
   Link,
   redirect,
   useFetcher,
+  useRevalidator,
   useSearchParams,
 } from 'react-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   AlertTriangle,
   ChevronDown,
   Mail,
+  KeyRound,
+  LoaderCircle,
   Plus,
   RefreshCw,
   Trash2,
 } from 'lucide-react';
 import type { Route } from './+types/connected-accounts';
 import { WarningModal } from '~/components/WarningModal';
+import { Modal } from '~/components/Modal';
 import { DropdownMenu } from '~/components/DropdownMenu';
 import {
   deleteConnectedEmailAccount,
   listConnectedEmailAccounts,
   setConnectedEmailAccountActive,
   setConnectedEmailAccountFolder,
+  upsertConnectedEmailAccount,
 } from '~/db/connectedEmailAccounts';
 import { getUserFromRequest } from '~/utils/session.server';
 import { getOrganizationForUser } from '~/db/organizations';
+import { cloudflareContext } from '~/contexts.server/cloudflareContext.server';
+import { verifyYahooImapCredentials } from '~/services/email/yahoo.server';
+import { encryptToken } from '~/utils/tokenEncryption.server';
 import {
   emailProviders,
   getEmailProviderMetadata,
 } from '~/services/email/providers';
+
+type PasswordConnectResponse =
+  | { success: true; provider: 'yahoo' | 'aol'; email: string }
+  | { error: string };
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
@@ -39,7 +51,9 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
-  if (!user.planFeatures.emailAutomation) {return redirect('/billing');}
+  if (!user.planFeatures.emailAutomation) {
+    return redirect('/billing');
+  }
   return {
     accounts: await listConnectedEmailAccounts(organization.id),
     isOwner: organization.createdBy === user.id,
@@ -47,7 +61,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   };
 };
 
-export const action = async ({ request }: Route.ActionArgs) => {
+export const action = async ({ request, context }: Route.ActionArgs) => {
   const user = await getUserFromRequest(request);
   if (!user) {
     return data({ error: 'Unauthorized' }, { status: 401 });
@@ -59,14 +73,81 @@ export const action = async ({ request }: Route.ActionArgs) => {
       { status: 403 },
     );
   }
-  if (!user.planFeatures.emailAutomation)
-    {return data(
+  if (!user.planFeatures.emailAutomation) {
+    return data(
       { error: 'Your plan does not include email automation' },
       { status: 403 },
-    );}
+    );
+  }
   const form = await request.formData();
   const id = form.get('id');
   const intent = form.get('intent');
+  if (intent === 'connect-password') {
+    const provider = form.get('provider');
+    const email = form.get('email');
+    const appPassword = form.get('appPassword');
+    if (
+      (provider !== 'yahoo' && provider !== 'aol') ||
+      typeof email !== 'string' ||
+      typeof appPassword !== 'string' ||
+      !email.trim() ||
+      !appPassword.trim() ||
+      /[\r\n\0]/.test(appPassword)
+    ) {
+      return data(
+        { error: 'Enter a valid email address and app password.' },
+        { status: 400 },
+      );
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return data({ error: 'Enter a valid email address.' }, { status: 400 });
+    }
+    const { env } = context.get(cloudflareContext);
+    if (!env.TOKEN_ENCRYPTION_KEY) {
+      return data(
+        { error: 'Email account encryption is not configured.' },
+        { status: 500 },
+      );
+    }
+    try {
+      await verifyYahooImapCredentials({
+        provider,
+        email: normalizedEmail,
+        appPassword,
+      });
+      await upsertConnectedEmailAccount({
+        userId: user.id,
+        organizationId: organization.id,
+        provider,
+        providerAccountId: normalizedEmail,
+        email: normalizedEmail,
+        displayName: null,
+        authType: 'app_password',
+        encryptedRefreshToken: await encryptToken(
+          appPassword,
+          env.TOKEN_ENCRYPTION_KEY,
+        ),
+      });
+      return data({ success: true, provider, email: normalizedEmail });
+    } catch (error) {
+      console.warn(
+        JSON.stringify({
+          event: 'email_account_imap_connection_failed',
+          provider,
+          userId: user.id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }),
+      );
+      return data(
+        {
+          error:
+            'Could not connect. Check the email address and app password, then try again.',
+        },
+        { status: 400 },
+      );
+    }
+  }
   if (typeof id !== 'string') {
     return data({ error: 'Account id is required' }, { status: 400 });
   }
@@ -113,11 +194,19 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
 const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
   const fetcher = useFetcher();
+  const passwordConnectFetcher = useFetcher<PasswordConnectResponse>();
+  const revalidator = useRevalidator();
   const [accountToDelete, setAccountToDelete] = useState<{
     id: string;
     email: string;
   } | null>(null);
   const [isConnectMenuOpen, setIsConnectMenuOpen] = useState(false);
+  const [credentialProvider, setCredentialProvider] = useState<
+    'yahoo' | 'aol' | null
+  >(null);
+  const [credentialEmail, setCredentialEmail] = useState('');
+  const [connectAttempted, setConnectAttempted] = useState(false);
+  const handledConnectResponse = useRef<PasswordConnectResponse | null>(null);
   const [searchParams] = useSearchParams();
   const error = searchParams.get('error');
   const errorMessages: Record<string, string> = {
@@ -162,6 +251,18 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
         ? 'aol'
         : 'gmail';
   const connectedProviderMetadata = getEmailProviderMetadata(connectedProvider);
+  const successfulPasswordConnection =
+    passwordConnectFetcher.data &&
+    'success' in passwordConnectFetcher.data &&
+    passwordConnectFetcher.data.success
+      ? passwordConnectFetcher.data
+      : null;
+  const connectionSuccess = successfulPasswordConnection
+    ? `${getEmailProviderMetadata(successfulPasswordConnection.provider).label} account ${successfulPasswordConnection.email} connected successfully.`
+    : null;
+  const credentialProviderMetadata = credentialProvider
+    ? getEmailProviderMetadata(credentialProvider)
+    : null;
   const actionError =
     fetcher.data &&
     typeof fetcher.data === 'object' &&
@@ -169,6 +270,28 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
     typeof fetcher.data.error === 'string'
       ? fetcher.data.error
       : null;
+
+  const openPasswordConnect = (provider: 'yahoo' | 'aol', email = '') => {
+    passwordConnectFetcher.reset();
+    setCredentialProvider(provider);
+    setCredentialEmail(email);
+    setConnectAttempted(false);
+    setIsConnectMenuOpen(false);
+  };
+
+  useEffect(() => {
+    const response = passwordConnectFetcher.data;
+    if (
+      passwordConnectFetcher.state === 'idle' &&
+      response &&
+      handledConnectResponse.current !== response &&
+      'success' in response &&
+      response.success
+    ) {
+      handledConnectResponse.current = response;
+      revalidator.revalidate();
+    }
+  }, [passwordConnectFetcher.data, passwordConnectFetcher.state, revalidator]);
 
   return (
     <div className='mx-auto max-w-5xl font-sans text-slate-950'>
@@ -213,7 +336,17 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
               </p>
               {emailProviders.map((provider) => {
                 const metadata = getEmailProviderMetadata(provider);
-                return (
+                const content = (
+                  <>
+                    <span
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg ${metadata.brandClassName}`}
+                    >
+                      <Mail size={16} />
+                    </span>
+                    <span>Connect {metadata.label}</span>
+                  </>
+                );
+                return provider === 'gmail' ? (
                   <Link
                     key={provider}
                     to={metadata.startPath}
@@ -221,13 +354,18 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
                     role='menuitem'
                     className='flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50'
                   >
-                    <span
-                      className={`flex h-8 w-8 items-center justify-center rounded-lg ${metadata.brandClassName}`}
-                    >
-                      <Mail size={16} />
-                    </span>
-                    <span>Connect {metadata.label}</span>
+                    {content}
                   </Link>
+                ) : (
+                  <button
+                    key={provider}
+                    type='button'
+                    onClick={() => openPasswordConnect(provider)}
+                    role='menuitem'
+                    className='flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50'
+                  >
+                    {content}
+                  </button>
                 );
               })}
             </DropdownMenu>
@@ -248,6 +386,11 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
       {searchParams.has('connected') && (
         <p className='mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700'>
           {connectedProviderMetadata.label} account connected successfully.
+        </p>
+      )}
+      {connectionSuccess && (
+        <p className='mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700'>
+          {connectionSuccess}
         </p>
       )}
 
@@ -296,14 +439,27 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
                   </div>
                   {loaderData.isOwner ? (
                     <>
-                      {account.needsReconnect && (
-                        <Link
-                          to={metadata.startPath}
-                          className='inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-400'
-                        >
-                          <RefreshCw size={16} /> Reconnect
-                        </Link>
-                      )}
+                      {account.needsReconnect &&
+                        (account.provider === 'gmail' ? (
+                          <Link
+                            to={metadata.startPath}
+                            className='inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-400'
+                          >
+                            <RefreshCw size={16} /> Reconnect
+                          </Link>
+                        ) : (
+                          <button
+                            type='button'
+                            onClick={() =>
+                              account.provider === 'yahoo'
+                                ? openPasswordConnect('yahoo', account.email)
+                                : openPasswordConnect('aol', account.email)
+                            }
+                            className='inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-400'
+                          >
+                            <RefreshCw size={16} /> Reconnect
+                          </button>
+                        ))}
                       <fetcher.Form method='post'>
                         <input type='hidden' name='id' value={account.id} />
                         <input type='hidden' name='intent' value='toggle' />
@@ -395,6 +551,100 @@ const ConnectedAccountsPage = ({ loaderData }: Route.ComponentProps) => {
           })
         )}
       </div>
+
+      <Modal
+        isOpen={credentialProvider !== null && !successfulPasswordConnection}
+        title={`Connect ${credentialProviderMetadata?.label ?? 'email'}`}
+        subtitle='Use your email address and provider-generated app password to connect over IMAP.'
+        icon={<KeyRound size={20} />}
+        onClose={() => setCredentialProvider(null)}
+        isLoading={passwordConnectFetcher.state !== 'idle'}
+        closeOnBackdrop={false}
+      >
+        <passwordConnectFetcher.Form
+          method='post'
+          action='/connected-accounts'
+          onSubmit={() => setConnectAttempted(true)}
+          className='space-y-4'
+        >
+          <input type='hidden' name='intent' value='connect-password' />
+          <input
+            type='hidden'
+            name='provider'
+            value={credentialProvider ?? ''}
+          />
+          <div>
+            <label
+              htmlFor='provider-email'
+              className='mb-1.5 block text-sm font-semibold text-slate-700'
+            >
+              Email address
+            </label>
+            <input
+              id='provider-email'
+              name='email'
+              type='email'
+              required
+              autoComplete='username'
+              value={credentialEmail}
+              onChange={(event) => setCredentialEmail(event.target.value)}
+              className='w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-600'
+              placeholder='you@example.com'
+            />
+          </div>
+          <div>
+            <label
+              htmlFor='provider-app-password'
+              className='mb-1.5 block text-sm font-semibold text-slate-700'
+            >
+              App password
+            </label>
+            <input
+              id='provider-app-password'
+              name='appPassword'
+              type='password'
+              required
+              autoComplete='new-password'
+              className='w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-600'
+              placeholder='Enter your app password'
+            />
+            <p className='mt-2 text-xs leading-5 text-slate-500'>
+              Create an app password in your {credentialProviderMetadata?.label}{' '}
+              account security settings. Your password is encrypted before it is
+              stored.
+            </p>
+          </div>
+          {connectAttempted &&
+            passwordConnectFetcher.data &&
+            'error' in passwordConnectFetcher.data && (
+              <p className='rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'>
+                {passwordConnectFetcher.data.error}
+              </p>
+            )}
+          <div className='flex justify-end gap-3 pt-2'>
+            <button
+              type='button'
+              onClick={() => setCredentialProvider(null)}
+              disabled={passwordConnectFetcher.state !== 'idle'}
+              className='rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50'
+            >
+              Cancel
+            </button>
+            <button
+              type='submit'
+              disabled={passwordConnectFetcher.state !== 'idle'}
+              className='inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60'
+            >
+              {passwordConnectFetcher.state !== 'idle' && (
+                <LoaderCircle size={16} className='animate-spin' />
+              )}
+              {passwordConnectFetcher.state !== 'idle'
+                ? 'Connecting…'
+                : 'Connect account'}
+            </button>
+          </div>
+        </passwordConnectFetcher.Form>
+      </Modal>
 
       <WarningModal
         isOpen={accountToDelete !== null}

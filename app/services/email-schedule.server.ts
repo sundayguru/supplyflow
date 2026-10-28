@@ -73,6 +73,14 @@ const getClientConfig = (
         refreshToken,
       };
     case 'yahoo':
+      if (account.authType === 'app_password') {
+        return {
+          provider: account.provider,
+          authType: 'app_password' as const,
+          appPassword: refreshToken,
+          accountEmail: account.email,
+        };
+      }
       return {
         provider: account.provider,
         clientId: requireEmailSetting(
@@ -87,6 +95,14 @@ const getClientConfig = (
         accountEmail: account.email,
       };
     case 'aol':
+      if (account.authType === 'app_password') {
+        return {
+          provider: account.provider,
+          authType: 'app_password' as const,
+          appPassword: refreshToken,
+          accountEmail: account.email,
+        };
+      }
       return {
         provider: account.provider,
         clientId: requireEmailSetting(

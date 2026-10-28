@@ -8,10 +8,12 @@ import type {
 } from './types';
 
 export type YahooClientConfig = {
-  clientId: string;
-  clientSecret: string;
-  refreshToken: string;
+  clientId?: string;
+  clientSecret?: string;
+  refreshToken?: string;
   accountEmail: string;
+  authType?: 'oauth' | 'app_password';
+  appPassword?: string;
   authorizationUrl?: string;
   tokenUrl?: string;
   userinfoUrl?: string;
@@ -160,6 +162,9 @@ const yahooTokenRequest = async (
 };
 
 const getAccessToken = async (config: YahooClientConfig) => {
+  if (!config.clientId || !config.clientSecret || !config.refreshToken) {
+    throw new Error('Yahoo OAuth credentials are missing');
+  }
   const response = await yahooTokenRequest(
     config.clientId,
     config.clientSecret,
@@ -284,6 +289,19 @@ class ImapConnection {
         ? `${this.provider === 'aol' ? 'AOL' : 'Yahoo'} IMAP OAuth authentication failed. Reconnect this account to grant mail-r access. ${authenticationFailures.join('; ')}`
         : `${this.provider === 'aol' ? 'AOL' : 'Yahoo'} IMAP server does not advertise OAuth authentication support`,
     );
+  }
+
+  async authenticatePassword(email: string, appPassword: string) {
+    try {
+      await this.command(
+        `LOGIN ${quoteImapString(email)} ${quoteImapString(appPassword)}`,
+        { authenticationCommand: true },
+      );
+    } catch {
+      throw new YahooAuthenticationError(
+        `${this.provider === 'aol' ? 'AOL' : 'Yahoo'} IMAP authentication failed. Check the email address and app password.`,
+      );
+    }
   }
 
   async select(folder: string) {
@@ -693,13 +711,23 @@ const listYahooMessages = async (
   config: YahooClientConfig,
   options: ListMessagesOptions,
 ) => {
-  const accessToken = await getAccessToken(config);
   const connection = await ImapConnection.open(
     config.imapHost ?? YAHOO_IMAP_HOST,
     config.provider ?? 'yahoo',
   );
   try {
-    await connection.authenticate(config.accountEmail, accessToken);
+    if (config.authType === 'app_password') {
+      if (!config.appPassword) {
+        throw new YahooAuthenticationError('IMAP app password is missing.');
+      }
+      await connection.authenticatePassword(
+        config.accountEmail,
+        config.appPassword,
+      );
+    } else {
+      const accessToken = await getAccessToken(config);
+      await connection.authenticate(config.accountEmail, accessToken);
+    }
     await connection.select(options.folder ?? 'INBOX');
     const uids = await connection.search(options);
     const messages: EmailMessage[] = [];
@@ -714,6 +742,20 @@ const listYahooMessages = async (
       .sort(
         (left, right) => left.receivedAt.getTime() - right.receivedAt.getTime(),
       );
+  } finally {
+    await connection.close();
+  }
+};
+
+export const verifyYahooImapCredentials = async (input: {
+  provider: 'yahoo' | 'aol';
+  email: string;
+  appPassword: string;
+}) => {
+  const imapHost = input.provider === 'aol' ? 'imap.aol.com' : YAHOO_IMAP_HOST;
+  const connection = await ImapConnection.open(imapHost, input.provider);
+  try {
+    await connection.authenticatePassword(input.email, input.appPassword);
   } finally {
     await connection.close();
   }

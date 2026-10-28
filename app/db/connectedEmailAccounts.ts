@@ -84,8 +84,41 @@ export const upsertConnectedEmailAccount = async (input: {
   email: string;
   displayName: string | null;
   encryptedRefreshToken: string;
+  authType?: 'oauth' | 'app_password';
 }) => {
   const db = getDb();
+  if (input.authType === 'app_password') {
+    const [existing] = await db
+      .select({ id: connectedEmailAccounts.id })
+      .from(connectedEmailAccounts)
+      .where(
+        and(
+          eq(connectedEmailAccounts.organizationId, input.organizationId),
+          eq(connectedEmailAccounts.provider, input.provider),
+          eq(connectedEmailAccounts.email, input.email),
+        ),
+      )
+      .limit(1);
+    if (existing) {
+      const [updated] = await db
+        .update(connectedEmailAccounts)
+        .set({
+          providerAccountId: input.providerAccountId,
+          email: input.email,
+          displayName: input.displayName,
+          encryptedRefreshToken: input.encryptedRefreshToken,
+          authType: 'app_password',
+          isActive: true,
+          needsReconnect: false,
+          reconnectReason: null,
+          reconnectRequiredAt: null,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(connectedEmailAccounts.id, existing.id))
+        .returning({ id: connectedEmailAccounts.id });
+      return updated;
+    }
+  }
   const id = crypto.randomUUID();
   const [account] = await db
     .insert(connectedEmailAccounts)
@@ -100,6 +133,7 @@ export const upsertConnectedEmailAccount = async (input: {
         email: input.email,
         displayName: input.displayName,
         encryptedRefreshToken: input.encryptedRefreshToken,
+        authType: input.authType ?? 'oauth',
         isActive: true,
         needsReconnect: false,
         reconnectReason: null,

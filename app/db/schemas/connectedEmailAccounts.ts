@@ -24,6 +24,9 @@ export const connectedEmailAccounts = sqliteTable(
     email: text('email', { length: 255 }).notNull(),
     displayName: text('display_name', { length: 255 }),
     encryptedRefreshToken: text('encrypted_refresh_token').notNull(),
+    authType: text('auth_type', { enum: ['oauth', 'app_password'] })
+      .notNull()
+      .default('oauth'),
     isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
     emailFolder: text('email_folder', { length: 255 }),
     needsReconnect: integer('needs_reconnect', { mode: 'boolean' })

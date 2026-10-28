@@ -27,7 +27,7 @@ export const emailProviderMetadata = {
     connectionFailedMessage:
       'Yahoo Mail could not be connected. Please try again.',
     reconnectMessage:
-      'Yahoo Mail access expired. Reconnect this account to resume inbox checks.',
+      'Yahoo Mail IMAP sign-in failed. Reconnect with a valid app password to resume inbox checks.',
   },
   aol: {
     label: 'AOL Mail',
@@ -37,7 +37,7 @@ export const emailProviderMetadata = {
     connectionFailedMessage:
       'AOL Mail could not be connected. Please try again.',
     reconnectMessage:
-      'AOL Mail access expired. Reconnect this account to resume inbox checks.',
+      'AOL Mail IMAP sign-in failed. Reconnect with a valid app password to resume inbox checks.',
   },
 } satisfies Record<EmailProvider, EmailProviderMetadata>;
 

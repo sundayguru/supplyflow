@@ -13,17 +13,31 @@ export type EmailClientConfig =
     }
   | {
       provider: 'yahoo';
-      clientId: string;
-      clientSecret: string;
-      refreshToken: string;
       accountEmail: string;
+      authType: 'app_password';
+      appPassword: string;
     }
   | {
       provider: 'aol';
+      accountEmail: string;
+      authType: 'app_password';
+      appPassword: string;
+    }
+  | {
+      provider: 'yahoo';
+      accountEmail: string;
+      authType?: 'oauth';
       clientId: string;
       clientSecret: string;
       refreshToken: string;
+    }
+  | {
+      provider: 'aol';
       accountEmail: string;
+      authType?: 'oauth';
+      clientId: string;
+      clientSecret: string;
+      refreshToken: string;
     };
 
 export const createEmailClient = (config: EmailClientConfig): EmailClient => {

@@ -400,6 +400,13 @@
       "when": 1793232000005,
       "tag": "0057_reply_draft_text",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "6",
+      "when": 1793232000006,
+      "tag": "0058_email_account_auth_type",
+      "breakpoints": true
     }
   ]
 }
