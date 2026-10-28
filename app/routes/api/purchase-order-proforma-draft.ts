@@ -9,7 +9,9 @@ import {
 } from '~/db/purchaseOrders';
 import { getRfqPdfTemplate } from '~/db/rfqPdfTemplates';
 import { createEmailClient } from '~/services/email/index.server';
+import { generateDocumentEmailDraft } from '~/services/document-email-draft.server';
 import { generateProformaInvoicePdf } from '~/utils/rfqPdf.server';
+import { getOpenAICompatibleAiConfig } from '~/utils/organization-ai.server';
 import { getUserFromRequest } from '~/utils/session.server';
 import { decryptToken } from '~/utils/tokenEncryption.server';
 import type { Route } from './+types/purchase-order-proforma-draft';
@@ -23,24 +25,6 @@ const requireSetting = (name: string, value: string | undefined) => {
 
 const safeFilename = (value: string) =>
   value.replace(/[^a-z0-9.-]+/gi, '-').replace(/^-|-$/g, '') || 'invoice';
-
-const createDraftBody = ({
-  organizationName,
-  purchaseOrderReference,
-  customerName,
-}: {
-  organizationName: string;
-  purchaseOrderReference: string;
-  customerName: string;
-}) =>
-  [
-    `Hello ${customerName},`,
-    '',
-    `Thank you for your purchase order ${purchaseOrderReference}. Please find the proforma invoice attached for your review.`,
-    '',
-    'Best regards,',
-    organizationName,
-  ].join('\n');
 
 export const action = async ({
   request,
@@ -121,7 +105,10 @@ export const action = async ({
     if (
       !('GOOGLE_CLIENT_ID' in env) ||
       !('GOOGLE_CLIENT_SECRET' in env) ||
-      !('TOKEN_ENCRYPTION_KEY' in env)
+      !('TOKEN_ENCRYPTION_KEY' in env) ||
+      !('AI_API_URL' in env) ||
+      !('AI_API_KEY' in env) ||
+      !('AI_MODEL' in env)
     ) {
       return data(
         { error: 'Connected email settings are not configured.' },
@@ -147,16 +134,56 @@ export const action = async ({
         { status: 400 },
       );
     }
+    if (!emailClient.getMessage) {
+      return data(
+        { error: 'This email provider cannot load the original message.' },
+        { status: 400 },
+      );
+    }
 
+    const originalMessage = await emailClient.getMessage(source.externalId);
     const pdf = await generateProformaInvoicePdf(
       purchaseOrder,
       template,
       organization,
     );
-    const generatedReply = createDraftBody({
-      organizationName: organization.name,
-      purchaseOrderReference: purchaseOrder.reference,
-      customerName: purchaseOrder.supplierName,
+    const generatedReply = await generateDocumentEmailDraft({
+      config: {
+        ...getOpenAICompatibleAiConfig(env),
+        usage: {
+          organizationId: organization.id,
+          userId: user.id,
+          feature: 'purchase-order-email-draft',
+        },
+      },
+      purpose:
+        'Reply to the customer about their purchase order and mention that the proforma invoice PDF is attached. Acknowledge receipt without asserting that the order has shipped or been accepted.',
+      context: {
+        organizationName: organization.name,
+        recipientName: purchaseOrder.supplierName,
+        purchaseOrder: {
+          reference: purchaseOrder.reference,
+          orderDate: purchaseOrder.orderDate,
+          expectedDate: purchaseOrder.expectedDate,
+          currency: purchaseOrder.currency,
+          deliveryTerms: purchaseOrder.deliveryTerms,
+          incoterms: purchaseOrder.incoterms,
+          notes: purchaseOrder.notes,
+          items: purchaseOrder.items.map((item) => ({
+            quantity: item.quantity,
+            unit: item.unit,
+            description: item.description,
+            manufacturerPartNumber: item.manufacturerPartNumber,
+          })),
+        },
+        originalEmail: {
+          subject: originalMessage.subject,
+          fromName: originalMessage.from.name,
+          fromAddress: originalMessage.from.address,
+          body: originalMessage.text.slice(0, 12000),
+        },
+        attachment: 'Proforma invoice PDF',
+      },
     });
     const draft = await emailClient.createDraftReply({
       originalMessageId: source.externalId,

@@ -9,7 +9,9 @@ import {
   updateVendorPurchaseOrderEmailDraft,
 } from '~/db/vendorPurchaseOrders';
 import { createEmailClient } from '~/services/email/index.server';
+import { generateDocumentEmailDraft } from '~/services/document-email-draft.server';
 import { generateVendorPurchaseOrderPdf } from '~/utils/rfqPdf.server';
+import { getOpenAICompatibleAiConfig } from '~/utils/organization-ai.server';
 import { getUserFromRequest } from '~/utils/session.server';
 import { decryptToken } from '~/utils/tokenEncryption.server';
 import type { Route } from './+types/vendor-purchase-order-draft';
@@ -23,26 +25,6 @@ const requireSetting = (name: string, value: string | undefined) => {
 
 const safeFilename = (value: string) =>
   value.replace(/[^a-z0-9.-]+/gi, '-').replace(/^-|-$/g, '') || 'vendor-po';
-
-const createDraftBody = ({
-  organizationName,
-  vendorName,
-  vendorPurchaseOrderReference,
-}: {
-  organizationName: string;
-  vendorName: string;
-  vendorPurchaseOrderReference: string;
-}) =>
-  [
-    `Hello ${vendorName},`,
-    '',
-    `Please find our purchase order ${vendorPurchaseOrderReference} attached for your review.`,
-    '',
-    'Kindly confirm receipt and advise the expected delivery date.',
-    '',
-    'Best regards,',
-    organizationName,
-  ].join('\n');
 
 export const action = async ({
   params,
@@ -101,10 +83,13 @@ export const action = async ({
     if (
       !('GOOGLE_CLIENT_ID' in env) ||
       !('GOOGLE_CLIENT_SECRET' in env) ||
-      !('TOKEN_ENCRYPTION_KEY' in env)
+      !('TOKEN_ENCRYPTION_KEY' in env) ||
+      !('AI_API_URL' in env) ||
+      !('AI_API_KEY' in env) ||
+      !('AI_MODEL' in env)
     ) {
       return data(
-        { error: 'Connected email settings are not configured.' },
+        { error: 'Connected email or AI settings are not configured.' },
         { status: 500 },
       );
     }
@@ -133,11 +118,40 @@ export const action = async ({
       template,
       organization,
     );
-    const generatedReply = createDraftBody({
-      organizationName: organization.name,
-      vendorName:
-        vendorPurchaseOrder.vendorContactName ?? vendorPurchaseOrder.vendorName,
-      vendorPurchaseOrderReference: vendorPurchaseOrder.reference,
+    const generatedReply = await generateDocumentEmailDraft({
+      config: {
+        ...getOpenAICompatibleAiConfig(env),
+        usage: {
+          organizationId: organization.id,
+          userId: user.id,
+          feature: 'vendor-purchase-order-email-draft',
+        },
+      },
+      purpose:
+        'Write an email to the vendor sending the attached purchase order. Ask them to confirm receipt and advise their expected delivery date. Do not claim that the vendor has accepted the order.',
+      context: {
+        organizationName: organization.name,
+        recipientName:
+          vendorPurchaseOrder.vendorContactName ??
+          vendorPurchaseOrder.vendorName,
+        vendorName: vendorPurchaseOrder.vendorName,
+        vendorPurchaseOrder: {
+          reference: vendorPurchaseOrder.reference,
+          vendorReference: vendorPurchaseOrder.vendorReference,
+          orderDate: vendorPurchaseOrder.orderDate,
+          expectedDate: vendorPurchaseOrder.expectedDate,
+          currency: vendorPurchaseOrder.currency,
+          shipTo: vendorPurchaseOrder.shipTo,
+          notes: vendorPurchaseOrder.notes,
+          items: vendorPurchaseOrder.items.map((item) => ({
+            quantity: item.quantity,
+            unit: item.unit,
+            description: item.description,
+            manufacturerPartNumber: item.manufacturerPartNumber,
+          })),
+        },
+        attachment: 'Vendor purchase order PDF',
+      },
     });
     const draft = await emailClient.createDraftEmail({
       accountEmail: account.email,
