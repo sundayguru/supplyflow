@@ -42,7 +42,8 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   }
 
   try {
-    const redirectUri = `${url.origin}/api/email-accounts/google/callback`;
+    const baseUrl = (env.BASE_URL || url.origin).replace(/\/+$/, '');
+    const redirectUri = `${baseUrl}/api/email-accounts/google/callback`;
     const credentials = await exchangeGmailAuthorizationCode({
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,

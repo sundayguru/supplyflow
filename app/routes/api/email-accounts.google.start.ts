@@ -11,7 +11,9 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   if (!user) {
     return redirect('/auth/login');
   }
-  if (!user.planFeatures.emailAutomation) {return redirect('/billing');}
+  if (!user.planFeatures.emailAutomation) {
+    return redirect('/billing');
+  }
   const organization = await getOrganizationForUser(user.id);
   if (!organization || organization.createdBy !== user.id) {
     throw new Response('Only the organization owner can connect accounts', {
@@ -23,7 +25,11 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     throw new Response('OAuth unavailable', { status: 503 });
   }
   const state = await createEmailAccountOauthState(user.id);
-  const redirectUri = `${new URL(request.url).origin}/api/email-accounts/google/callback`;
+  const baseUrl = (env.BASE_URL || new URL(request.url).origin).replace(
+    /\/+$/,
+    '',
+  );
+  const redirectUri = `${baseUrl}/api/email-accounts/google/callback`;
   return redirect(
     createGmailAuthorizationUrl({
       clientId: env.GOOGLE_CLIENT_ID,
