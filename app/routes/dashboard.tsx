@@ -19,6 +19,8 @@ import {
   getOrganizationUsers,
 } from '~/db/organizations';
 import { getRfqs } from '~/db/rfqs';
+import { getPurchaseOrders } from '~/db/purchaseOrders';
+import { listManufacturers } from '~/db/manufacturers';
 import type {
   DashboardDateRange,
   DashboardMetricId,
@@ -111,13 +113,21 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
   const selectedRange = getDashboardRange(new URL(request.url).searchParams);
 
-  const [rfqs, users] = await Promise.all([
+  const [rfqs, users, purchaseOrders, manufacturers] = await Promise.all([
     getRfqs(organization.id, organization.vat),
     getOrganizationUsers(organization.id),
+    getPurchaseOrders(organization.id, organization.vat),
+    listManufacturers(organization.id),
   ]);
 
   return {
-    analytics: buildDashboardAnalytics(rfqs, users, selectedRange.range),
+    analytics: buildDashboardAnalytics(
+      rfqs,
+      users,
+      selectedRange.range,
+      purchaseOrders,
+      manufacturers,
+    ),
     rangePreset: selectedRange.preset,
     dateFrom: selectedRange.dateFrom,
     dateTo: selectedRange.dateTo,
@@ -129,8 +139,8 @@ const DashboardPage = ({ loaderData }: Route.ComponentProps) => {
   const { user } = useUser();
   const { analytics, rangePreset, dateFrom, dateTo, filterError } = loaderData;
   const maxVolume = Math.max(
-    ...analytics.weeklyVolume.map(({ received, quoted }) =>
-      Math.max(received, quoted),
+    ...analytics.weeklyVolume.map(({ received, quoted, purchaseOrders }) =>
+      Math.max(received, quoted, purchaseOrders),
     ),
     1,
   );
@@ -259,8 +269,8 @@ const DashboardPage = ({ loaderData }: Route.ComponentProps) => {
         )}
       </section>
 
-      <div className='mt-4 grid gap-4 xl:grid-cols-[1.55fr_1fr]'>
-        <section className='rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6'>
+      <div className='mt-4 grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]'>
+        <section className='min-w-0 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6'>
           <div className='flex flex-wrap items-start justify-between gap-3'>
             <div>
               <h2 className='text-base font-bold'>RFQ volume</h2>
@@ -268,7 +278,7 @@ const DashboardPage = ({ loaderData }: Route.ComponentProps) => {
                 Requests received and quotes completed in the selected period
               </p>
             </div>
-            <div className='flex gap-4 text-xs font-medium text-slate-500'>
+            <div className='flex flex-wrap gap-x-4 gap-y-2 text-xs font-medium text-slate-500'>
               <span className='flex items-center gap-2'>
                 <span className='h-2.5 w-2.5 rounded-full bg-emerald-600' />
                 Received
@@ -277,61 +287,85 @@ const DashboardPage = ({ loaderData }: Route.ComponentProps) => {
                 <span className='h-2.5 w-2.5 rounded-full bg-emerald-200' />
                 Quoted
               </span>
+              <span className='flex items-center gap-2'>
+                <span className='h-2.5 w-2.5 rounded-full bg-blue-500' />
+                POs
+              </span>
             </div>
           </div>
-          <div className='mt-8 flex h-64 items-end gap-3 border-b border-slate-100 sm:gap-5'>
-            {analytics.weeklyVolume.map(({ day, received, quoted }, index) => (
-              <div
-                key={`${day}-${index}`}
-                className='flex h-full flex-1 flex-col justify-end'
-              >
-                <div className='flex flex-1 items-end justify-center gap-1'>
-                  <div
-                    tabIndex={received > 0 ? 0 : undefined}
-                    role='img'
-                    aria-label={`${day}: ${received} received`}
-                    className='group/bar relative w-2.5 rounded-t-full bg-emerald-600 outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 sm:w-4'
-                    style={{
-                      height: `${Math.max((received / maxVolume) * 88, received > 0 ? 4 : 0)}%`,
-                    }}
-                  >
-                    {received > 0 && (
-                      <span
-                        role='tooltip'
-                        className='pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 rounded-lg bg-slate-950 px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap text-white shadow-lg group-hover/bar:block group-focus-visible/bar:block'
-                      >
-                        {day}: {received} received
-                      </span>
-                    )}
+          <div className='mt-8 flex h-64 min-w-0 items-end gap-1 border-b border-slate-100 sm:gap-3'>
+            {analytics.weeklyVolume.map(
+              ({ day, received, quoted, purchaseOrders }, index) => (
+                <div
+                  key={`${day}-${index}`}
+                  className='flex h-full min-w-0 flex-1 flex-col justify-end'
+                >
+                  <div className='flex flex-1 items-end justify-center gap-0.5 sm:gap-1'>
+                    <div
+                      tabIndex={received > 0 ? 0 : undefined}
+                      role='img'
+                      aria-label={`${day}: ${received} received`}
+                      className='group/bar relative w-2 rounded-t-full bg-emerald-600 outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 sm:w-3 md:w-4'
+                      style={{
+                        height: `${Math.max((received / maxVolume) * 88, received > 0 ? 4 : 0)}%`,
+                      }}
+                    >
+                      {received > 0 && (
+                        <span
+                          role='tooltip'
+                          className='pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 rounded-lg bg-slate-950 px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap text-white shadow-lg group-hover/bar:block group-focus-visible/bar:block'
+                        >
+                          {day}: {received} received
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      tabIndex={purchaseOrders > 0 ? 0 : undefined}
+                      role='img'
+                      aria-label={`${day}: ${purchaseOrders} purchase orders`}
+                      className='group/bar relative w-2 rounded-t-full bg-blue-500 outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 sm:w-3 md:w-4'
+                      style={{
+                        height: `${Math.max((purchaseOrders / maxVolume) * 88, purchaseOrders > 0 ? 4 : 0)}%`,
+                      }}
+                    >
+                      {purchaseOrders > 0 && (
+                        <span
+                          role='tooltip'
+                          className='pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 rounded-lg bg-slate-950 px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap text-white shadow-lg group-hover/bar:block group-focus-visible/bar:block'
+                        >
+                          {day}: {purchaseOrders} POs
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      tabIndex={quoted > 0 ? 0 : undefined}
+                      role='img'
+                      aria-label={`${day}: ${quoted} quoted`}
+                      className='group/bar relative w-2 rounded-t-full bg-emerald-200 outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 sm:w-3 md:w-4'
+                      style={{
+                        height: `${Math.max((quoted / maxVolume) * 88, quoted > 0 ? 4 : 0)}%`,
+                      }}
+                    >
+                      {quoted > 0 && (
+                        <span
+                          role='tooltip'
+                          className='pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 rounded-lg bg-slate-950 px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap text-white shadow-lg group-hover/bar:block group-focus-visible/bar:block'
+                        >
+                          {day}: {quoted} quoted
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div
-                    tabIndex={quoted > 0 ? 0 : undefined}
-                    role='img'
-                    aria-label={`${day}: ${quoted} quoted`}
-                    className='group/bar relative w-2.5 rounded-t-full bg-emerald-200 outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 sm:w-4'
-                    style={{
-                      height: `${Math.max((quoted / maxVolume) * 88, quoted > 0 ? 4 : 0)}%`,
-                    }}
-                  >
-                    {quoted > 0 && (
-                      <span
-                        role='tooltip'
-                        className='pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 rounded-lg bg-slate-950 px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap text-white shadow-lg group-hover/bar:block group-focus-visible/bar:block'
-                      >
-                        {day}: {quoted} quoted
-                      </span>
-                    )}
-                  </div>
+                  <p className='py-3 text-center text-[10px] font-medium text-slate-400 sm:text-xs'>
+                    {day}
+                  </p>
                 </div>
-                <p className='py-3 text-center text-[10px] font-medium text-slate-400 sm:text-xs'>
-                  {day}
-                </p>
-              </div>
-            ))}
+              ),
+            )}
           </div>
         </section>
 
-        <section className='rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6'>
+        <section className='min-w-0 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6'>
           <div className='flex items-start justify-between'>
             <div>
               <h2 className='text-base font-bold'>Quotation pipeline</h2>
@@ -368,6 +402,201 @@ const DashboardPage = ({ loaderData }: Route.ComponentProps) => {
           </div>
         </section>
       </div>
+
+      <section
+        className='mt-4 grid gap-4 xl:grid-cols-2'
+        aria-label='Sales reporting'
+      >
+        <article className='rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6'>
+          <h2 className='text-base font-bold'>RFQ conversion funnel</h2>
+          <p className='mt-1 text-xs text-slate-500'>
+            Current status of RFQs received in this period · quote rate = quoted
+            or later / received · win rate = won / closed
+          </p>
+          <div className='mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5'>
+            {[
+              ['Received', analytics.funnel.received],
+              ['Quoted or later', analytics.funnel.quoted],
+              ['Open', analytics.funnel.open],
+              ['Won', analytics.funnel.won],
+              ['Lost', analytics.funnel.lost],
+            ].map(([label, count]) => (
+              <div key={label} className='rounded-xl bg-slate-50 p-3'>
+                <p className='text-xs text-slate-500'>{label}</p>
+                <p className='mt-1 text-2xl font-bold'>{count}</p>
+              </div>
+            ))}
+          </div>
+          <div className='mt-4 flex gap-6 text-sm'>
+            <p>
+              Quote rate{' '}
+              <strong>{analytics.funnel.quoteRate.toFixed(1)}%</strong>
+            </p>
+            <p>
+              Win rate <strong>{analytics.funnel.winRate.toFixed(1)}%</strong>
+            </p>
+          </div>
+        </article>
+        <article className='rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6'>
+          <h2 className='text-base font-bold'>Open pipeline by age</h2>
+          <p className='mt-1 text-xs text-slate-500'>
+            Open RFQs received in the selected period, grouped by age
+          </p>
+          <div className='mt-5 space-y-3'>
+            {analytics.pipelineAges.map((band) => (
+              <div
+                key={band.label}
+                className='flex items-center justify-between gap-3 border-b border-slate-100 pb-3 text-sm last:border-0'
+              >
+                <span className='text-slate-600'>
+                  {band.label}{' '}
+                  <span className='text-slate-400'>({band.count})</span>
+                </span>
+                <span className='font-semibold'>{band.value}</span>
+              </div>
+            ))}
+          </div>
+        </article>
+        <article className='rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6'>
+          <h2 className='text-base font-bold'>Quote turnaround</h2>
+          <p className='mt-1 text-xs text-slate-500'>
+            Median time from RFQ creation to first quote sent · target: 24 hours
+          </p>
+          <div className='mt-5 flex flex-wrap gap-8'>
+            <div>
+              <p className='text-xs text-slate-500'>Median turnaround</p>
+              <p className='mt-1 text-3xl font-bold'>
+                {analytics.turnaround.medianHours.toFixed(1)}h
+              </p>
+            </div>
+            <div>
+              <p className='text-xs text-slate-500'>
+                Within 24 hours ({analytics.turnaround.quotedCount} quotes)
+              </p>
+              <p className='mt-1 text-3xl font-bold'>
+                {analytics.turnaround.withinTarget.toFixed(1)}%
+              </p>
+            </div>
+          </div>
+          <div
+            className='mt-5 flex items-end gap-2 border-b border-slate-100'
+            aria-label='Median turnaround trend by date bucket'
+          >
+            {analytics.turnaround.trend.map((bucket, index) => (
+              <div
+                key={`${bucket.day}-${index}`}
+                className='group/bar relative flex h-20 flex-1 items-end justify-center'
+              >
+                <div
+                  className='w-3 rounded-t bg-violet-400'
+                  style={{
+                    height: `${Math.max(((bucket.medianHours ?? 0) / Math.max(analytics.turnaround.medianHours * 2, 1)) * 85, bucket.medianHours != null ? 4 : 0)}%`,
+                  }}
+                />
+                {bucket.medianHours != null && (
+                  <span
+                    role='tooltip'
+                    className='pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 rounded-lg bg-slate-950 px-2 py-1 text-xs whitespace-nowrap text-white group-hover/bar:block'
+                  >
+                    {bucket.day}: {bucket.medianHours.toFixed(1)}h median
+                  </span>
+                )}
+                <span className='absolute -bottom-5 text-[10px] text-slate-400'>
+                  {bucket.day}
+                </span>
+              </div>
+            ))}
+          </div>
+        </article>
+        <article className='rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6'>
+          <h2 className='text-base font-bold'>Won and lost breakdown</h2>
+          <p className='mt-1 text-xs text-slate-500'>
+            Closed RFQs by customer and product or manufacturer in this period
+          </p>
+          <div className='mt-5 grid gap-5 sm:grid-cols-2'>
+            {[
+              ['Customers', analytics.customerOutcomes],
+              ['Products / manufacturers', analytics.productOutcomes],
+            ].map(([title, rows]) => (
+              <div key={title as string}>
+                <h3 className='text-xs font-bold tracking-wide text-slate-500 uppercase'>
+                  {title as string}
+                </h3>
+                <div className='mt-2 space-y-2'>
+                  {(rows as typeof analytics.customerOutcomes).length ? (
+                    (rows as typeof analytics.customerOutcomes).map((row) => (
+                      <div
+                        key={row.label}
+                        className='flex justify-between gap-2 text-sm'
+                      >
+                        <span className='truncate text-slate-600'>
+                          {row.label}
+                        </span>
+                        <span className='shrink-0'>
+                          <b className='text-emerald-700'>{row.won}W</b>
+                          <span className='mx-1 text-slate-300'>/</span>
+                          <b className='text-rose-700'>{row.lost}L</b>
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className='text-sm text-slate-400'>No closed RFQs</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className='mt-5 border-t border-slate-100 pt-4'>
+            <h3 className='text-xs font-bold tracking-wide text-slate-500 uppercase'>
+              Recorded loss reasons
+            </h3>
+            <div className='mt-2 flex flex-wrap gap-2'>
+              {analytics.lossReasons.length ? (
+                analytics.lossReasons.map(({ reason, count }) => (
+                  <span
+                    key={reason}
+                    className='rounded-full bg-rose-50 px-3 py-1 text-xs text-rose-800'
+                  >
+                    {reason} · {count}
+                  </span>
+                ))
+              ) : (
+                <p className='text-sm text-slate-400'>
+                  No loss reasons recorded in this period
+                </p>
+              )}
+            </div>
+          </div>
+        </article>
+        <article className='rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6 xl:col-span-2'>
+          <h2 className='text-base font-bold'>
+            Purchase orders vs. RFQ activity
+          </h2>
+          <p className='mt-1 text-xs text-slate-500'>
+            RFQs received and purchase orders created in the selected period
+          </p>
+          <div className='mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4'>
+            {analytics.weeklyVolume.map((bucket, index) => (
+              <div
+                key={`${bucket.day}-${index}`}
+                className='rounded-xl bg-slate-50 p-3'
+              >
+                <p className='text-xs text-slate-500'>{bucket.day}</p>
+                <p className='mt-1 text-sm'>
+                  <span className='font-semibold text-emerald-700'>
+                    {bucket.received}
+                  </span>{' '}
+                  RFQs <span className='mx-1 text-slate-300'>·</span>{' '}
+                  <span className='font-semibold text-blue-700'>
+                    {bucket.purchaseOrders}
+                  </span>{' '}
+                  POs
+                </p>
+              </div>
+            ))}
+          </div>
+        </article>
+      </section>
 
       <section className='mt-4 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm'>
         <div className='flex items-center justify-between border-b border-slate-100 px-5 py-5 sm:px-6'>

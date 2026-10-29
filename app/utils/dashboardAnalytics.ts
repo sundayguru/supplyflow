@@ -1,5 +1,7 @@
 import type { RfqRecord, RfqStatus } from '~/types/rfq';
+import type { PurchaseOrderRecord } from '~/types/purchaseOrder';
 import { formatRfqMoney } from '~/utils/rfq';
+import { parseStatusHistory } from '~/utils/statusHistory';
 
 export type DashboardMetricId =
   | 'rfqsReceived'
@@ -20,6 +22,16 @@ export type DashboardWeeklyVolume = {
   day: string;
   received: number;
   quoted: number;
+  purchaseOrders: number;
+  medianHours: number | null;
+};
+
+export type DashboardBreakdown = { label: string; won: number; lost: number };
+export type DashboardLossReason = { reason: string; count: number };
+export type DashboardPipelineAge = {
+  label: string;
+  count: number;
+  value: string;
 };
 
 export type DashboardPipelineStage = {
@@ -46,6 +58,25 @@ export type DashboardAnalytics = {
   pipeline: DashboardPipelineStage[];
   activeCount: number;
   recentRequests: DashboardRecentRequest[];
+  funnel: {
+    received: number;
+    quoted: number;
+    won: number;
+    lost: number;
+    open: number;
+    quoteRate: number;
+    winRate: number;
+  };
+  pipelineAges: DashboardPipelineAge[];
+  turnaround: {
+    medianHours: number;
+    withinTarget: number;
+    quotedCount: number;
+    trend: DashboardWeeklyVolume[];
+  };
+  customerOutcomes: DashboardBreakdown[];
+  productOutcomes: DashboardBreakdown[];
+  lossReasons: DashboardLossReason[];
 };
 
 type OrganizationUser = {
@@ -137,6 +168,17 @@ const formatHours = (hours: number) =>
     minimumFractionDigits: hours % 1 === 0 ? 0 : 1,
   })}h`;
 
+const median = (values: number[]) => {
+  if (!values.length) {
+    return null;
+  }
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2
+    ? sorted[middle]
+    : (sorted[middle - 1] + sorted[middle]) / 2;
+};
+
 const formatChangePercent = (current: number, previous: number) => {
   if (previous === 0) {
     if (current === 0) {
@@ -212,13 +254,16 @@ const ownerName = (
 const buildRangeVolume = (
   rfqs: RfqRecord[],
   range: DashboardDateRange,
+  purchaseOrders: PurchaseOrderRecord[],
 ): DashboardWeeklyVolume[] => {
   const dayMs = 24 * 60 * 60 * 1000;
   const totalDays = Math.max(
     1,
     Math.ceil((range.end.getTime() - range.start.getTime()) / dayMs),
   );
-  const bucketCount = Math.min(totalDays, 14);
+  // Seven buckets keep the grouped bars readable in the dashboard's narrow
+  // mobile card and in the side-by-side desktop layout.
+  const bucketCount = Math.min(totalDays, 7);
 
   return Array.from({ length: bucketCount }, (_, index) => {
     const startOffset = Math.floor((index * totalDays) / bucketCount);
@@ -232,6 +277,16 @@ const buildRangeVolume = (
       timeZone: 'UTC',
     }).format(bucketStart);
 
+    const sentDurations = rfqs.flatMap((rfq) => {
+      if (!rfq.quotationSentAt || !isInRange(rfq.quotationSentAt, bucket)) {
+        return [];
+      }
+      const hours =
+        (parseDate(rfq.quotationSentAt).getTime() -
+          parseDate(rfq.createdAt).getTime()) /
+        (1000 * 60 * 60);
+      return hours >= 0 ? [hours] : [];
+    });
     return {
       day: totalDays <= 7 ? DAY_LABELS[bucketStart.getUTCDay()] : dayLabel,
       received: rfqs.filter((rfq) => isInRange(rfq.createdAt, bucket)).length,
@@ -239,6 +294,10 @@ const buildRangeVolume = (
         (rfq) =>
           rfq.quotationSentAt != null && isInRange(rfq.quotationSentAt, bucket),
       ).length,
+      purchaseOrders: purchaseOrders.filter((order) =>
+        isInRange(order.createdAt, bucket),
+      ).length,
+      medianHours: median(sentDurations),
     };
   });
 };
@@ -265,9 +324,14 @@ export const buildDashboardAnalytics = (
   rfqs: RfqRecord[],
   users: OrganizationUser[],
   current: DashboardDateRange,
+  purchaseOrders: PurchaseOrderRecord[] = [],
+  manufacturers: Array<{ id: string; name: string }> = [],
 ): DashboardAnalytics => {
   const previous = getPreviousRange(current);
   const usersById = new Map(users.map((user) => [user.userId, user]));
+  const manufacturerNames = new Map(
+    manufacturers.map((manufacturer) => [manufacturer.id, manufacturer.name]),
+  );
 
   const receivedCurrent = rfqs.filter((rfq) =>
     isInRange(rfq.createdAt, current),
@@ -332,6 +396,66 @@ export const buildDashboardAnalytics = (
   const activeRfqs = rangeRfqs.filter(
     (rfq) => rfq.status !== 'won' && rfq.status !== 'lost',
   );
+  const quotedOrLater = rangeRfqs.filter((rfq) =>
+    ['quoted', 'sent', 'won', 'lost'].includes(rfq.status),
+  );
+  const wonRfqs = rangeRfqs.filter((rfq) => rfq.status === 'won');
+  const lostRfqs = rangeRfqs.filter((rfq) => rfq.status === 'lost');
+  const closed = wonRfqs.length + lostRfqs.length;
+  const pipelineAges = [
+    { label: '0–7 days', max: 7 },
+    { label: '8–14 days', max: 14 },
+    { label: '15–30 days', max: 30 },
+    { label: '31+ days', max: Infinity },
+  ].map(({ label, max }, index, bands) => {
+    const min = index === 0 ? 0 : bands[index - 1].max;
+    const now = Date.now();
+    const records = activeRfqs.filter((rfq) => {
+      const days =
+        (now - parseDate(rfq.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+      return days >= min && days <= max;
+    });
+    return {
+      label,
+      count: records.length,
+      value: formatCombinedRfqValue(records),
+    };
+  });
+  const buildOutcomes = (keyFor: (rfq: RfqRecord) => string) => {
+    const map = new Map<string, DashboardBreakdown>();
+    [...wonRfqs, ...lostRfqs].forEach((rfq) => {
+      const label = keyFor(rfq).trim() || 'Unspecified';
+      const row = map.get(label) ?? { label, won: 0, lost: 0 };
+      row[rfq.status as 'won' | 'lost'] += 1;
+      map.set(label, row);
+    });
+    return [...map.values()]
+      .sort((a, b) => b.won + b.lost - a.won - a.lost)
+      .slice(0, 6);
+  };
+  const reasons = new Map<string, number>();
+  lostRfqs.forEach((rfq) =>
+    parseStatusHistory(rfq.statusReason)
+      .filter((entry) => entry.toStatus === 'lost' && entry.reason.trim())
+      .forEach((entry) =>
+        reasons.set(
+          entry.reason.trim(),
+          (reasons.get(entry.reason.trim()) ?? 0) + 1,
+        ),
+      ),
+  );
+  const turnaroundTrend = buildRangeVolume(rangeRfqs, current, purchaseOrders);
+  const turnaroundValues = rangeRfqs.flatMap((rfq) => {
+    if (!rfq.quotationSentAt) {
+      return [];
+    }
+    const hours =
+      (parseDate(rfq.quotationSentAt).getTime() -
+        parseDate(rfq.createdAt).getTime()) /
+      (1000 * 60 * 60);
+    return hours >= 0 ? [hours] : [];
+  });
+  const medianHours = median(turnaroundValues) ?? 0;
 
   return {
     metrics: [
@@ -371,7 +495,7 @@ export const buildDashboardAnalytics = (
             : 'vs. previous period',
       },
     ],
-    weeklyVolume: buildRangeVolume(rangeRfqs, current),
+    weeklyVolume: turnaroundTrend,
     pipeline: buildPipeline(rangeRfqs),
     activeCount: activeRfqs.length,
     recentRequests: rangeRfqs.slice(0, 5).map((rfq) => ({
@@ -382,5 +506,45 @@ export const buildDashboardAnalytics = (
       value: formatRfqMoney(rfq.totalValue, rfq.currency),
       status: rfq.status,
     })),
+    funnel: {
+      received: rangeRfqs.length,
+      quoted: quotedOrLater.length,
+      won: wonRfqs.length,
+      lost: lostRfqs.length,
+      open: activeRfqs.length,
+      quoteRate: rangeRfqs.length
+        ? (quotedOrLater.length / rangeRfqs.length) * 100
+        : 0,
+      winRate: closed ? (wonRfqs.length / closed) * 100 : 0,
+    },
+    pipelineAges,
+    turnaround: {
+      medianHours,
+      withinTarget: turnaroundValues.length
+        ? (turnaroundValues.filter((hours) => hours <= 24).length /
+            turnaroundValues.length) *
+          100
+        : 0,
+      quotedCount: turnaroundValues.length,
+      trend: turnaroundTrend,
+    },
+    customerOutcomes: buildOutcomes((rfq) => rfq.customerName),
+    productOutcomes: buildOutcomes((rfq) =>
+      rfq.items
+        .map(
+          (item) =>
+            (item.manufacturerId
+              ? manufacturerNames.get(item.manufacturerId)
+              : null) ||
+            item.description ||
+            (item.manufacturerId ? 'Unlisted manufacturer' : ''),
+        )
+        .filter(Boolean)
+        .join(', '),
+    ),
+    lossReasons: [...reasons]
+      .map(([reason, count]) => ({ reason, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5),
   };
 };
