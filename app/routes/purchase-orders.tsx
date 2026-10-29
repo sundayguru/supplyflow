@@ -33,6 +33,7 @@ import type {
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
 import { findManufacturerName } from '~/utils/manufacturers';
 import { getUserFromRequest } from '~/utils/session.server';
+import { useManagementView } from '~/utils/useManagementView';
 
 type ApiResponse =
   | { success: true; purchaseOrder?: PurchaseOrderRecord; id?: string }
@@ -139,7 +140,7 @@ const PurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | PurchaseOrderStatus>('all');
-  const [view, setView] = useState<'table' | 'pipeline'>('table');
+  const [view, setView] = useManagementView();
   const [formPurchaseOrder, setFormPurchaseOrder] = useState<
     PurchaseOrderRecord | 'new' | null
   >(null);

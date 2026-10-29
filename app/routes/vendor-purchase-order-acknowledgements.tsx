@@ -20,6 +20,7 @@ import type {
   VendorPurchaseOrderAcknowledgementStatus,
 } from '~/types/vendorPurchaseOrderAcknowledgement';
 import { getUserFromRequest } from '~/utils/session.server';
+import { useManagementView } from '~/utils/useManagementView';
 
 type ApiResponse =
   | {
@@ -74,7 +75,7 @@ const VendorPurchaseOrderAcknowledgementsPage = ({
   const [status, setStatus] = useState<
     'all' | VendorPurchaseOrderAcknowledgementStatus
   >('all');
-  const [view, setView] = useState<'table' | 'pipeline'>('table');
+  const [view, setView] = useManagementView();
   const [formTarget, setFormTarget] = useState<
     VendorPurchaseOrderAcknowledgementRecord | 'new' | null
   >(null);

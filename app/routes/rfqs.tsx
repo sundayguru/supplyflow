@@ -38,6 +38,7 @@ import { listEmailSourcesForRfqs } from '~/db/emailIngestion';
 import { getUserFromRequest } from '~/utils/session.server';
 import type { RfqRecord, RfqStatus } from '~/types/rfq';
 import { formatRfqMoney } from '~/utils/rfq';
+import { useManagementView } from '~/utils/useManagementView';
 import { getOrganizationForUser } from '~/db/organizations';
 import { listRfqPdfTemplates } from '~/db/rfqPdfTemplates';
 import { cloudflareContext } from '~/contexts.server/cloudflareContext.server';
@@ -254,7 +255,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | RfqStatus>('all');
-  const [view, setView] = useState<'table' | 'pipeline'>('table');
+  const [view, setView] = useManagementView();
   const [formRfq, setFormRfq] = useState<RfqRecord | 'new' | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<RfqRecord | null>(null);
   const selectedRfq = rfqs.find((rfq) => rfq.id === searchParams.get('id'));

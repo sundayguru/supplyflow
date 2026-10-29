@@ -30,6 +30,7 @@ import type {
 } from '~/types/vendorPurchaseOrder';
 import { findManufacturerName } from '~/utils/manufacturers';
 import { getUserFromRequest } from '~/utils/session.server';
+import { useManagementView } from '~/utils/useManagementView';
 
 type ApiResponse =
   | {
@@ -105,7 +106,7 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
   const [status, setStatus] = useState<'all' | VendorPurchaseOrderStatus>(
     'all',
   );
-  const [view, setView] = useState<'table' | 'pipeline'>('table');
+  const [view, setView] = useManagementView();
   const [formTarget, setFormTarget] = useState<
     VendorPurchaseOrderRecord | 'new' | null
   >(null);
