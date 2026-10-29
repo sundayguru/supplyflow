@@ -22,6 +22,35 @@ import { parseVendorPurchaseOrderAcknowledgementInput } from '~/utils/vendorPurc
 import { getUserFromRequest } from '~/utils/session.server';
 import type { Route } from './+types/vendor-purchase-order-acknowledgements';
 import { notifyOrganizationMembers } from '~/db/notifications';
+import { getVendorPurchaseOrder } from '~/db/vendorPurchaseOrders';
+import type { VendorPurchaseOrderAcknowledgementRecord } from '~/types/vendorPurchaseOrderAcknowledgement';
+
+const recordCreatedAcknowledgement = async (
+  organizationId: string,
+  userId: string,
+  acknowledgement: VendorPurchaseOrderAcknowledgementRecord,
+) => {
+  await notifyOrganizationMembers(
+    organizationId,
+    {
+      title: 'New vendor PO acknowledgement',
+      message: `Acknowledgement ${acknowledgement.reference} was created by a team member.`,
+      actorType: 'user',
+      actionUrl: `/vendor-purchase-order-acknowledgements?id=${acknowledgement.id}`,
+    },
+    userId,
+  );
+  await logCreatedActivity(
+    {
+      organizationId,
+      actorUserId: userId,
+      sourceType: 'vendor_purchase_order_acknowledgement',
+      sourceId: acknowledgement.id,
+      sourceReference: acknowledgement.reference,
+    },
+    acknowledgement,
+  );
+};
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
@@ -65,6 +94,92 @@ export const action = async ({ request }: Route.ActionArgs) => {
   try {
     if (request.method === 'POST') {
       const body: unknown = await request.json();
+      if (
+        typeof body === 'object' &&
+        body !== null &&
+        'intent' in body &&
+        body.intent === 'generateFromVendorPurchaseOrder'
+      ) {
+        if (!user.planFeatures.vendorPurchaseOrderAcknowledgements) {
+          return data(
+            {
+              error:
+                'Vendor PO acknowledgements are not included in your plan.',
+            },
+            { status: 403 },
+          );
+        }
+        if (
+          !('vendorPurchaseOrderId' in body) ||
+          typeof body.vendorPurchaseOrderId !== 'string'
+        ) {
+          return data({ error: 'Vendor PO id is required' }, { status: 400 });
+        }
+        const vendorPurchaseOrder = await getVendorPurchaseOrder(
+          body.vendorPurchaseOrderId,
+          organization.id,
+        );
+        if (!vendorPurchaseOrder) {
+          return data({ error: 'Vendor PO not found' }, { status: 404 });
+        }
+        if (vendorPurchaseOrder.status !== 'acknowledged') {
+          return data(
+            {
+              error:
+                'Only acknowledged vendor POs can generate an acknowledgement.',
+            },
+            { status: 409 },
+          );
+        }
+        if (vendorPurchaseOrder.linkedAcknowledgements.length > 0) {
+          return data(
+            { error: 'This vendor PO already has a linked acknowledgement.' },
+            { status: 409 },
+          );
+        }
+        const acknowledgedAt = new Date().toISOString().slice(0, 10);
+        const input = {
+          vendorPurchaseOrderId: vendorPurchaseOrder.id,
+          acknowledgementReference: null,
+          status: 'received' as const,
+          acknowledgedAt,
+          notes: null,
+          items: vendorPurchaseOrder.items.map((item) => ({
+            vendorPurchaseOrderItemId: item.id,
+            quantity: item.quantity,
+            price: item.price,
+            unit: item.unit,
+            description: item.description,
+            manufacturerPartNumber: item.manufacturerPartNumber,
+            deliveryDate: vendorPurchaseOrder.expectedDate,
+            status: 'ordered' as const,
+            notes: null,
+          })),
+        };
+        const acknowledgement = await createVendorPurchaseOrderAcknowledgement(
+          organization.id,
+          user.id,
+          input,
+        );
+        if (!acknowledgement) {
+          return data(
+            { error: 'Unable to create vendor PO acknowledgement' },
+            { status: 500 },
+          );
+        }
+        await recordCreatedAcknowledgement(
+          organization.id,
+          user.id,
+          acknowledgement,
+        );
+        return data(
+          {
+            success: true,
+            vendorPurchaseOrderAcknowledgement: acknowledgement,
+          },
+          { status: 201 },
+        );
+      }
       const parsed = parseVendorPurchaseOrderAcknowledgementInput(body);
       if (!parsed.success) {
         return data({ error: parsed.error }, { status: 400 });
@@ -84,24 +199,9 @@ export const action = async ({ request }: Route.ActionArgs) => {
           parsed.value,
         );
       if (vendorPurchaseOrderAcknowledgement) {
-        await notifyOrganizationMembers(
+        await recordCreatedAcknowledgement(
           organization.id,
-          {
-            title: 'New vendor PO acknowledgement',
-            message: `Acknowledgement ${vendorPurchaseOrderAcknowledgement.reference} was created by a team member.`,
-            actorType: 'user',
-            actionUrl: `/vendor-purchase-order-acknowledgements?id=${vendorPurchaseOrderAcknowledgement.id}`,
-          },
           user.id,
-        );
-        await logCreatedActivity(
-          {
-            organizationId: organization.id,
-            actorUserId: user.id,
-            sourceType: 'vendor_purchase_order_acknowledgement',
-            sourceId: vendorPurchaseOrderAcknowledgement.id,
-            sourceReference: vendorPurchaseOrderAcknowledgement.reference,
-          },
           vendorPurchaseOrderAcknowledgement,
         );
       }

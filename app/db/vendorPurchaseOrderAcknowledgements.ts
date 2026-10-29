@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import type {
   VendorPurchaseOrderAcknowledgementInput,
   VendorPurchaseOrderAcknowledgementItemInput,
@@ -12,6 +12,7 @@ import {
   vendorPurchaseOrderAcknowledgements,
   vendorPurchaseOrderItems,
   vendorPurchaseOrders,
+  purchaseOrderItems,
 } from './schemas';
 
 const createReference = () =>
@@ -138,10 +139,78 @@ export const updateVendorPurchaseOrderAcknowledgementItem = async (
           changedAt: updatedAt,
         })
       : (input.statusReason ?? existing.statusReason);
-  await db
-    .update(vendorPurchaseOrderAcknowledgementItems)
-    .set({ ...input, statusReason, updatedAt })
-    .where(eq(vendorPurchaseOrderAcknowledgementItems.id, itemId));
+  const statements = [
+    db
+      .update(vendorPurchaseOrderAcknowledgementItems)
+      .set({ ...input, statusReason, updatedAt })
+      .where(eq(vendorPurchaseOrderAcknowledgementItems.id, itemId)),
+  ] as const;
+  if (existing.status !== input.status && existing.vendorPurchaseOrderItemId) {
+    const vendorPurchaseOrder = await db.query.vendorPurchaseOrders.findFirst({
+      where: and(
+        eq(vendorPurchaseOrders.id, parent.vendorPurchaseOrderId),
+        eq(vendorPurchaseOrders.organizationId, organizationId),
+      ),
+      with: { items: true },
+    });
+    const vendorItem = vendorPurchaseOrder?.items.find(
+      (item) => item.id === existing.vendorPurchaseOrderItemId,
+    );
+    const purchaseOrderItemsForVendorOrder = vendorPurchaseOrder
+      ? await db.query.purchaseOrderItems.findMany({
+          where: eq(
+            purchaseOrderItems.purchaseOrderId,
+            vendorPurchaseOrder.purchaseOrderId,
+          ),
+        })
+      : [];
+    const matchingPurchaseOrderItems = purchaseOrderItemsForVendorOrder
+      .filter((purchaseOrderItem) => {
+        if (!vendorItem) {
+          return false;
+        }
+        const vendorPartNumber = vendorItem.manufacturerPartNumber
+          ?.trim()
+          .toLowerCase();
+        const purchaseOrderPartNumber = purchaseOrderItem.manufacturerPartNumber
+          ?.trim()
+          .toLowerCase();
+        if (vendorPartNumber && purchaseOrderPartNumber) {
+          return vendorPartNumber === purchaseOrderPartNumber;
+        }
+        return (
+          vendorItem.description.trim().toLowerCase() ===
+          purchaseOrderItem.description.trim().toLowerCase()
+        );
+      })
+      .map((item) => item);
+    if (matchingPurchaseOrderItems.length) {
+      const purchaseOrderUpdates = matchingPurchaseOrderItems.map((item) => {
+        const purchaseOrderStatusReason =
+          input.statusReason?.trim() && item.status !== input.status
+            ? appendStatusChange(item.statusReason, {
+                fromStatus: item.status,
+                toStatus: input.status,
+                reason: input.statusReason.trim(),
+                changedAt: updatedAt,
+              })
+            : item.statusReason;
+        return db
+          .update(purchaseOrderItems)
+          .set({
+            status: input.status,
+            statusReason: purchaseOrderStatusReason,
+            updatedAt,
+          })
+          .where(eq(purchaseOrderItems.id, item.id));
+      });
+      await db.batch([...statements, ...purchaseOrderUpdates]);
+    } else {
+      await db.batch(statements);
+    }
+  } else {
+    await db.batch(statements);
+  }
   return await getVendorPurchaseOrderAcknowledgement(
     existing.acknowledgementId,
     organizationId,
@@ -173,8 +242,50 @@ export const createVendorPurchaseOrderAcknowledgement = async (
   const db = getDb();
   const id = crypto.randomUUID();
   const { items, ...acknowledgementInput } = input;
+  const vendorPurchaseOrder = await db.query.vendorPurchaseOrders.findFirst({
+    where: and(
+      eq(vendorPurchaseOrders.id, input.vendorPurchaseOrderId),
+      eq(vendorPurchaseOrders.organizationId, organizationId),
+    ),
+    with: {
+      items: true,
+    },
+  });
+  const acknowledgedVendorItems =
+    vendorPurchaseOrder?.items.filter((vendorItem) =>
+      items.some(
+        (ackItem) => ackItem.vendorPurchaseOrderItemId === vendorItem.id,
+      ),
+    ) ?? [];
+  const purchaseOrderItemRecords = vendorPurchaseOrder
+    ? await db.query.purchaseOrderItems.findMany({
+        where: eq(
+          purchaseOrderItems.purchaseOrderId,
+          vendorPurchaseOrder.purchaseOrderId,
+        ),
+      })
+    : [];
+  const matchingPurchaseOrderItemIds = purchaseOrderItemRecords
+    .filter((purchaseOrderItem) =>
+      acknowledgedVendorItems.some((vendorItem) => {
+        const vendorPartNumber = vendorItem.manufacturerPartNumber
+          ?.trim()
+          .toLowerCase();
+        const purchaseOrderPartNumber = purchaseOrderItem.manufacturerPartNumber
+          ?.trim()
+          .toLowerCase();
+        if (vendorPartNumber && purchaseOrderPartNumber) {
+          return vendorPartNumber === purchaseOrderPartNumber;
+        }
+        return (
+          vendorItem.description.trim().toLowerCase() ===
+          purchaseOrderItem.description.trim().toLowerCase()
+        );
+      }),
+    )
+    .map((item) => item.id);
 
-  await db.batch([
+  const acknowledgementStatements = [
     db.insert(vendorPurchaseOrderAcknowledgements).values({
       ...acknowledgementInput,
       id,
@@ -186,7 +297,18 @@ export const createVendorPurchaseOrderAcknowledgement = async (
     db
       .insert(vendorPurchaseOrderAcknowledgementItems)
       .values(createItemValues(id, items)),
-  ]);
+  ] as const;
+  if (matchingPurchaseOrderItemIds.length) {
+    await db.batch([
+      ...acknowledgementStatements,
+      db
+        .update(purchaseOrderItems)
+        .set({ status: 'ordered', updatedAt: new Date().toISOString() })
+        .where(inArray(purchaseOrderItems.id, matchingPurchaseOrderItemIds)),
+    ]);
+  } else {
+    await db.batch(acknowledgementStatements);
+  }
 
   return getVendorPurchaseOrderAcknowledgement(id, organizationId);
 };
@@ -207,8 +329,62 @@ export const updateVendorPurchaseOrderAcknowledgement = async (
   const db = getDb();
   const { items, ...acknowledgementInput } = input;
   const updatedAt = new Date().toISOString();
+  const vendorPurchaseOrder = await db.query.vendorPurchaseOrders.findFirst({
+    where: and(
+      eq(vendorPurchaseOrders.id, input.vendorPurchaseOrderId),
+      eq(vendorPurchaseOrders.organizationId, organizationId),
+    ),
+    with: { items: true },
+  });
+  const purchaseOrderItemsForVendorOrder = vendorPurchaseOrder
+    ? await db.query.purchaseOrderItems.findMany({
+        where: eq(
+          purchaseOrderItems.purchaseOrderId,
+          vendorPurchaseOrder.purchaseOrderId,
+        ),
+      })
+    : [];
+  const updatedItemStatuses = items.flatMap((acknowledgementItem, position) => {
+    const vendorItem = vendorPurchaseOrder?.items.find(
+      (item) => item.id === acknowledgementItem.vendorPurchaseOrderItemId,
+    );
+    if (!vendorItem) {
+      return [];
+    }
+    const matchingItems = purchaseOrderItemsForVendorOrder.filter(
+      (purchaseOrderItem) => {
+        const vendorPartNumber = vendorItem.manufacturerPartNumber
+          ?.trim()
+          .toLowerCase();
+        const purchaseOrderPartNumber = purchaseOrderItem.manufacturerPartNumber
+          ?.trim()
+          .toLowerCase();
+        if (vendorPartNumber && purchaseOrderPartNumber) {
+          return vendorPartNumber === purchaseOrderPartNumber;
+        }
+        return (
+          vendorItem.description.trim().toLowerCase() ===
+          purchaseOrderItem.description.trim().toLowerCase()
+        );
+      },
+    );
+    return matchingItems.map((purchaseOrderItem) => ({
+      id: purchaseOrderItem.id,
+      status: acknowledgementItem.status,
+      statusReason:
+        existing.items[position]?.status !== acknowledgementItem.status &&
+        acknowledgementItem.statusReason?.trim()
+          ? appendStatusChange(purchaseOrderItem.statusReason, {
+              fromStatus: purchaseOrderItem.status,
+              toStatus: acknowledgementItem.status,
+              reason: acknowledgementItem.statusReason.trim(),
+              changedAt: updatedAt,
+            })
+          : purchaseOrderItem.statusReason,
+    }));
+  });
 
-  await db.batch([
+  const statements = [
     db
       .update(vendorPurchaseOrderAcknowledgements)
       .set({ ...acknowledgementInput, updatedAt })
@@ -242,7 +418,19 @@ export const updateVendorPurchaseOrderAcknowledgement = async (
         updatedAt,
       })),
     ),
-  ]);
+  ] as const;
+  if (updatedItemStatuses.length) {
+    const updates = updatedItemStatuses.map(
+      ({ id: itemId, status, statusReason }) =>
+        db
+          .update(purchaseOrderItems)
+          .set({ status, statusReason, updatedAt })
+          .where(eq(purchaseOrderItems.id, itemId)),
+    );
+    await db.batch([...statements, ...updates]);
+  } else {
+    await db.batch(statements);
+  }
 
   return getVendorPurchaseOrderAcknowledgement(id, organizationId);
 };

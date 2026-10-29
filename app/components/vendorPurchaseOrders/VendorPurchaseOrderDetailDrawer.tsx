@@ -11,10 +11,12 @@ import {
   ExternalLink,
   FileText,
   History,
+  LoaderCircle,
   Mail,
   MailPlus,
   Package,
   Pencil,
+  Plus,
   Trash2,
   Truck,
   UserRound,
@@ -38,6 +40,7 @@ type VendorPurchaseOrderDetailDrawerProps = {
   templates: RfqPdfTemplateOption[];
   manufacturers: ManufacturerRecord[];
   llmUsageEnabled: boolean;
+  canCreateAcknowledgement: boolean;
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -55,6 +58,13 @@ type DraftVendorPurchaseOrderResponse =
 
 type ItemUpdateResponse = { success: true } | { error: string };
 
+type CreateAcknowledgementResponse =
+  | {
+      success: true;
+      vendorPurchaseOrderAcknowledgement: { id: string; reference: string };
+    }
+  | { error: string };
+
 const formatDate = (value: string) => new Date(value).toLocaleDateString();
 
 export const VendorPurchaseOrderDetailDrawer = ({
@@ -62,12 +72,14 @@ export const VendorPurchaseOrderDetailDrawer = ({
   templates,
   manufacturers,
   llmUsageEnabled,
+  canCreateAcknowledgement,
   onClose,
   onEdit,
   onDelete,
 }: VendorPurchaseOrderDetailDrawerProps) => {
   const draftEmail = useFetcher<DraftVendorPurchaseOrderResponse>();
   const itemMutation = useFetcher<ItemUpdateResponse>();
+  const acknowledgementMutation = useFetcher<CreateAcknowledgementResponse>();
   const [copiedDraft, setCopiedDraft] = useState(false);
   const [editItem, setEditItem] =
     useState<VendorPurchaseOrderItemRecord | null>(null);
@@ -113,6 +125,20 @@ export const VendorPurchaseOrderDetailDrawer = ({
       {
         method: 'post',
         action: `/api/vendor-purchase-orders/${encodeURIComponent(currentVendorPurchaseOrder.id)}/draft`,
+        encType: 'application/json',
+      },
+    );
+  };
+
+  const createAcknowledgement = () => {
+    acknowledgementMutation.submit(
+      {
+        intent: 'generateFromVendorPurchaseOrder',
+        vendorPurchaseOrderId: currentVendorPurchaseOrder.id,
+      },
+      {
+        method: 'post',
+        action: '/api/vendor-purchase-order-acknowledgements',
         encType: 'application/json',
       },
     );
@@ -501,6 +527,43 @@ export const VendorPurchaseOrderDetailDrawer = ({
               >
                 <History size={17} /> View activity
               </Link>
+              {canCreateAcknowledgement &&
+                currentVendorPurchaseOrder.status === 'acknowledged' &&
+                currentVendorPurchaseOrder.linkedAcknowledgements.length ===
+                  0 && (
+                  <>
+                    {acknowledgementMutation.data &&
+                      'error' in acknowledgementMutation.data && (
+                        <p className='rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'>
+                          {acknowledgementMutation.data.error}
+                        </p>
+                      )}
+                    <button
+                      type='button'
+                      onClick={createAcknowledgement}
+                      disabled={acknowledgementMutation.state !== 'idle'}
+                      className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-wait disabled:opacity-60'
+                    >
+                      {acknowledgementMutation.state !== 'idle' ? (
+                        <LoaderCircle size={17} className='animate-spin' />
+                      ) : (
+                        <Plus size={17} />
+                      )}
+                      {acknowledgementMutation.state !== 'idle'
+                        ? 'Generating acknowledgement…'
+                        : 'Generate vendor PO acknowledgement'}
+                    </button>
+                  </>
+                )}
+              {acknowledgementMutation.data &&
+                'success' in acknowledgementMutation.data && (
+                  <Link
+                    to={`/vendor-purchase-order-acknowledgements?id=${encodeURIComponent(acknowledgementMutation.data.vendorPurchaseOrderAcknowledgement.id)}`}
+                    className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-5 py-3 text-sm font-semibold text-sky-800 transition hover:bg-sky-100'
+                  >
+                    <ExternalLink size={17} /> View generated acknowledgement
+                  </Link>
+                )}
               {draftEmail.data && 'error' in draftEmail.data && (
                 <p className='rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'>
                   {draftEmail.data.error}

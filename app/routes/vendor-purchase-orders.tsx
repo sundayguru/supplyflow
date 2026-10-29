@@ -68,6 +68,8 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     ]);
     return data({
       vendorPurchaseOrders,
+      canCreateAcknowledgement:
+        user.planFeatures.vendorPurchaseOrderAcknowledgements === true,
       llmUsageEnabled: user.planFeatures.llmUsage === true,
       purchaseOrders,
       manufacturers,
@@ -80,6 +82,8 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     console.error('Unable to load vendor POs', error);
     return data({
       vendorPurchaseOrders: [],
+      canCreateAcknowledgement:
+        user.planFeatures.vendorPurchaseOrderAcknowledgements === true,
       purchaseOrders: [],
       manufacturers: [],
       addresses: [],
@@ -337,6 +341,7 @@ const VendorPurchaseOrdersPage = ({ loaderData }: Route.ComponentProps) => {
           templates={loaderData.templates}
           manufacturers={loaderData.manufacturers}
           llmUsageEnabled={loaderData.llmUsageEnabled}
+          canCreateAcknowledgement={loaderData.canCreateAcknowledgement}
           onClose={closeDetails}
           onEdit={editFromDetails}
           onDelete={deleteFromDetails}
