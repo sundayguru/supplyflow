@@ -3,9 +3,16 @@ import {
   type ManagementTableColumn,
 } from '~/components/table/ManagementTable';
 import { ManagementRowActions } from '~/components/table/ManagementRowActions';
-import type { VendorPurchaseOrderRecord } from '~/types/vendorPurchaseOrder';
+import { StatusMenu } from '~/components/status/StatusMenu';
+import {
+  vendorPurchaseOrderStatuses,
+  type VendorPurchaseOrderRecord,
+} from '~/types/vendorPurchaseOrder';
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
-import { VendorPurchaseOrderStatusBadge } from './VendorPurchaseOrderStatusBadge';
+import {
+  getVendorPurchaseOrderStatusBadgeClassName,
+  vendorPurchaseOrderStatusLabels,
+} from './VendorPurchaseOrderStatusBadge';
 
 type VendorPurchaseOrderTableProps = {
   vendorPurchaseOrders: VendorPurchaseOrderRecord[];
@@ -22,6 +29,16 @@ export const VendorPurchaseOrderTable = ({
   onEdit,
   onDelete,
 }: VendorPurchaseOrderTableProps) => {
+  const statusControl = (record: VendorPurchaseOrderRecord) => (
+    <StatusMenu
+      id={record.id}
+      action='/api/vendor-purchase-orders'
+      status={record.status}
+      statuses={vendorPurchaseOrderStatuses}
+      statusLabels={vendorPurchaseOrderStatusLabels}
+      getBadgeClassName={getVendorPurchaseOrderStatusBadgeClassName}
+    />
+  );
   const actions = (record: VendorPurchaseOrderRecord) => (
     <ManagementRowActions
       label={record.reference}
@@ -101,9 +118,7 @@ export const VendorPurchaseOrderTable = ({
     {
       id: 'status',
       header: 'Status',
-      cell: (record) => (
-        <VendorPurchaseOrderStatusBadge status={record.status} />
-      ),
+      cell: statusControl,
     },
     {
       id: 'actions',
@@ -128,7 +143,7 @@ export const VendorPurchaseOrderTable = ({
           </button>
         ),
         secondary: record.vendorName,
-        status: <VendorPurchaseOrderStatusBadge status={record.status} />,
+        status: statusControl(record),
         description: record.items[0]?.description ?? 'No item description',
         value: formatPurchaseOrderMoney(record.totalValue, record.currency),
         meta: `${new Date(record.createdAt).toLocaleDateString()} · ${record.items.length} ${record.items.length === 1 ? 'item' : 'items'} · ${record.linkedPurchaseOrder.reference}`,

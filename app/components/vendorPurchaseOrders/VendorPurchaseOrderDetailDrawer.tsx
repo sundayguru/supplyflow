@@ -33,7 +33,12 @@ import { VendorPurchaseOrderItemEditModal } from './VendorPurchaseOrderItemEditM
 import { findManufacturerName } from '~/utils/manufacturers';
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
 import { StatusChangeReasonDetails } from '~/components/status/StatusChangeReasonDetails';
-import { VendorPurchaseOrderStatusBadge } from './VendorPurchaseOrderStatusBadge';
+import { StatusMenu } from '~/components/status/StatusMenu';
+import {
+  getVendorPurchaseOrderStatusBadgeClassName,
+  vendorPurchaseOrderStatusLabels,
+} from './VendorPurchaseOrderStatusBadge';
+import { vendorPurchaseOrderStatuses } from '~/types/vendorPurchaseOrder';
 
 type VendorPurchaseOrderDetailDrawerProps = {
   vendorPurchaseOrder: VendorPurchaseOrderRecord;
@@ -204,8 +209,13 @@ export const VendorPurchaseOrderDetailDrawer = ({
               >
                 {currentVendorPurchaseOrder.reference}
               </h2>
-              <VendorPurchaseOrderStatusBadge
+              <StatusMenu
+                id={currentVendorPurchaseOrder.id}
+                action='/api/vendor-purchase-orders'
                 status={currentVendorPurchaseOrder.status}
+                statuses={vendorPurchaseOrderStatuses}
+                statusLabels={vendorPurchaseOrderStatusLabels}
+                getBadgeClassName={getVendorPurchaseOrderStatusBadgeClassName}
               />
             </div>
           </div>

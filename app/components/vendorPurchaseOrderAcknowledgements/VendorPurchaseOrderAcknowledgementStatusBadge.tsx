@@ -36,10 +36,18 @@ const statusStyles: Record<VendorPurchaseOrderAcknowledgementStatus, string> = {
 const badgeClassName = (className: string) =>
   `inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${className}`;
 
+export const getVendorPurchaseOrderAcknowledgementStatusBadgeClassName = (
+  status: VendorPurchaseOrderAcknowledgementStatus,
+) => badgeClassName(statusStyles[status]);
+
 export const VendorPurchaseOrderAcknowledgementStatusBadge = ({
   status,
 }: VendorPurchaseOrderAcknowledgementStatusBadgeProps) => (
-  <span className={badgeClassName(statusStyles[status])}>
+  <span
+    className={getVendorPurchaseOrderAcknowledgementStatusBadgeClassName(
+      status,
+    )}
+  >
     {vendorPurchaseOrderAcknowledgementStatusLabels[status]}
   </span>
 );

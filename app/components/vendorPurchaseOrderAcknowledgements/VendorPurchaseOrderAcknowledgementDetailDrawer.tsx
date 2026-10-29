@@ -18,11 +18,14 @@ import type {
   VendorPurchaseOrderAcknowledgementRecord,
 } from '~/types/vendorPurchaseOrderAcknowledgement';
 import { StatusChangeReasonDetails } from '~/components/status/StatusChangeReasonDetails';
+import { StatusMenu } from '~/components/status/StatusMenu';
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
 import {
   VendorPurchaseOrderAcknowledgementItemStatusBadge,
-  VendorPurchaseOrderAcknowledgementStatusBadge,
+  getVendorPurchaseOrderAcknowledgementStatusBadgeClassName,
+  vendorPurchaseOrderAcknowledgementStatusLabels,
 } from './VendorPurchaseOrderAcknowledgementStatusBadge';
+import { vendorPurchaseOrderAcknowledgementStatuses } from '~/types/vendorPurchaseOrderAcknowledgement';
 import { VendorPurchaseOrderAcknowledgementItemEditModal } from './VendorPurchaseOrderAcknowledgementItemEditModal';
 
 type ItemUpdateResponse = { success: true } | { error: string };
@@ -114,8 +117,15 @@ export const VendorPurchaseOrderAcknowledgementDetailDrawer = ({
               >
                 {acknowledgement.reference}
               </h2>
-              <VendorPurchaseOrderAcknowledgementStatusBadge
+              <StatusMenu
+                id={acknowledgement.id}
+                action='/api/vendor-purchase-order-acknowledgements'
                 status={acknowledgement.status}
+                statuses={vendorPurchaseOrderAcknowledgementStatuses}
+                statusLabels={vendorPurchaseOrderAcknowledgementStatusLabels}
+                getBadgeClassName={
+                  getVendorPurchaseOrderAcknowledgementStatusBadgeClassName
+                }
               />
             </div>
           </div>

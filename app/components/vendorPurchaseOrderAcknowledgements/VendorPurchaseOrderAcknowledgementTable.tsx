@@ -3,8 +3,15 @@ import {
   type ManagementTableColumn,
 } from '~/components/table/ManagementTable';
 import { ManagementRowActions } from '~/components/table/ManagementRowActions';
-import type { VendorPurchaseOrderAcknowledgementRecord } from '~/types/vendorPurchaseOrderAcknowledgement';
-import { VendorPurchaseOrderAcknowledgementStatusBadge } from './VendorPurchaseOrderAcknowledgementStatusBadge';
+import { StatusMenu } from '~/components/status/StatusMenu';
+import {
+  vendorPurchaseOrderAcknowledgementStatuses,
+  type VendorPurchaseOrderAcknowledgementRecord,
+} from '~/types/vendorPurchaseOrderAcknowledgement';
+import {
+  getVendorPurchaseOrderAcknowledgementStatusBadgeClassName,
+  vendorPurchaseOrderAcknowledgementStatusLabels,
+} from './VendorPurchaseOrderAcknowledgementStatusBadge';
 
 type AcknowledgementTableProps = {
   acknowledgements: VendorPurchaseOrderAcknowledgementRecord[];
@@ -22,6 +29,18 @@ export const VendorPurchaseOrderAcknowledgementTable = ({
   onEdit,
   onDelete,
 }: AcknowledgementTableProps) => {
+  const statusControl = (record: VendorPurchaseOrderAcknowledgementRecord) => (
+    <StatusMenu
+      id={record.id}
+      action='/api/vendor-purchase-order-acknowledgements'
+      status={record.status}
+      statuses={vendorPurchaseOrderAcknowledgementStatuses}
+      statusLabels={vendorPurchaseOrderAcknowledgementStatusLabels}
+      getBadgeClassName={
+        getVendorPurchaseOrderAcknowledgementStatusBadgeClassName
+      }
+    />
+  );
   const actions = (record: VendorPurchaseOrderAcknowledgementRecord) => (
     <ManagementRowActions
       label={record.reference}
@@ -98,11 +117,7 @@ export const VendorPurchaseOrderAcknowledgementTable = ({
       {
         id: 'status',
         header: 'Status',
-        cell: (record) => (
-          <VendorPurchaseOrderAcknowledgementStatusBadge
-            status={record.status}
-          />
-        ),
+        cell: statusControl,
       },
       {
         id: 'actions',
@@ -123,11 +138,7 @@ export const VendorPurchaseOrderAcknowledgementTable = ({
       renderMobileCard={(record) => ({
         primary: record.reference,
         secondary: record.linkedVendorPurchaseOrder.vendorName,
-        status: (
-          <VendorPurchaseOrderAcknowledgementStatusBadge
-            status={record.status}
-          />
-        ),
+        status: statusControl(record),
         description: record.items[0]?.description ?? 'No item description',
         value: record.acknowledgementReference ?? undefined,
         meta: `${new Date(record.createdAt).toLocaleDateString()} · ${formatDate(record.acknowledgedAt)} · ${record.items.length} ${record.items.length === 1 ? 'item' : 'items'}`,
