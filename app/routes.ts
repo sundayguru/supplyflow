@@ -109,6 +109,10 @@ export default [
       'routes/api/email-ingestion.trigger.ts',
     ),
     route(
+      'api/email-ingestions/:ingestionId/message',
+      'routes/api/email-ingestion-message.ts',
+    ),
+    route(
       'api/email-accounts/google/start',
       'routes/api/email-accounts.google.start.ts',
     ),

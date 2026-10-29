@@ -32,6 +32,7 @@ export const emailIngestions = sqliteTable(
       .default('processing'),
     subject: text('subject', { length: 511 }),
     fromAddress: text('from_address', { length: 255 }),
+    messageText: text('message_text'),
     receivedAt: text('received_at'),
     rfqId: text('rfq_id').references(() => rfqs.id, { onDelete: 'set null' }),
     purchaseOrderId: text('purchase_order_id').references(

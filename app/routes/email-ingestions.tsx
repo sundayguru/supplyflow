@@ -1,5 +1,5 @@
-import { Form, Link, redirect } from 'react-router';
-import { ChevronLeft, ChevronRight, Inbox, Search } from 'lucide-react';
+import { Form, Link, redirect, useFetcher } from 'react-router';
+import { ChevronLeft, ChevronRight, Inbox, Search, X } from 'lucide-react';
 import type { Route } from './+types/email-ingestions';
 import { listConnectedEmailAccounts } from '~/db/connectedEmailAccounts';
 import {
@@ -32,6 +32,19 @@ const statusStyles: Record<EmailIngestionStatus, string> = {
   ignored: 'bg-slate-100 text-slate-600 ring-slate-200',
   failed: 'bg-rose-50 text-rose-700 ring-rose-200',
 };
+
+type MessageViewerResponse =
+  | {
+      success: true;
+      message: {
+        subject: string | null;
+        fromAddress: string | null;
+        receivedAt: string | null;
+        messageText: string | null;
+        accountEmail: string;
+      };
+    }
+  | { error: string };
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserFromRequest(request);
@@ -97,6 +110,13 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 };
 
 const EmailIngestionsPage = ({ loaderData }: Route.ComponentProps) => {
+  const messageFetcher = useFetcher<MessageViewerResponse>();
+  const openMessage = (id: string) => {
+    messageFetcher.reset();
+    messageFetcher.load(
+      `/api/email-ingestions/${encodeURIComponent(id)}/message`,
+    );
+  };
   const searchParams = new URLSearchParams();
   if (loaderData.filters.query) {
     searchParams.set('query', loaderData.filters.query);
@@ -255,6 +275,13 @@ const EmailIngestionsPage = ({ loaderData }: Route.ComponentProps) => {
                       <p className='mt-1 truncate text-xs text-slate-500'>
                         {ingestion.fromAddress || 'Unknown sender'}
                       </p>
+                      <button
+                        type='button'
+                        onClick={() => openMessage(ingestion.id)}
+                        className='mt-2 text-xs font-semibold text-emerald-700 hover:text-emerald-600'
+                      >
+                        View message
+                      </button>
                     </td>
                     <td className='px-5 py-4 text-sm text-slate-600'>
                       {ingestion.accountEmail}
@@ -338,6 +365,96 @@ const EmailIngestionsPage = ({ loaderData }: Route.ComponentProps) => {
           </div>
         </div>
       </section>
+      {(messageFetcher.state !== 'idle' || messageFetcher.data) && (
+        <div className='fixed inset-0 z-[140] flex items-center justify-center p-4'>
+          <button
+            type='button'
+            onClick={() => messageFetcher.reset()}
+            className='absolute inset-0 bg-slate-950/50 backdrop-blur-sm'
+            aria-label='Close message viewer'
+          />
+          <section
+            role='dialog'
+            aria-modal='true'
+            aria-labelledby='ingestion-message-title'
+            className='relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl'
+          >
+            <header className='flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6'>
+              <div className='min-w-0'>
+                <p className='text-xs font-bold tracking-wide text-emerald-700 uppercase'>
+                  Customer email
+                </p>
+                <h2
+                  id='ingestion-message-title'
+                  className='mt-1 truncate text-xl font-semibold text-slate-900'
+                >
+                  {messageFetcher.data && 'success' in messageFetcher.data
+                    ? messageFetcher.data.message.subject || '(No subject)'
+                    : 'Email message'}
+                </h2>
+              </div>
+              <button
+                type='button'
+                onClick={() => messageFetcher.reset()}
+                className='rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700'
+                aria-label='Close'
+              >
+                <X size={19} />
+              </button>
+            </header>
+            {messageFetcher.state !== 'idle' ? (
+              <p className='p-6 text-sm text-slate-500'>Loading message…</p>
+            ) : messageFetcher.data && 'error' in messageFetcher.data ? (
+              <p className='p-6 text-sm text-rose-700'>
+                {messageFetcher.data.error}
+              </p>
+            ) : messageFetcher.data && 'success' in messageFetcher.data ? (
+              <div className='min-h-0 overflow-y-auto p-5 sm:p-6'>
+                <dl className='mb-5 grid gap-2 rounded-xl bg-slate-50 p-4 text-sm sm:grid-cols-2'>
+                  <div>
+                    <dt className='text-xs font-semibold text-slate-400 uppercase'>
+                      From
+                    </dt>
+                    <dd className='mt-1 break-all text-slate-700'>
+                      {messageFetcher.data.message.fromAddress ||
+                        'Unknown sender'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className='text-xs font-semibold text-slate-400 uppercase'>
+                      Received
+                    </dt>
+                    <dd className='mt-1 text-slate-700'>
+                      {messageFetcher.data.message.receivedAt
+                        ? new Date(
+                            messageFetcher.data.message.receivedAt,
+                          ).toLocaleString()
+                        : 'Unknown date'}
+                    </dd>
+                  </div>
+                  <div className='sm:col-span-2'>
+                    <dt className='text-xs font-semibold text-slate-400 uppercase'>
+                      Connected account
+                    </dt>
+                    <dd className='mt-1 break-all text-slate-700'>
+                      {messageFetcher.data.message.accountEmail}
+                    </dd>
+                  </div>
+                </dl>
+                {messageFetcher.data.message.messageText ? (
+                  <pre className='font-sans text-sm leading-6 break-words whitespace-pre-wrap text-slate-800'>
+                    {messageFetcher.data.message.messageText}
+                  </pre>
+                ) : (
+                  <p className='text-sm text-slate-500'>
+                    The original message body was not stored for this email.
+                  </p>
+                )}
+              </div>
+            ) : null}
+          </section>
+        </div>
+      )}
     </div>
   );
 };

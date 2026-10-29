@@ -45,7 +45,11 @@ export const middleware: Route.MiddlewareFunction[] = [
       ['emailAutomation', ['/connected-accounts', '/api/email-accounts']],
       [
         'emailIngestions',
-        ['/email-ingestions', '/api/email-ingestion/trigger'],
+        [
+          '/email-ingestions',
+          '/api/email-ingestion/trigger',
+          '/api/email-ingestions',
+        ],
       ],
       ['teamManagement', ['/organization/users', '/organization/invitations']],
     ];

@@ -112,6 +112,35 @@ export const listEmailIngestions = async ({
   return { rows, total: totalResult?.total ?? 0 };
 };
 
+export const getEmailIngestionMessage = async (
+  id: string,
+  organizationId: string,
+) => {
+  const db = getDb();
+  const [message] = await db
+    .select({
+      id: emailIngestions.id,
+      subject: emailIngestions.subject,
+      fromAddress: emailIngestions.fromAddress,
+      receivedAt: emailIngestions.receivedAt,
+      messageText: emailIngestions.messageText,
+      accountEmail: connectedEmailAccounts.email,
+    })
+    .from(emailIngestions)
+    .innerJoin(
+      connectedEmailAccounts,
+      eq(emailIngestions.accountId, connectedEmailAccounts.id),
+    )
+    .where(
+      and(
+        eq(emailIngestions.id, id),
+        eq(connectedEmailAccounts.organizationId, organizationId),
+      ),
+    )
+    .limit(1);
+  return message ?? null;
+};
+
 export const getEmailIngestionCounts = async (organizationId: string) => {
   const db = getDb();
   const grouped = await db
@@ -355,6 +384,7 @@ export const claimEmail = async (
       threadId: message.threadId,
       subject: message.subject,
       fromAddress: message.from.address,
+      messageText: message.text,
       receivedAt: message.receivedAt.toISOString(),
     })
     .onConflictDoNothing()
