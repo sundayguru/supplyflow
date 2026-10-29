@@ -11,11 +11,15 @@ type ForwardedSender =
 
 const parseForwardedSender = (text: string) => {
   const marker = FORWARDED_MESSAGE_MARKER.exec(text);
-  if (!marker) {return null;}
+  if (!marker) {
+    return null;
+  }
 
   const forwardedContent = text.slice(marker.index + marker[0].length);
   const fromHeader = /\bFrom\s*:\s*/i.exec(forwardedContent);
-  if (!fromHeader) {return null;}
+  if (!fromHeader) {
+    return null;
+  }
 
   const headerValue = forwardedContent.slice(
     fromHeader.index + fromHeader[0].length,

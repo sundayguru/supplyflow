@@ -64,7 +64,9 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
-  if (!user.planFeatures.manufacturers) {return redirect('/billing');}
+  if (!user.planFeatures.manufacturers) {
+    return redirect('/billing');
+  }
   return data({
     manufacturers: await listManufacturers(organization.id),
   });
@@ -79,11 +81,12 @@ export const action = async ({ request }: Route.ActionArgs) => {
   if (!organization) {
     return data({ error: 'Organization required' }, { status: 403 });
   }
-  if (!user.planFeatures.manufacturers)
-    {return data(
+  if (!user.planFeatures.manufacturers) {
+    return data(
       { error: 'Your plan does not include manufacturers' },
       { status: 403 },
-    );}
+    );
+  }
 
   const formData = await request.formData();
   const intent = String(formData.get('intent') ?? '');

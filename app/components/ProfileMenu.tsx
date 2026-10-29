@@ -39,8 +39,12 @@ export const ProfileMenu = ({
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
-      if (!(event.target instanceof Node)) {return;}
-      if (menuRef.current?.contains(event.target)) {return;}
+      if (!(event.target instanceof Node)) {
+        return;
+      }
+      if (menuRef.current?.contains(event.target)) {
+        return;
+      }
       if (
         event.target instanceof Element &&
         event.target.closest('[data-profile-menu-trigger]')
@@ -50,7 +54,9 @@ export const ProfileMenu = ({
       onClose();
     };
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {onClose();}
+      if (event.key === 'Escape') {
+        onClose();
+      }
     };
 
     document.addEventListener('pointerdown', handlePointerDown);

@@ -35,7 +35,9 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   if (!organization) {
     return redirect('/organization');
   }
-  if (!user.planFeatures.llmUsage) {return redirect('/billing');}
+  if (!user.planFeatures.llmUsage) {
+    return redirect('/billing');
+  }
 
   const url = new URL(request.url);
   const today = new Date();
