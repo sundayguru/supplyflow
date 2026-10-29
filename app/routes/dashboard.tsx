@@ -287,19 +287,41 @@ const DashboardPage = ({ loaderData }: Route.ComponentProps) => {
               >
                 <div className='flex flex-1 items-end justify-center gap-1'>
                   <div
-                    className='w-2.5 rounded-t-full bg-emerald-600 sm:w-4'
+                    tabIndex={received > 0 ? 0 : undefined}
+                    role='img'
+                    aria-label={`${day}: ${received} received`}
+                    className='group/bar relative w-2.5 rounded-t-full bg-emerald-600 outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 sm:w-4'
                     style={{
                       height: `${Math.max((received / maxVolume) * 88, received > 0 ? 4 : 0)}%`,
                     }}
-                    title={`${received} received`}
-                  />
+                  >
+                    {received > 0 && (
+                      <span
+                        role='tooltip'
+                        className='pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 rounded-lg bg-slate-950 px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap text-white shadow-lg group-hover/bar:block group-focus-visible/bar:block'
+                      >
+                        {day}: {received} received
+                      </span>
+                    )}
+                  </div>
                   <div
-                    className='w-2.5 rounded-t-full bg-emerald-200 sm:w-4'
+                    tabIndex={quoted > 0 ? 0 : undefined}
+                    role='img'
+                    aria-label={`${day}: ${quoted} quoted`}
+                    className='group/bar relative w-2.5 rounded-t-full bg-emerald-200 outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 sm:w-4'
                     style={{
                       height: `${Math.max((quoted / maxVolume) * 88, quoted > 0 ? 4 : 0)}%`,
                     }}
-                    title={`${quoted} quoted`}
-                  />
+                  >
+                    {quoted > 0 && (
+                      <span
+                        role='tooltip'
+                        className='pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 rounded-lg bg-slate-950 px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap text-white shadow-lg group-hover/bar:block group-focus-visible/bar:block'
+                      >
+                        {day}: {quoted} quoted
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <p className='py-3 text-center text-[10px] font-medium text-slate-400 sm:text-xs'>
                   {day}
