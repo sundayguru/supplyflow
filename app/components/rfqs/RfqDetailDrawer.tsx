@@ -494,17 +494,17 @@ export const RfqDetailDrawer = ({
                 </span>
               </span>
             </summary>
-            <div className='mt-3 grid gap-3 sm:grid-cols-2'>
+            <div className='mt-3 flex flex-wrap gap-2'>
               <a
                 href={`/api/rfqs/${encodeURIComponent(rfq.id)}/customer-pdf`}
                 download
-                className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:col-span-2'
+                className='inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
               >
                 <Download size={17} /> Download customer PDF
               </a>
               <Link
                 to={`/activities?sourceType=rfq&sourceId=${encodeURIComponent(rfq.id)}`}
-                className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
+                className='inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
               >
                 <History size={17} /> View activity
               </Link>
@@ -518,7 +518,7 @@ export const RfqDetailDrawer = ({
                       ? undefined
                       : 'Only RFQs created from connected email can draft a reply'
                   }
-                  className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400'
+                  className='inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400'
                 >
                   {isDraftingReply ? (
                     <LoaderCircle size={17} className='animate-spin' />
@@ -558,7 +558,7 @@ export const RfqDetailDrawer = ({
               <button
                 type='button'
                 onClick={onEdit}
-                className='inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-500 sm:col-span-2'
+                className='inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-500'
               >
                 <Pencil size={17} /> Edit RFQ
               </button>

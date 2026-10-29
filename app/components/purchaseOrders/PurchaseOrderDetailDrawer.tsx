@@ -866,16 +866,16 @@ export const PurchaseOrderDetailDrawer = ({
                 </span>
               </span>
             </summary>
-            <div className='mt-3 space-y-3'>
+            <div className='mt-3 flex flex-wrap gap-2'>
               <a
                 href={statusReportUrl}
-                className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
+                className='inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
               >
                 <Download size={17} /> Generate status report
               </a>
               <Link
                 to={`/activities?sourceType=purchase_order&sourceId=${encodeURIComponent(currentPurchaseOrder.id)}`}
-                className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
+                className='inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
               >
                 <History size={17} /> View activity
               </Link>
@@ -884,7 +884,7 @@ export const PurchaseOrderDetailDrawer = ({
                   type='button'
                   onClick={validatePurchaseOrder}
                   disabled={validationMutation.state !== 'idle'}
-                  className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60'
+                  className='inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60'
                 >
                   <RefreshCw
                     size={17}
@@ -900,7 +900,7 @@ export const PurchaseOrderDetailDrawer = ({
               <button
                 type='button'
                 onClick={onEdit}
-                className='inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-500'
+                className='inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-500'
               >
                 <Pencil size={17} /> Edit PO
               </button>
@@ -908,7 +908,7 @@ export const PurchaseOrderDetailDrawer = ({
                 type='button'
                 onClick={() => setIsVendorPoModalOpen(true)}
                 disabled={vendorPurchaseOrderMutation.state !== 'idle'}
-                className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60'
+                className='inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60'
               >
                 <ShoppingCart size={17} /> Generate vendor PO
               </button>
