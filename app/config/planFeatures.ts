@@ -13,6 +13,7 @@ export const planFeatureLabels = {
   emailAutomation: 'Connected email accounts',
   emailIngestions: 'Email ingestions',
   emailNotifications: 'Email notifications',
+  supportAndTraining: 'Support and training',
   teamManagement: 'Organization users',
 } as const;
 

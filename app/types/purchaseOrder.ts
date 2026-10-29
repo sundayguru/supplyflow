@@ -20,6 +20,7 @@ export const purchaseOrderItemStatuses = [
   'ordered',
   'shipped',
   'received',
+  'delivered',
   'cancelled',
 ] as const;
 
