@@ -1,6 +1,5 @@
 import { data } from 'react-router';
 import { logUpdatedActivity } from '~/db/activityLogs';
-import { notifyOrganizationMembers } from '~/db/notifications';
 import {
   getVendorPurchaseOrder,
   updateVendorPurchaseOrderItem,
@@ -48,16 +47,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
   if (!previous || !previousItem) {
     return data({ error: 'Vendor PO item not found' }, { status: 404 });
   }
-  if (
-    previousItem.status !== parsed.value.status &&
-    !parsed.value.statusReason?.trim()
-  ) {
-    return data(
-      { error: 'Enter a reason for the item status change' },
-      { status: 400 },
-    );
-  }
-
   const vendorPurchaseOrder = await updateVendorPurchaseOrderItem(
     body.id,
     organization.id,
@@ -65,18 +54,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
   );
   if (!vendorPurchaseOrder || vendorPurchaseOrder.id !== parentId) {
     return data({ error: 'Vendor PO item not found' }, { status: 404 });
-  }
-  if (previousItem.status !== parsed.value.status) {
-    await notifyOrganizationMembers(
-      organization.id,
-      {
-        title: 'Vendor PO item status changed',
-        message: `${previousItem.description} on vendor PO ${vendorPurchaseOrder.reference} changed status.`,
-        actorType: 'user',
-        actionUrl: `/vendor-purchase-orders?id=${vendorPurchaseOrder.id}`,
-      },
-      user.id,
-    );
   }
   await logUpdatedActivity(
     {

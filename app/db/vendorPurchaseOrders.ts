@@ -187,18 +187,9 @@ export const updateVendorPurchaseOrderItem = async (
     return null;
   }
   const updatedAt = new Date().toISOString();
-  const statusReason =
-    existing.status !== input.status && input.statusReason?.trim()
-      ? appendStatusChange(existing.statusReason, {
-          fromStatus: existing.status,
-          toStatus: input.status,
-          reason: input.statusReason.trim(),
-          changedAt: updatedAt,
-        })
-      : (input.statusReason ?? existing.statusReason);
   await db
     .update(vendorPurchaseOrderItems)
-    .set({ ...input, statusReason, updatedAt })
+    .set({ ...input, updatedAt })
     .where(eq(vendorPurchaseOrderItems.id, itemId));
   return await getVendorPurchaseOrder(
     existing.vendorPurchaseOrderId,
@@ -259,11 +250,6 @@ export const updateVendorPurchaseOrder = async (
     db.insert(vendorPurchaseOrderItems).values(
       createItemValues(id, items).map((item) => ({
         ...item,
-        statusReason:
-          item.statusReason ??
-          (existing.items[item.position]?.status === item.status
-            ? existing.items[item.position].statusReason
-            : null),
         updatedAt,
       })),
     ),

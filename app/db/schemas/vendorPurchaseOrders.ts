@@ -6,10 +6,7 @@ import {
   sqliteTable,
   text,
 } from 'drizzle-orm/sqlite-core';
-import {
-  purchaseOrderItemStatuses,
-  vendorPurchaseOrderStatuses,
-} from '../../types';
+import { vendorPurchaseOrderStatuses } from '../../types';
 import { manufacturers } from './manufacturers';
 import { organizations } from './organizations';
 import { purchaseOrders } from './purchaseOrders';
@@ -97,10 +94,6 @@ export const vendorPurchaseOrderItems = sqliteTable(
     discountValue: real('discount_value').notNull().default(0),
     unit: text('unit', { length: 32 }).notNull(),
     description: text('description').notNull(),
-    status: text('status', { enum: purchaseOrderItemStatuses })
-      .notNull()
-      .default('pending'),
-    statusReason: text('status_reason'),
     manufacturerId: text('manufacturer_id').references(() => manufacturers.id, {
       onDelete: 'set null',
     }),
@@ -115,7 +108,6 @@ export const vendorPurchaseOrderItems = sqliteTable(
   },
   (table) => [
     index('vendor_po_items_vendor_po_id_idx').on(table.vendorPurchaseOrderId),
-    index('vendor_po_items_status_idx').on(table.status),
     index('vendor_po_items_manufacturer_id_idx').on(table.manufacturerId),
   ],
 );

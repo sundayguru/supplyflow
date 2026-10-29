@@ -428,6 +428,20 @@
       "when": 1793232000009,
       "tag": "0061_rename_purchase_order_draft_status",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "6",
+      "when": 1793232000010,
+      "tag": "0062_remove_vendor_po_received_statuses",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "6",
+      "when": 1793232000011,
+      "tag": "0063_remove_vendor_po_item_status",
+      "breakpoints": true
     }
   ]
 }

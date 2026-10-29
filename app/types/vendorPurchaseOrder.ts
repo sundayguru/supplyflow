@@ -5,18 +5,18 @@ export const vendorPurchaseOrderStatuses = [
   'review_email',
   'sent',
   'acknowledged',
-  'partially_received',
-  'received',
   'cancelled',
 ] as const;
 
 export type VendorPurchaseOrderStatus =
   (typeof vendorPurchaseOrderStatuses)[number];
 
-export type VendorPurchaseOrderItemInput = PurchaseOrderItemInput & {
+export type VendorPurchaseOrderItemInput = Omit<
+  PurchaseOrderItemInput,
+  'status' | 'statusReason'
+> & {
   discountType?: 'percentage' | 'fixed';
   discountValue?: number;
-  statusReason?: string | null;
 };
 
 export type VendorPurchaseOrderInput = {
@@ -42,7 +42,6 @@ export type VendorPurchaseOrderItemRecord = VendorPurchaseOrderItemInput & {
   position: number;
   createdAt: string;
   updatedAt: string;
-  statusReason: string | null;
 };
 
 export type LinkedPurchaseOrderSummary = {

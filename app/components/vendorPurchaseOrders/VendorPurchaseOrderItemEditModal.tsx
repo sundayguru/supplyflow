@@ -4,7 +4,6 @@ import type {
   VendorPurchaseOrderItemInput,
   VendorPurchaseOrderItemRecord,
 } from '~/types/vendorPurchaseOrder';
-import { purchaseOrderItemStatuses } from '~/types/purchaseOrder';
 import type { ManufacturerRecord } from '~/types/manufacturer';
 
 type VendorPurchaseOrderItemEditModalProps = {
@@ -31,8 +30,6 @@ export const VendorPurchaseOrderItemEditModal = ({
     discountValue: item.discountValue,
     unit: item.unit,
     description: item.description,
-    status: item.status,
-    statusReason: null,
     manufacturerId: item.manufacturerId,
     manufacturerPartNumber: item.manufacturerPartNumber,
     specifications: item.specifications,
@@ -142,26 +139,6 @@ export const VendorPurchaseOrderItemEditModal = ({
               />
             </label>
             <label className='text-sm font-semibold text-slate-700'>
-              Status
-              <select
-                value={value.status}
-                onChange={(event) =>
-                  update(
-                    'status',
-                    event.target
-                      .value as VendorPurchaseOrderItemInput['status'],
-                  )
-                }
-                className={inputClass}
-              >
-                {purchaseOrderItemStatuses.map((status) => (
-                  <option key={status} value={status}>
-                    {status.replaceAll('_', ' ')}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className='text-sm font-semibold text-slate-700'>
               Discount type
               <select
                 value={value.discountType ?? 'percentage'}
@@ -230,18 +207,6 @@ export const VendorPurchaseOrderItemEditModal = ({
               className={inputClass}
             />
           </label>
-          {value.status !== item.status && (
-            <label className='block text-sm font-semibold text-slate-700'>
-              Status change reason
-              <textarea
-                required
-                rows={3}
-                value={value.statusReason ?? ''}
-                onChange={(event) => update('statusReason', event.target.value)}
-                className={inputClass}
-              />
-            </label>
-          )}
           <div className='flex justify-end gap-3 border-t border-slate-100 pt-5'>
             <button
               type='button'

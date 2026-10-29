@@ -12,8 +12,6 @@ export const vendorPurchaseOrderStatusLabels: Record<
   review_email: 'Review email',
   sent: 'Sent',
   acknowledged: 'Acknowledged',
-  partially_received: 'Partially received',
-  received: 'Received',
   cancelled: 'Cancelled',
 };
 
@@ -22,8 +20,6 @@ const statusStyles: Record<VendorPurchaseOrderStatus, string> = {
   review_email: 'bg-amber-50 text-amber-700 ring-amber-200',
   sent: 'bg-sky-50 text-sky-700 ring-sky-200',
   acknowledged: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
-  partially_received: 'bg-amber-50 text-amber-700 ring-amber-200',
-  received: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
   cancelled: 'bg-rose-50 text-rose-700 ring-rose-200',
 };
 

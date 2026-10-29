@@ -1,8 +1,4 @@
 import {
-  purchaseOrderItemStatuses,
-  type PurchaseOrderItemStatus,
-} from '~/types/purchaseOrder';
-import {
   vendorPurchaseOrderStatuses,
   type VendorPurchaseOrderInput,
   type VendorPurchaseOrderItemInput,
@@ -36,7 +32,6 @@ export const parseVendorPurchaseOrderItemInput = (
   const unit = typeof value.unit === 'string' ? value.unit.trim() : '';
   const description =
     typeof value.description === 'string' ? value.description.trim() : '';
-  const status = value.status;
 
   if (!Number.isFinite(quantity) || quantity <= 0 || !unit || !description) {
     return {
@@ -54,13 +49,6 @@ export const parseVendorPurchaseOrderItemInput = (
   ) {
     return { success: false, error: 'Enter a valid item discount' };
   }
-  if (
-    typeof status !== 'string' ||
-    !purchaseOrderItemStatuses.includes(status as PurchaseOrderItemStatus)
-  ) {
-    return { success: false, error: 'Select a valid item status' };
-  }
-
   return {
     success: true,
     value: {
@@ -70,11 +58,6 @@ export const parseVendorPurchaseOrderItemInput = (
       discountValue,
       unit,
       description,
-      status: status as PurchaseOrderItemStatus,
-      statusReason:
-        typeof value.statusReason === 'string'
-          ? value.statusReason.trim() || null
-          : undefined,
       manufacturerId:
         typeof value.manufacturerId === 'string' && value.manufacturerId.trim()
           ? value.manufacturerId.trim()

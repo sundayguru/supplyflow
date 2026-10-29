@@ -38,14 +38,6 @@ const statusStyles: Record<VendorPurchaseOrderStatus, PipelineStatusStyle> = {
     column: 'border-indigo-200 bg-indigo-50/60',
     dot: 'bg-indigo-500',
   },
-  partially_received: {
-    column: 'border-amber-200 bg-amber-50/60',
-    dot: 'bg-amber-500',
-  },
-  received: {
-    column: 'border-emerald-200 bg-emerald-50/60',
-    dot: 'bg-emerald-500',
-  },
   cancelled: { column: 'border-rose-200 bg-rose-50/60', dot: 'bg-rose-500' },
 };
 

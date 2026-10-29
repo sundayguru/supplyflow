@@ -7,6 +7,7 @@ import {
   vendorPurchaseOrderStatuses,
   type LinkedPurchaseOrderSummary,
   type VendorPurchaseOrderInput,
+  type VendorPurchaseOrderItemInput,
   type VendorPurchaseOrderStatus,
 } from '~/types/vendorPurchaseOrder';
 import { currencyOptionLabel, supportedCurrencies } from '~/utils/currencies';
@@ -21,7 +22,7 @@ export type VendorPurchaseOrderFormValue = Omit<
   'items'
 > & {
   id?: string;
-  items: PurchaseOrderItemFormValue[];
+  items: VendorPurchaseOrderItemInput[];
 };
 
 type VendorPurchaseOrderFormModalProps = {
@@ -88,7 +89,9 @@ export const VendorPurchaseOrderFormModal = ({
   const [currency, setCurrency] = useState(initialValue?.currency ?? 'EUR');
   const [notes, setNotes] = useState(initialValue?.notes ?? '');
   const [items, setItems] = useState<PurchaseOrderItemFormValue[]>(
-    initialValue?.items ?? [emptyItem()],
+    initialValue?.items.map((item) => ({ ...item, status: 'pending' })) ?? [
+      emptyItem(),
+    ],
   );
   const updateVendorManufacturer = (manufacturerName: string) => {
     const normalizedName = manufacturerName.trim();
@@ -121,7 +124,17 @@ export const VendorPurchaseOrderFormModal = ({
       expectedDate: expectedDate || null,
       currency,
       notes: notes || null,
-      items,
+      items: items.map((item) => ({
+        quantity: item.quantity,
+        price: item.price,
+        discountType: item.discountType ?? 'percentage',
+        discountValue: item.discountValue ?? 0,
+        unit: item.unit,
+        description: item.description,
+        manufacturerId: item.manufacturerId,
+        manufacturerPartNumber: item.manufacturerPartNumber,
+        specifications: item.specifications,
+      })),
     });
   };
 
@@ -318,6 +331,7 @@ export const VendorPurchaseOrderFormModal = ({
                   key={index}
                   index={index}
                   showDiscount
+                  showStatus={false}
                   value={item}
                   canRemove={items.length > 1}
                   manufacturers={manufacturers}

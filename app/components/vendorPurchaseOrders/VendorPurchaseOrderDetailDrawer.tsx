@@ -30,7 +30,6 @@ import type {
 import { VendorPurchaseOrderItemEditModal } from './VendorPurchaseOrderItemEditModal';
 import { findManufacturerName } from '~/utils/manufacturers';
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
-import { PurchaseOrderItemStatusBadge } from '../purchaseOrders/PurchaseOrderStatusBadge';
 import { StatusChangeReasonDetails } from '~/components/status/StatusChangeReasonDetails';
 import { VendorPurchaseOrderStatusBadge } from './VendorPurchaseOrderStatusBadge';
 
@@ -358,7 +357,6 @@ export const VendorPurchaseOrderDetailDrawer = ({
                             currentVendorPurchaseOrder.currency,
                           )}
                         </p>
-                        <PurchaseOrderItemStatusBadge status={item.status} />
                         <button
                           type='button'
                           onClick={() => {
@@ -412,10 +410,6 @@ export const VendorPurchaseOrderDetailDrawer = ({
                           </div>
                         ) : null;
                       })()}
-                      <StatusChangeReasonDetails
-                        reason={item.statusReason}
-                        className='mt-4'
-                      />
                     </div>
                   </div>
                 </article>
