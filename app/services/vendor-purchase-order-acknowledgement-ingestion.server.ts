@@ -159,7 +159,7 @@ const createAcknowledgementItemFromVendorPoItem = (item: {
   description: item.description,
   manufacturerPartNumber: item.manufacturerPartNumber,
   deliveryDate: null,
-  status: 'acknowledged',
+  status: 'ordered',
   notes: null,
 });
 

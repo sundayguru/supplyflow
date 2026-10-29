@@ -80,7 +80,7 @@ export const vendorPurchaseOrderAcknowledgementItems = sqliteTable(
       enum: vendorPurchaseOrderAcknowledgementItemStatuses,
     })
       .notNull()
-      .default('acknowledged'),
+      .default('ordered'),
     statusReason: text('status_reason'),
     notes: text('notes'),
     createdAt: text('created_at')

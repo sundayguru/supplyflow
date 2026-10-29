@@ -33,13 +33,13 @@ Return exactly one JSON object with this shape:
       "description": string,
       "manufacturerPartNumber": string or null,
       "deliveryDate": "YYYY-MM-DD" or null,
-      "status": "acknowledged" or "partially_acknowledged" or "backordered" or "rejected",
+      "status": "pending" or "ordered" or "shipped" or "delivered" or "received" or "cancelled",
       "notes": string or null
     }]
   }
 }
 
-A vendor purchase order acknowledgement is a vendor order confirmation, delivery confirmation, promise date, backorder notice, or rejection in response to our outbound vendor PO (VPO-YYYY-XXXXXX). It is not a customer purchase order. Customer POs are inbound orders from buyers and often mention RFQ-YYYY-XXXXXX. An outbound "thank you for your purchase order" reply we send to a customer is also not a vendor PO acknowledgement. If the source mentions a vendor PO reference such as VPO-2026-ABC123, put the exact reference in vendorPurchaseOrderReference. Do not classify customer POs, RFQs, invoices, shipping notices, newsletters, or casual sales messages as acknowledgements. Extract item delivery dates and statuses when present. If the acknowledgement confirms the order generally but does not list items, return an empty items array.`;
+A vendor purchase order acknowledgement is a vendor order confirmation, delivery confirmation, promise date, backorder notice, or rejection in response to our outbound vendor PO (VPO-YYYY-XXXXXX). It is not a customer purchase order. Customer POs are inbound orders from buyers and often mention RFQ-YYYY-XXXXXX. An outbound "thank you for your purchase order" reply we send to a customer is also not a vendor PO acknowledgement. If the source mentions a vendor PO reference such as VPO-2026-ABC123, put the exact reference in vendorPurchaseOrderReference. Do not classify customer POs, RFQs, invoices, shipping notices, newsletters, or casual sales messages as acknowledgements. Extract item delivery dates and statuses using only these statuses: pending, ordered, shipped, delivered, received, cancelled. Map order acceptance to ordered, backorders or not-yet-fulfilled items to pending, shipment to shipped, delivery to delivered, receipt confirmation to received, and rejection or cancellation to cancelled. If the acknowledgement confirms the order generally but does not list items, return an empty items array.`;
 
 export const buildVendorPurchaseOrderAcknowledgementExtractionPrompt = (
   message: EmailMessage,

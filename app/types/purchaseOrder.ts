@@ -1,15 +1,14 @@
 import type { RfqItemRecord } from './rfq';
 
 export const purchaseOrderStatuses = [
-  'draft',
-  'sent',
+  'new',
   'validated',
   'exception',
   'review_email',
+  'acknowledged',
   'awaiting_payment',
   'partial_payment',
   'payment_confirmed',
-  'acknowledged',
   'partially_received',
   'received',
   'cancelled',

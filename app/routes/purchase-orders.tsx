@@ -39,15 +39,15 @@ type ApiResponse =
   | { error: string };
 
 const activeStatuses: PurchaseOrderStatus[] = [
-  'draft',
-  'sent',
+  'new',
   'validated',
   'exception',
   'review_email',
+  'acknowledged',
   'awaiting_payment',
   'partial_payment',
-  'acknowledged',
   'partially_received',
+  'received',
 ];
 
 const formatCombinedValue = (records: PurchaseOrderRecord[]) => {

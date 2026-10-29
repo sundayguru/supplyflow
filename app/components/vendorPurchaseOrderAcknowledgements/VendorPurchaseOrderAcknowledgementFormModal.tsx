@@ -36,7 +36,7 @@ const emptyItem = (): VendorPurchaseOrderAcknowledgementItemInput => ({
   description: '',
   manufacturerPartNumber: null,
   deliveryDate: null,
-  status: 'acknowledged',
+  status: 'ordered',
   notes: null,
 });
 
@@ -50,7 +50,7 @@ const itemFromVendorPoItem = (
   description: item.description,
   manufacturerPartNumber: item.manufacturerPartNumber,
   deliveryDate: null,
-  status: 'acknowledged',
+  status: 'ordered',
   notes: null,
 });
 

@@ -1,21 +1,22 @@
+import {
+  purchaseOrderItemStatuses,
+  type PurchaseOrderItemStatus,
+} from './purchaseOrder';
+
 export const vendorPurchaseOrderAcknowledgementStatuses = [
   'received',
   'accepted',
   'exception',
 ] as const;
 
-export const vendorPurchaseOrderAcknowledgementItemStatuses = [
-  'acknowledged',
-  'partially_acknowledged',
-  'backordered',
-  'rejected',
-] as const;
+export const vendorPurchaseOrderAcknowledgementItemStatuses =
+  purchaseOrderItemStatuses;
 
 export type VendorPurchaseOrderAcknowledgementStatus =
   (typeof vendorPurchaseOrderAcknowledgementStatuses)[number];
 
 export type VendorPurchaseOrderAcknowledgementItemStatus =
-  (typeof vendorPurchaseOrderAcknowledgementItemStatuses)[number];
+  PurchaseOrderItemStatus;
 
 export type VendorPurchaseOrderAcknowledgementItemInput = {
   vendorPurchaseOrderItemId: string | null;

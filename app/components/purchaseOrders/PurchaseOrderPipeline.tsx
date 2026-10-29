@@ -26,8 +26,7 @@ type PurchaseOrderPipelineProps = {
 };
 
 const statusStyles: Record<PurchaseOrderStatus, PipelineStatusStyle> = {
-  draft: { column: 'border-slate-200 bg-slate-50/70', dot: 'bg-slate-500' },
-  sent: { column: 'border-sky-200 bg-sky-50/60', dot: 'bg-sky-500' },
+  new: { column: 'border-slate-200 bg-slate-50/70', dot: 'bg-slate-500' },
   validated: {
     column: 'border-emerald-200 bg-emerald-50/60',
     dot: 'bg-emerald-500',

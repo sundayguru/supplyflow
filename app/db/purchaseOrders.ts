@@ -450,11 +450,12 @@ export const createPurchaseOrderPaymentConfirmation = async (
     return null;
   }
   if (
+    existing.status !== 'acknowledged' &&
     existing.status !== 'awaiting_payment' &&
     existing.status !== 'partial_payment'
   ) {
     throw new Error(
-      'Payments can only be confirmed for POs awaiting payment or partial payment.',
+      'Payments can only be confirmed for acknowledged POs or POs awaiting payment or partial payment.',
     );
   }
 

@@ -5,6 +5,7 @@ import type {
   VendorPurchaseOrderAcknowledgementItemRecord,
 } from '~/types/vendorPurchaseOrderAcknowledgement';
 import { vendorPurchaseOrderAcknowledgementItemStatuses } from '~/types/vendorPurchaseOrderAcknowledgement';
+import { vendorPurchaseOrderAcknowledgementItemStatusLabels } from './VendorPurchaseOrderAcknowledgementStatusBadge';
 
 type VendorPurchaseOrderAcknowledgementItemEditModalProps = {
   item: VendorPurchaseOrderAcknowledgementItemRecord;
@@ -155,7 +156,11 @@ export const VendorPurchaseOrderAcknowledgementItemEditModal = ({
                 {vendorPurchaseOrderAcknowledgementItemStatuses.map(
                   (status) => (
                     <option key={status} value={status}>
-                      {status.replaceAll('_', ' ')}
+                      {
+                        vendorPurchaseOrderAcknowledgementItemStatusLabels[
+                          status
+                        ]
+                      }
                     </option>
                   ),
                 )}

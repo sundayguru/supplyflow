@@ -12,15 +12,14 @@ type PurchaseOrderItemStatusBadgeProps = {
 };
 
 export const purchaseOrderStatusLabels: Record<PurchaseOrderStatus, string> = {
-  draft: 'Draft',
-  sent: 'Sent',
+  new: 'New',
   validated: 'Validated',
   exception: 'Exception',
   review_email: 'Review email',
+  acknowledged: 'Acknowledged',
   awaiting_payment: 'Awaiting payment',
   partial_payment: 'Partial payment',
   payment_confirmed: 'Payment confirmed',
-  acknowledged: 'Acknowledged',
   partially_received: 'Partially received',
   received: 'Received',
   cancelled: 'Cancelled',
@@ -39,8 +38,7 @@ export const purchaseOrderItemStatusLabels: Record<
 };
 
 const orderStatusStyles: Record<PurchaseOrderStatus, string> = {
-  draft: 'bg-slate-100 text-slate-700 ring-slate-200',
-  sent: 'bg-sky-50 text-sky-700 ring-sky-200',
+  new: 'bg-slate-100 text-slate-700 ring-slate-200',
   validated: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
   exception: 'bg-rose-50 text-rose-700 ring-rose-200',
   review_email: 'bg-amber-50 text-amber-700 ring-amber-200',

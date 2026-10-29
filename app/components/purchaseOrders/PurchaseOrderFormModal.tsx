@@ -59,7 +59,7 @@ export const PurchaseOrderFormModal = ({
     initialValue?.supplierEmail ?? '',
   );
   const [status, setStatus] = useState<PurchaseOrderStatus>(
-    initialValue?.status ?? 'draft',
+    initialValue?.status ?? 'new',
   );
   const [orderDate, setOrderDate] = useState(initialValue?.orderDate ?? '');
   const [expectedDate, setExpectedDate] = useState(

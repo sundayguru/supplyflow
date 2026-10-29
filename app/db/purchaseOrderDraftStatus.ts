@@ -50,7 +50,7 @@ export const markPurchaseOrderProformaInvoiceSent = async (
   const [updated] = await db
     .update(purchaseOrders)
     .set({
-      status: 'awaiting_payment',
+      status: 'acknowledged',
       proformaInvoiceSentAt: sentAt,
       updatedAt: sentAt,
     })

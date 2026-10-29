@@ -35,7 +35,7 @@ export const purchaseOrders = sqliteTable(
     supplierEmail: text('supplier_email', { length: 255 }),
     status: text('status', { enum: purchaseOrderStatuses })
       .notNull()
-      .default('draft'),
+      .default('new'),
     statusReason: text('status_reason'),
     orderDate: text('order_date'),
     expectedDate: text('expected_date'),

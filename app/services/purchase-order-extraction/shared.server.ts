@@ -40,7 +40,7 @@ Return exactly one JSON object with this shape:
   "purchaseOrder": null or {
     "supplierName": string,
     "supplierEmail": string or null,
-    "status": "sent",
+    "status": "new",
     "orderDate": "YYYY-MM-DD" or null,
     "expectedDate": "YYYY-MM-DD" or null,
     "applyVat": false,
@@ -114,7 +114,7 @@ export const parsePurchaseOrderExtractionResponse = (
               : null,
           ),
           supplierEmail: senderEmail(message),
-          status: 'sent',
+          status: 'new',
           rfqId: null,
           templateId: null,
           items:

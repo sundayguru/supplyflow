@@ -187,9 +187,11 @@ export const PurchaseOrderDetailDrawer = ({
   const canGenerateProforma =
     purchaseOrder.status === 'validated' ||
     purchaseOrder.status === 'review_email' ||
+    purchaseOrder.status === 'acknowledged' ||
     purchaseOrder.status === 'awaiting_payment';
   const canDraftProforma = canGenerateProforma && llmUsageEnabled;
   const canConfirmPayment =
+    currentPurchaseOrder.status === 'acknowledged' ||
     currentPurchaseOrder.status === 'awaiting_payment' ||
     currentPurchaseOrder.status === 'partial_payment';
   const savedTemplateId =
