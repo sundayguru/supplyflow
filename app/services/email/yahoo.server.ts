@@ -328,9 +328,7 @@ class ImapConnection {
     await this.writer.write(concatBytes(message, textEncoder.encode(CRLF)));
     const result = await this.readUntilTag(tag);
     if (!result.startsWith(`${tag} OK`)) {
-      const response = result
-        .split(CRLF)
-        .find((line) => line.startsWith(`${tag} `));
+      const response = result.split(CRLF).filter(Boolean).join(' | ');
       throw new Error(
         `IMAP server could not save the draft${response ? `: ${response}` : ''}`,
       );
