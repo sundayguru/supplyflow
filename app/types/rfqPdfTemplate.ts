@@ -4,6 +4,8 @@ export type RfqPdfTemplate = {
   name: string;
   headerBannerKey: string | null;
   footerBannerKey: string | null;
+  headerBannerFullWidth: boolean;
+  footerBannerFullWidth: boolean;
   termsHtml: string;
   createdBy: string;
   createdAt: string;

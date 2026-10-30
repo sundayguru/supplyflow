@@ -46,6 +46,12 @@ export const RfqPdfTemplateFormModal = ({
   const [footerFile, setFooterFile] = useState<File | null>(null);
   const [removeHeader, setRemoveHeader] = useState(false);
   const [removeFooter, setRemoveFooter] = useState(false);
+  const [headerBannerFullWidth, setHeaderBannerFullWidth] = useState(
+    template?.headerBannerFullWidth ?? true,
+  );
+  const [footerBannerFullWidth, setFooterBannerFullWidth] = useState(
+    template?.footerBannerFullWidth ?? true,
+  );
   const headerPreview = useMemo(
     () => (headerFile ? URL.createObjectURL(headerFile) : null),
     [headerFile],
@@ -114,6 +120,16 @@ export const RfqPdfTemplateFormModal = ({
             name='removeFooter'
             value={String(removeFooter)}
           />
+          <input
+            type='hidden'
+            name='headerBannerFullWidth'
+            value={String(headerBannerFullWidth)}
+          />
+          <input
+            type='hidden'
+            name='footerBannerFullWidth'
+            value={String(footerBannerFullWidth)}
+          />
           <Input
             id='template-name'
             name='name'
@@ -150,6 +166,40 @@ export const RfqPdfTemplateFormModal = ({
                 }}
                 className='mt-2 block w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:font-semibold'
               />
+            </label>
+          </div>
+          <div className='grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 sm:grid-cols-2'>
+            <label className='flex items-start gap-2'>
+              <input
+                type='checkbox'
+                checked={headerBannerFullWidth}
+                onChange={(event) =>
+                  setHeaderBannerFullWidth(event.target.checked)
+                }
+                className='mt-0.5 accent-emerald-600'
+              />
+              <span>
+                <span className='block font-semibold'>Full-width header</span>
+                <span className='text-xs text-slate-500'>
+                  Extend the header banner to the page edges.
+                </span>
+              </span>
+            </label>
+            <label className='flex items-start gap-2'>
+              <input
+                type='checkbox'
+                checked={footerBannerFullWidth}
+                onChange={(event) =>
+                  setFooterBannerFullWidth(event.target.checked)
+                }
+                className='mt-0.5 accent-emerald-600'
+              />
+              <span>
+                <span className='block font-semibold'>Full-width footer</span>
+                <span className='text-xs text-slate-500'>
+                  Extend the footer banner to the page edges.
+                </span>
+              </span>
             </label>
           </div>
           {template &&
@@ -218,6 +268,8 @@ export const RfqPdfTemplateFormModal = ({
           priceMarkup={priceMarkup}
           headerUrl={currentHeaderUrl}
           footerUrl={currentFooterUrl}
+          headerFullWidth={headerBannerFullWidth}
+          footerFullWidth={footerBannerFullWidth}
           termsHtml={termsHtml}
         />
       </div>

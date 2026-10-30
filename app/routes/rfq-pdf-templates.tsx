@@ -118,6 +118,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
     const footerBannerKey =
       newFooterKey ??
       (removeFooter ? null : (existing?.footerBannerKey ?? null));
+    const headerBannerFullWidth =
+      formData.get('headerBannerFullWidth') === 'true';
+    const footerBannerFullWidth =
+      formData.get('footerBannerFullWidth') === 'true';
 
     if (existing) {
       await updateRfqPdfTemplate(existing.id, organization.id, {
@@ -125,6 +129,8 @@ export const action = async ({ request }: Route.ActionArgs) => {
         termsHtml,
         headerBannerKey,
         footerBannerKey,
+        headerBannerFullWidth,
+        footerBannerFullWidth,
       });
       await Promise.all(
         [
@@ -148,6 +154,8 @@ export const action = async ({ request }: Route.ActionArgs) => {
         termsHtml,
         headerBannerKey,
         footerBannerKey,
+        headerBannerFullWidth,
+        footerBannerFullWidth,
       });
     } else {
       return data({ error: 'Invalid action' }, { status: 400 });

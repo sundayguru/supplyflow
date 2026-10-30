@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { index, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { organizations } from './organizations';
 import { users } from './users';
 
@@ -13,6 +13,16 @@ export const rfqPdfTemplates = sqliteTable(
     name: text('name', { length: 255 }).notNull(),
     headerBannerKey: text('header_banner_key', { length: 511 }),
     footerBannerKey: text('footer_banner_key', { length: 511 }),
+    headerBannerFullWidth: integer('header_banner_full_width', {
+      mode: 'boolean',
+    })
+      .notNull()
+      .default(true),
+    footerBannerFullWidth: integer('footer_banner_full_width', {
+      mode: 'boolean',
+    })
+      .notNull()
+      .default(true),
     termsHtml: text('terms_html').notNull().default(''),
     createdBy: text('created_by')
       .notNull()

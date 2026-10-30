@@ -442,6 +442,13 @@
       "when": 1793232000011,
       "tag": "0063_remove_vendor_po_item_status",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "6",
+      "when": 1793348451522,
+      "tag": "0064_bumpy_revanche",
+      "breakpoints": true
     }
   ]
 }

@@ -76,7 +76,11 @@ export type RfqPdfBannerAsset = {
 
 type RfqPdfTemplateContent = Pick<
   SelectRfqPdfTemplate,
-  'termsHtml' | 'headerBannerKey' | 'footerBannerKey'
+  | 'termsHtml'
+  | 'headerBannerKey'
+  | 'footerBannerKey'
+  | 'headerBannerFullWidth'
+  | 'footerBannerFullWidth'
 >;
 
 type RfqPdfData = Omit<
@@ -171,16 +175,19 @@ const loadBanner = async (
   return null;
 };
 
-const drawFullWidthBanner = (
+const drawBanner = (
   page: PDFPage,
   banner: PDFImage,
   y: number,
   height: number,
+  fullWidth: boolean,
 ) => {
+  const x = fullWidth ? 0 : SIDE_MARGIN;
+  const width = fullWidth ? PAGE_WIDTH : PAGE_WIDTH - SIDE_MARGIN * 2;
   page.drawImage(banner, {
-    x: 0,
+    x,
     y,
-    width: PAGE_WIDTH,
+    width,
     height,
   });
 };
@@ -205,15 +212,22 @@ export const generateRfqPdf = async (
   const addPage = () => {
     const page = document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
     if (headerBanner) {
-      drawFullWidthBanner(
+      drawBanner(
         page,
         headerBanner,
         PAGE_HEIGHT - HEADER_HEIGHT,
         HEADER_HEIGHT,
+        template?.headerBannerFullWidth ?? true,
       );
     }
     if (footerBanner) {
-      drawFullWidthBanner(page, footerBanner, 0, FOOTER_HEIGHT);
+      drawBanner(
+        page,
+        footerBanner,
+        0,
+        FOOTER_HEIGHT,
+        template?.footerBannerFullWidth ?? true,
+      );
     } else {
       page.drawText(`${safePdfText(organization.name)} quotation sample`, {
         x: SIDE_MARGIN,
@@ -440,11 +454,12 @@ export const generateProformaInvoicePdf = async (
   const addPage = () => {
     const page = document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
     if (headerBanner) {
-      drawFullWidthBanner(
+      drawBanner(
         page,
         headerBanner,
         PAGE_HEIGHT - HEADER_HEIGHT,
         HEADER_HEIGHT,
+        template?.headerBannerFullWidth ?? true,
       );
     } else {
       page.drawText(safePdfText(organization.name), {
@@ -456,7 +471,13 @@ export const generateProformaInvoicePdf = async (
       });
     }
     if (footerBanner) {
-      drawFullWidthBanner(page, footerBanner, 0, FOOTER_HEIGHT);
+      drawBanner(
+        page,
+        footerBanner,
+        0,
+        FOOTER_HEIGHT,
+        template?.footerBannerFullWidth ?? true,
+      );
     } else {
       page.drawText(
         `${safePdfText(organization.name)} ${isStatusReport ? 'purchase order status report' : 'proforma invoice'}`,
@@ -747,11 +768,12 @@ export const generateVendorPurchaseOrderPdf = async (
   const addPage = () => {
     const page = document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
     if (headerBanner) {
-      drawFullWidthBanner(
+      drawBanner(
         page,
         headerBanner,
         PAGE_HEIGHT - HEADER_HEIGHT,
         HEADER_HEIGHT,
+        template?.headerBannerFullWidth ?? true,
       );
     } else {
       page.drawText(`${safePdfText(organization.name)} purchase order`, {
@@ -763,7 +785,13 @@ export const generateVendorPurchaseOrderPdf = async (
       });
     }
     if (footerBanner) {
-      drawFullWidthBanner(page, footerBanner, 0, FOOTER_HEIGHT);
+      drawBanner(
+        page,
+        footerBanner,
+        0,
+        FOOTER_HEIGHT,
+        template?.footerBannerFullWidth ?? true,
+      );
     } else {
       page.drawText(safePdfText(organization.name), {
         x: SIDE_MARGIN,

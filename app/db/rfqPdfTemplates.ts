@@ -32,6 +32,8 @@ export const createRfqPdfTemplate = async (input: {
   termsHtml: string;
   headerBannerKey: string | null;
   footerBannerKey: string | null;
+  headerBannerFullWidth: boolean;
+  footerBannerFullWidth: boolean;
 }) => {
   const db = getDb();
   const id = crypto.randomUUID();
@@ -50,6 +52,8 @@ export const updateRfqPdfTemplate = async (
     termsHtml: string;
     headerBannerKey: string | null;
     footerBannerKey: string | null;
+    headerBannerFullWidth: boolean;
+    footerBannerFullWidth: boolean;
   },
 ) => {
   const db = getDb();

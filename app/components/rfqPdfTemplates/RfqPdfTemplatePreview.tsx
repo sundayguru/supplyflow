@@ -8,6 +8,8 @@ type RfqPdfTemplatePreviewProps = {
   priceMarkup: number;
   headerUrl: string | null;
   footerUrl: string | null;
+  headerFullWidth: boolean;
+  footerFullWidth: boolean;
   termsHtml: string;
 };
 
@@ -15,16 +17,18 @@ const Banner = ({
   url,
   fallback,
   position,
+  fullWidth,
 }: {
   url: string | null;
   fallback: string;
   position: 'header' | 'footer';
+  fullWidth: boolean;
 }) =>
   url ? (
     <img
       src={url}
       alt={`${position} banner preview`}
-      className={`w-full object-fill ${position === 'header' ? 'h-12' : 'h-8'}`}
+      className={`${fullWidth ? 'w-full' : 'mx-auto w-[calc(100%-2.5rem)]'} object-fill ${position === 'header' ? 'h-12' : 'h-8'}`}
     />
   ) : (
     <div
@@ -40,6 +44,8 @@ export const RfqPdfTemplatePreview = ({
   priceMarkup,
   headerUrl,
   footerUrl,
+  headerFullWidth,
+  footerFullWidth,
   termsHtml,
 }: RfqPdfTemplatePreviewProps) => {
   const rfq = createMockRfqForTemplate({ vat, priceMarkup });
@@ -57,6 +63,7 @@ export const RfqPdfTemplatePreview = ({
             url={headerUrl}
             fallback={organizationName}
             position='header'
+            fullWidth={headerFullWidth}
           />
           <div className='flex-1 p-5 text-[7px] text-slate-700'>
             <div className='flex items-start justify-between'>
@@ -123,6 +130,7 @@ export const RfqPdfTemplatePreview = ({
             url={footerUrl}
             fallback='Suploop quotation sample - Page 1'
             position='footer'
+            fullWidth={footerFullWidth}
           />
         </div>
 
@@ -131,6 +139,7 @@ export const RfqPdfTemplatePreview = ({
             url={headerUrl}
             fallback={organizationName}
             position='header'
+            fullWidth={headerFullWidth}
           />
           <div className='flex-1 p-5 text-[7px] leading-3 text-slate-700'>
             <p className='text-sm font-bold text-slate-950'>
@@ -149,6 +158,7 @@ export const RfqPdfTemplatePreview = ({
             url={footerUrl}
             fallback='Suploop quotation sample - Last page'
             position='footer'
+            fullWidth={footerFullWidth}
           />
         </div>
       </div>
