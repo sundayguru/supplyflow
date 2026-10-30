@@ -323,12 +323,17 @@ class ImapConnection {
     );
     const continuation = await this.readLine();
     if (!continuation.startsWith('+')) {
-      throw new Error('IMAP server rejected draft upload');
+      throw new Error(`IMAP server rejected draft upload: ${continuation}`);
     }
     await this.writer.write(concatBytes(message, textEncoder.encode(CRLF)));
     const result = await this.readUntilTag(tag);
     if (!result.startsWith(`${tag} OK`)) {
-      throw new Error('IMAP server could not save the draft');
+      const response = result
+        .split(CRLF)
+        .find((line) => line.startsWith(`${tag} `));
+      throw new Error(
+        `IMAP server could not save the draft${response ? `: ${response}` : ''}`,
+      );
     }
     return /\[APPENDUID\s+\d+\s+(\d+)\]/i.exec(result)?.[1] ?? null;
   }
