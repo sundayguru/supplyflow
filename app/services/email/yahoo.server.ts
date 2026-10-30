@@ -313,6 +313,31 @@ class ImapConnection {
     await this.command(`SELECT ${quoteImapString(folder || 'INBOX')}`);
   }
 
+  async findDraftFolder(provider: 'yahoo' | 'aol') {
+    try {
+      const result = await this.command('LIST "" "*"');
+      const mailboxes = result.text
+        .split(CRLF)
+        .map(parseImapListMailbox)
+        .filter((entry) => entry !== null);
+      const flaggedMailbox = mailboxes.find((entry) =>
+        entry.attributes.includes('\\DRAFTS'),
+      );
+      if (flaggedMailbox) {
+        return flaggedMailbox.name;
+      }
+      const expectedNames =
+        provider === 'aol' ? ['drafts', 'draft'] : ['draft', 'drafts'];
+      return (
+        mailboxes.find((entry) =>
+          expectedNames.includes(entry.name.toLowerCase()),
+        )?.name ?? null
+      );
+    } catch {
+      return null;
+    }
+  }
+
   async appendDraft(folder: string, message: Uint8Array) {
     this.tagNumber += 1;
     const tag = `A${String(this.tagNumber).padStart(4, '0')}`;
@@ -690,7 +715,9 @@ const saveYahooDraft = async (
       config.accountEmail,
       config.appPassword,
     );
-    const folder = config.provider === 'aol' ? 'Drafts' : 'Draft';
+    const folder =
+      (await connection.findDraftFolder(config.provider ?? 'yahoo')) ??
+      (config.provider === 'aol' ? 'Drafts' : 'Draft');
     const rawMessage = createImapDraftMessage(input, isReply);
     const uid = await connection.appendDraft(folder, rawMessage);
     if (previousDraftId) {
@@ -722,6 +749,22 @@ const parseLiteralLength = (line: string) => {
 
 const quoteImapString = (value: string) =>
   `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+
+const parseImapListMailbox = (line: string) => {
+  const match = line.match(
+    /^\* LIST \(([^)]*)\)\s+(?:"(?:\\.|[^"])*"|\S+)\s+(.+)$/i,
+  );
+  if (!match) {
+    return null;
+  }
+  const name = match[2].startsWith('"')
+    ? match[2].slice(1, -1).replace(/\\([\\"])/g, '$1')
+    : match[2];
+  return {
+    attributes: match[1].toUpperCase().split(/\s+/),
+    name,
+  };
+};
 
 const formatImapDate = (date: Date) => {
   const months = [
