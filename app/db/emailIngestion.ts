@@ -83,6 +83,7 @@ export const listEmailIngestions = async ({
       status: emailIngestions.status,
       subject: emailIngestions.subject,
       fromAddress: emailIngestions.fromAddress,
+      messageText: emailIngestions.messageText,
       receivedAt: emailIngestions.receivedAt,
       error: emailIngestions.error,
       attempts: emailIngestions.attempts,

@@ -5,7 +5,6 @@ import { getEmailSourceForRfq } from '~/db/emailIngestion';
 import { getOrganizationForUser } from '~/db/organizations';
 import { getRfqPdfTemplate } from '~/db/rfqPdfTemplates';
 import { getRfq, updateRfqGeneratedReply } from '~/db/rfqs';
-import { createConnectedEmailClient } from '~/services/email-schedule.server';
 import { generateRfqReplyDraft } from '~/services/rfq-reply-draft.server';
 import { getOpenAICompatibleAiConfig } from '~/utils/organization-ai.server';
 import { generateRfqPdf } from '~/utils/rfqPdf.server';
@@ -92,20 +91,6 @@ export const action = async ({
       intent === 'updatePdf' && rfq.generatedReply
         ? rfq.generatedReply
         : await (async () => {
-            const originalMessage = source
-              ? await (async () => {
-                  const emailClient = await createConnectedEmailClient(
-                    source,
-                    env as Env,
-                  );
-                  if (!emailClient.getMessage) {
-                    throw new Error(
-                      'This email provider cannot load the original message.',
-                    );
-                  }
-                  return emailClient.getMessage(source.externalId);
-                })()
-              : null;
             return await generateRfqReplyDraft({
               config: {
                 ...getOpenAICompatibleAiConfig(env),
@@ -118,12 +103,12 @@ export const action = async ({
               rfq,
               organizationName: organization.name,
               customerName: rfq.customerName,
-              originalEmail: originalMessage
+              originalEmail: source
                 ? {
-                    subject: originalMessage.subject,
-                    fromName: originalMessage.from.name,
-                    fromAddress: originalMessage.from.address,
-                    text: originalMessage.text,
+                    subject: source.subject ?? '',
+                    fromName: null,
+                    fromAddress: source.fromAddress ?? '',
+                    text: source.messageText ?? '',
                   }
                 : null,
             });

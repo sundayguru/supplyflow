@@ -82,6 +82,7 @@ const getClientConfig = (
           authType: 'app_password' as const,
           appPassword: refreshToken,
           accountEmail: account.email,
+          imapFolder: account.emailFolder,
         };
       }
       return {
@@ -96,6 +97,7 @@ const getClientConfig = (
         ),
         refreshToken,
         accountEmail: account.email,
+        imapFolder: account.emailFolder,
       };
     case 'aol':
       if (account.authType === 'app_password') {
@@ -104,6 +106,7 @@ const getClientConfig = (
           authType: 'app_password' as const,
           appPassword: refreshToken,
           accountEmail: account.email,
+          imapFolder: account.emailFolder,
         };
       }
       return {
@@ -118,6 +121,7 @@ const getClientConfig = (
         ),
         refreshToken,
         accountEmail: account.email,
+        imapFolder: account.emailFolder,
       };
   }
 };
