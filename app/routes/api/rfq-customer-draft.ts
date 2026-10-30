@@ -5,6 +5,7 @@ import { getEmailSourceForRfq } from '~/db/emailIngestion';
 import { getOrganizationForUser } from '~/db/organizations';
 import { getRfqPdfTemplate } from '~/db/rfqPdfTemplates';
 import { getRfq, updateRfqGeneratedReply } from '~/db/rfqs';
+import { createConnectedEmailClient } from '~/services/email-schedule.server';
 import { generateRfqReplyDraft } from '~/services/rfq-reply-draft.server';
 import { getOpenAICompatibleAiConfig } from '~/utils/organization-ai.server';
 import { generateRfqPdf } from '~/utils/rfqPdf.server';
@@ -160,13 +161,6 @@ export const action = async ({
         { status: 400 },
       );
     }
-    if (!emailClient.getMessage) {
-      return data(
-        { error: 'This email provider cannot load the original message.' },
-        { status: 400 },
-      );
-    }
-
     const template = rfq.templateId
       ? await getRfqPdfTemplate(rfq.templateId, organization.id)
       : null;
