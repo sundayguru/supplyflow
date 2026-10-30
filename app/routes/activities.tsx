@@ -310,131 +310,89 @@ const ActivitiesPage = ({ loaderData }: Route.ComponentProps) => {
             </p>
           </div>
         ) : (
-          <>
-            <div className='divide-y divide-slate-100 md:hidden'>
-              {loaderData.activityLogs.map((activityLog) => (
-                <article key={activityLog.id} className='space-y-4 p-4'>
-                  <div className='flex items-start justify-between gap-3'>
-                    <div className='min-w-0'>
-                      <p className='text-xs font-bold tracking-wide text-slate-400 uppercase'>
+          <div className='space-y-3 bg-slate-50/60 p-3 sm:p-5'>
+            {loaderData.activityLogs.map((activityLog) => (
+              <article
+                key={activityLog.id}
+                className='rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5'
+              >
+                <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
+                  <div className='min-w-0'>
+                    <div className='flex flex-wrap items-center gap-2'>
+                      <span className='text-xs font-bold tracking-wide text-slate-400 uppercase'>
                         {sourceTypeLabels[activityLog.sourceType]}
-                      </p>
-                      <Link
-                        to={sourceHref(
-                          activityLog.sourceType,
-                          activityLog.sourceId,
-                        )}
-                        className='mt-1 block truncate font-semibold text-slate-900 hover:text-emerald-700'
-                      >
-                        {activityLog.sourceReference}
-                      </Link>
+                      </span>
+                      <span className='rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600'>
+                        {actionLabels[activityLog.action]}
+                      </span>
                     </div>
-                    <span className='shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600'>
-                      {actionLabels[activityLog.action]}
-                    </span>
+                    <Link
+                      to={sourceHref(
+                        activityLog.sourceType,
+                        activityLog.sourceId,
+                      )}
+                      className='mt-1 block truncate text-base font-semibold text-slate-900 hover:text-emerald-700'
+                    >
+                      {activityLog.sourceReference}
+                    </Link>
                   </div>
-                  <div className='flex flex-col gap-1 text-xs text-slate-500'>
-                    <time dateTime={activityLog.createdAt}>
-                      {new Date(activityLog.createdAt).toLocaleString()}
-                    </time>
-                    <span className='font-medium break-all text-slate-700'>
-                      {activityLog.fieldPath}
-                    </span>
-                  </div>
-                  <div className='grid gap-3'>
-                    <div>
-                      <p className='mb-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase'>
-                        Previous
-                      </p>
-                      <pre className='max-h-36 overflow-auto rounded-xl bg-slate-50 p-3 text-xs leading-5 break-words whitespace-pre-wrap text-slate-600'>
-                        {stringifyValue(activityLog.previousValue)}
-                      </pre>
-                    </div>
-                    <div>
-                      <p className='mb-1 text-[10px] font-bold tracking-wider text-emerald-700 uppercase'>
-                        New
-                      </p>
-                      <pre className='max-h-36 overflow-auto rounded-xl bg-emerald-50 p-3 text-xs leading-5 break-words whitespace-pre-wrap text-emerald-900'>
-                        {stringifyValue(activityLog.newValue)}
-                      </pre>
-                    </div>
-                  </div>
-                  <div className='border-t border-slate-100 pt-3'>
-                    <p className='text-sm font-semibold text-slate-900'>
+                  <time
+                    dateTime={activityLog.createdAt}
+                    className='shrink-0 text-xs text-slate-500 sm:text-right'
+                  >
+                    {new Date(activityLog.createdAt).toLocaleString()}
+                  </time>
+                </div>
+
+                <div className='mt-4 flex flex-col gap-1 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4'>
+                  <p className='min-w-0 text-sm font-medium break-all text-slate-700'>
+                    {activityLog.fieldPath}
+                  </p>
+                  <p className='shrink-0 text-xs text-slate-500'>
+                    <span className='font-semibold text-slate-700'>
                       {activityLog.actor.name}
-                    </p>
-                    <p className='mt-0.5 text-xs break-all text-slate-500'>
-                      {activityLog.actor.email}
-                    </p>
-                  </div>
-                </article>
-              ))}
-            </div>
-            <div className='hidden overflow-x-auto md:block'>
-              <table className='min-w-full divide-y divide-slate-100 text-left text-sm'>
-                <thead className='bg-slate-50/70 text-[10px] font-bold tracking-wider text-slate-400 uppercase'>
-                  <tr>
-                    <th className='px-5 py-3'>When</th>
-                    <th className='px-5 py-3'>Source</th>
-                    <th className='px-5 py-3'>Action</th>
-                    <th className='px-5 py-3'>Field</th>
-                    <th className='px-5 py-3'>Previous</th>
-                    <th className='px-5 py-3'>New</th>
-                    <th className='px-5 py-3'>User</th>
-                  </tr>
-                </thead>
-                <tbody className='divide-y divide-slate-100 bg-white'>
-                  {loaderData.activityLogs.map((activityLog) => (
-                    <tr key={activityLog.id} className='align-top'>
-                      <td className='px-5 py-4 whitespace-nowrap text-slate-500'>
-                        {new Date(activityLog.createdAt).toLocaleString()}
-                      </td>
-                      <td className='px-5 py-4'>
-                        <p className='text-xs font-bold tracking-wide text-slate-400 uppercase'>
-                          {sourceTypeLabels[activityLog.sourceType]}
-                        </p>
-                        <Link
-                          to={sourceHref(
-                            activityLog.sourceType,
-                            activityLog.sourceId,
-                          )}
-                          className='mt-1 inline-flex font-semibold text-slate-900 hover:text-emerald-700'
-                        >
-                          {activityLog.sourceReference}
-                        </Link>
-                      </td>
-                      <td className='px-5 py-4'>
-                        <span className='rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600'>
-                          {actionLabels[activityLog.action]}
-                        </span>
-                      </td>
-                      <td className='px-5 py-4 font-medium text-slate-700'>
-                        {activityLog.fieldPath}
-                      </td>
-                      <td className='max-w-sm px-5 py-4'>
-                        <pre className='max-h-44 overflow-auto rounded-xl bg-slate-50 p-3 text-xs leading-5 whitespace-pre-wrap text-slate-600'>
-                          {stringifyValue(activityLog.previousValue)}
-                        </pre>
-                      </td>
-                      <td className='max-w-sm px-5 py-4'>
-                        <pre className='max-h-44 overflow-auto rounded-xl bg-emerald-50 p-3 text-xs leading-5 whitespace-pre-wrap text-emerald-900'>
-                          {stringifyValue(activityLog.newValue)}
-                        </pre>
-                      </td>
-                      <td className='px-5 py-4'>
-                        <p className='font-semibold text-slate-900'>
-                          {activityLog.actor.name}
-                        </p>
-                        <p className='mt-1 text-xs text-slate-500'>
-                          {activityLog.actor.email}
-                        </p>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
+                    </span>
+                    {activityLog.actor.email && (
+                      <span className='ml-1 break-all'>
+                        · {activityLog.actor.email}
+                      </span>
+                    )}
+                  </p>
+                </div>
+
+                <div className='mt-4 grid gap-2 sm:grid-cols-2'>
+                  <details className='group rounded-xl border border-slate-200 bg-slate-50'>
+                    <summary className='flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-xs font-bold text-slate-600'>
+                      Previous value
+                      <span className='text-slate-400 group-open:hidden'>
+                        Show
+                      </span>
+                      <span className='hidden text-slate-400 group-open:inline'>
+                        Hide
+                      </span>
+                    </summary>
+                    <pre className='max-h-56 overflow-auto border-t border-slate-200 px-3 py-2.5 text-xs leading-5 break-words whitespace-pre-wrap text-slate-600'>
+                      {stringifyValue(activityLog.previousValue)}
+                    </pre>
+                  </details>
+                  <details className='group rounded-xl border border-emerald-200 bg-emerald-50/60'>
+                    <summary className='flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-xs font-bold text-emerald-800'>
+                      New value
+                      <span className='text-emerald-600/70 group-open:hidden'>
+                        Show
+                      </span>
+                      <span className='hidden text-emerald-600/70 group-open:inline'>
+                        Hide
+                      </span>
+                    </summary>
+                    <pre className='max-h-56 overflow-auto border-t border-emerald-200 px-3 py-2.5 text-xs leading-5 break-words whitespace-pre-wrap text-emerald-900'>
+                      {stringifyValue(activityLog.newValue)}
+                    </pre>
+                  </details>
+                </div>
+              </article>
+            ))}
+          </div>
         )}
       </section>
     </div>
