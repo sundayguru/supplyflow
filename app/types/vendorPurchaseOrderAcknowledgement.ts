@@ -4,9 +4,15 @@ import {
 } from './purchaseOrder';
 
 export const vendorPurchaseOrderAcknowledgementStatuses = [
-  'received',
+  'new',
   'accepted',
   'exception',
+  'partial_payment',
+  'payment_confirmed',
+  'partially_shipped',
+  'shipped',
+  'partially_received',
+  'received',
 ] as const;
 
 export const vendorPurchaseOrderAcknowledgementItemStatuses =

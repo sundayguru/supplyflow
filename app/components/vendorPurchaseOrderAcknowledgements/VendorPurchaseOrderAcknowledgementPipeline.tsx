@@ -30,7 +30,28 @@ const statusStyles: Record<
   VendorPurchaseOrderAcknowledgementStatus,
   PipelineStatusStyle
 > = {
+  new: { column: 'border-slate-200 bg-slate-50/70', dot: 'bg-slate-500' },
   received: { column: 'border-sky-200 bg-sky-50/60', dot: 'bg-sky-500' },
+  partial_payment: {
+    column: 'border-amber-200 bg-amber-50/60',
+    dot: 'bg-amber-500',
+  },
+  payment_confirmed: {
+    column: 'border-teal-200 bg-teal-50/60',
+    dot: 'bg-teal-500',
+  },
+  partially_shipped: {
+    column: 'border-violet-200 bg-violet-50/60',
+    dot: 'bg-violet-500',
+  },
+  shipped: {
+    column: 'border-indigo-200 bg-indigo-50/60',
+    dot: 'bg-indigo-500',
+  },
+  partially_received: {
+    column: 'border-cyan-200 bg-cyan-50/60',
+    dot: 'bg-cyan-500',
+  },
   accepted: {
     column: 'border-emerald-200 bg-emerald-50/60',
     dot: 'bg-emerald-500',
