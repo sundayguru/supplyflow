@@ -5,18 +5,24 @@ import { connectedEmailAccounts, emailIngestions, rfqs } from './schemas';
 
 const terminalDraftStatuses: RfqStatus[] = ['sent', 'won', 'lost'];
 
-export const listRfqsWithDraftedEmails = (limit = 50) => {
+export const listRfqsWithDraftedEmails = (
+  limit = 50,
+  organizationId?: string,
+) => {
   const db = getDb();
   return db
     .select({
       rfqId: rfqs.id,
       organizationId: rfqs.organizationId,
       reference: rfqs.reference,
+      customerEmail: rfqs.customerEmail,
       draftId: rfqs.generatedReplyDraftId,
       draftUpdatedAt: rfqs.generatedReplyDraftUpdatedAt,
       rfqUpdatedAt: rfqs.updatedAt,
       threadId: emailIngestions.threadId,
       originalMessageId: emailIngestions.externalId,
+      subject: emailIngestions.subject,
+      recipient: emailIngestions.fromAddress,
       accountId: connectedEmailAccounts.id,
       accountProvider: connectedEmailAccounts.provider,
       accountEmail: connectedEmailAccounts.email,
@@ -34,6 +40,7 @@ export const listRfqsWithDraftedEmails = (limit = 50) => {
         notInArray(rfqs.status, terminalDraftStatuses),
         eq(connectedEmailAccounts.isActive, true),
         eq(connectedEmailAccounts.needsReconnect, false),
+        organizationId ? eq(rfqs.organizationId, organizationId) : undefined,
       ),
     )
     .limit(limit);

@@ -31,6 +31,7 @@ export type ListMessagesOptions = {
 export type CreateDraftReplyInput = {
   originalMessageId: string;
   threadId: string | null;
+  trackingId?: string;
   accountEmail: string;
   to: string;
   subject: string;
@@ -69,6 +70,9 @@ export type DraftSentStatusInput = {
   draftId: string;
   threadId: string | null;
   originalMessageId?: string;
+  trackingId?: string;
+  recipient?: string;
+  subject?: string;
   sentAfter: Date;
 };
 

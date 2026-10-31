@@ -15,6 +15,8 @@ type DraftStatusResult = {
   checked: number;
   sent: number;
   failed: number;
+  unmatched: number;
+  unavailable: number;
 };
 
 const SENT_CHECK_LOOKBACK_MS = 60 * 1000;
@@ -26,21 +28,33 @@ const sentAfterDate = (value: string | null, fallback: string) =>
 
 export const runRfqDraftSentStatusSync = async (
   mailboxes: ScheduledMailbox[],
+  organizationId?: string,
 ): Promise<DraftStatusResult> => {
-  const draftedRfqs = await listRfqsWithDraftedEmails();
+  const draftedRfqs = await listRfqsWithDraftedEmails(50, organizationId);
   const mailboxesByAccountId = indexMailboxesByAccountId(mailboxes);
   let sent = 0;
   let failed = 0;
+  let unmatched = 0;
+  let unavailable = 0;
 
   for (const draftedRfq of draftedRfqs) {
     if (!draftedRfq.draftId) {
       continue;
     }
 
-    const emailClient = mailboxesByAccountId.get(
-      draftedRfq.accountId,
-    )?.emailClient;
+    const mailbox = mailboxesByAccountId.get(draftedRfq.accountId);
+    const emailClient = mailbox?.emailClient;
     if (!emailClient?.isDraftSent) {
+      unavailable += 1;
+      console.warn(
+        JSON.stringify({
+          event: 'rfq_draft_sent_status_unavailable',
+          rfqId: draftedRfq.rfqId,
+          accountId: draftedRfq.accountId,
+          provider: draftedRfq.accountProvider,
+          reason: mailbox?.loadError ?? 'Email client unavailable',
+        }),
+      );
       continue;
     }
 
@@ -49,12 +63,17 @@ export const runRfqDraftSentStatusSync = async (
         draftId: draftedRfq.draftId,
         threadId: draftedRfq.threadId,
         originalMessageId: draftedRfq.originalMessageId,
+        trackingId: draftedRfq.rfqId,
+        recipient:
+          draftedRfq.recipient ?? draftedRfq.customerEmail ?? undefined,
+        subject: draftedRfq.subject ?? draftedRfq.reference,
         sentAfter: sentAfterDate(
           draftedRfq.draftUpdatedAt,
           draftedRfq.rfqUpdatedAt,
         ),
       });
       if (!isSent) {
+        unmatched += 1;
         continue;
       }
 
@@ -88,7 +107,13 @@ export const runRfqDraftSentStatusSync = async (
     }
   }
 
-  const summary = { checked: draftedRfqs.length, sent, failed };
+  const summary = {
+    checked: draftedRfqs.length,
+    sent,
+    failed,
+    unmatched,
+    unavailable,
+  };
   console.log(
     JSON.stringify({ event: 'rfq_draft_sent_status_completed', ...summary }),
   );

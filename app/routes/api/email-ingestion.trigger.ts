@@ -35,7 +35,7 @@ export const loader = async ({ request, context }: Route.ActionArgs) => {
   }
 
   try {
-    const summary = await executeScheduleMethods(env as Env);
+    const summary = await executeScheduleMethods(env as Env, organization.id);
     return data({ success: true, summary });
   } catch (error) {
     console.error(

@@ -44,6 +44,8 @@ type ImapCommandResult = {
   literals: Uint8Array[];
 };
 
+class ImapCommandError extends Error {}
+
 type MimePart = {
   headers: Map<string, string>;
   body: Uint8Array;
@@ -339,36 +341,54 @@ class ImapConnection {
     }
   }
 
-  async findSentFolder() {
+  async findSentFolders() {
     try {
       const result = await this.command('LIST "" "*"');
       const mailboxes = result.text
         .split(CRLF)
         .map(parseImapListMailbox)
         .filter((entry) => entry !== null);
-      return (
-        mailboxes.find((entry) => entry.attributes.includes('\\SENT'))?.name ??
-        mailboxes.find((entry) => entry.name.toLowerCase() === 'sent')?.name ??
-        'Sent'
-      );
-    } catch {
-      return 'Sent';
+      const sentFolders = mailboxes
+        .filter(
+          (entry) =>
+            entry.attributes.includes('\\SENT') ||
+            /^sent(?: items| messages| mail)?$/i.test(entry.name),
+        )
+        .map((entry) => entry.name);
+      return [...new Set(sentFolders.length > 0 ? sentFolders : ['Sent'])];
+    } catch (error) {
+      if (error instanceof ImapCommandError) {
+        return ['Sent'];
+      }
+      throw error;
     }
   }
 
   async hasSentReply(input: DraftSentStatusInput) {
-    if (!input.threadId && !input.originalMessageId) {
+    if (!input.trackingId && !input.threadId && !input.originalMessageId) {
       return false;
     }
-    await this.select(await this.findSentFolder());
     const expectedMessageIds = [input.threadId, input.originalMessageId]
       .filter((messageId): messageId is string => Boolean(messageId))
       .map((messageId) => messageId.toLowerCase());
-    const matchingUids = new Set<string>();
-    for (const messageId of expectedMessageIds) {
-      for (const header of ['In-Reply-To', 'References']) {
+    let selectedFolders = 0;
+    let folderError: ImapCommandError | undefined;
+    for (const folder of await this.findSentFolders()) {
+      try {
+        await this.select(folder);
+        selectedFolders += 1;
+      } catch (error) {
+        if (!(error instanceof ImapCommandError)) {
+          throw error;
+        }
+        folderError = error;
+        continue;
+      }
+      const matchingUids = new Set<string>();
+      let searchRejected = false;
+      const searchCandidates = async (criteria: string) => {
         const result = await this.command(
-          `UID SEARCH SINCE ${formatImapDate(input.sentAfter)} HEADER ${quoteImapString(header)} ${quoteImapString(messageId)}`,
+          `UID SEARCH SINCE ${formatImapDate(input.sentAfter)} ${criteria}`,
         );
         const searchLine = result.text
           .split(CRLF)
@@ -380,33 +400,122 @@ class ImapConnection {
           .filter(Boolean) ?? []) {
           matchingUids.add(uid);
         }
+      };
+      const searchHeader = async (header: string, value: string) => {
+        if (searchRejected) {
+          return;
+        }
+        try {
+          await searchCandidates(
+            `HEADER ${quoteImapString(header)} ${quoteImapString(value)}`,
+          );
+        } catch (error) {
+          if (!(error instanceof ImapCommandError)) {
+            throw error;
+          }
+          searchRejected = true;
+          console.warn(
+            JSON.stringify({
+              event: 'imap_sent_header_search_rejected',
+              provider: this.provider,
+              header,
+              error: error.message,
+            }),
+          );
+        }
+      };
+      if (input.trackingId) {
+        await searchHeader('X-SupplyFlow-RFQ-ID', input.trackingId);
+      }
+      for (const messageId of expectedMessageIds) {
+        await searchHeader('In-Reply-To', messageId);
+        await searchHeader('References', messageId);
+      }
+      if (input.recipient && input.subject) {
+        try {
+          await searchCandidates(`TO ${quoteImapString(input.recipient)}`);
+        } catch (error) {
+          if (!(error instanceof ImapCommandError)) {
+            throw error;
+          }
+          searchRejected = true;
+          console.warn(
+            JSON.stringify({
+              event: 'imap_sent_recipient_search_rejected',
+              provider: this.provider,
+              error: error.message,
+            }),
+          );
+          await searchHeader('To', input.recipient);
+        }
+      }
+      const matchesCandidate = async (uid: string) => {
+        const result = await this.command(
+          `UID FETCH ${uid} (UID INTERNALDATE BODY.PEEK[HEADER])`,
+        );
+        if (!result.literals[0]) {
+          return false;
+        }
+        if (
+          parseInternalDate(result.text).getTime() < input.sentAfter.getTime()
+        ) {
+          return false;
+        }
+        const headers = parseMimePart(result.literals[0]).headers;
+        if (input.recipient && input.subject) {
+          const recipient = input.recipient.toLowerCase();
+          const sentRecipients = parseAddresses(getHeader(headers, 'to'));
+          const sentSubject = decodeMimeHeader(getHeader(headers, 'subject'))
+            .replace(/^(re:\s*)+/i, '')
+            .trim()
+            .toLowerCase();
+          const expectedSubject = input.subject
+            .replace(/^(re:\s*)+/i, '')
+            .trim()
+            .toLowerCase();
+          if (
+            sentRecipients.some((address) => address.address === recipient) &&
+            sentSubject === expectedSubject
+          ) {
+            return true;
+          }
+        }
+        const replyHeaders =
+          `${getHeader(headers, 'in-reply-to')} ${getHeader(headers, 'references')}`.toLowerCase();
+        if (getHeader(headers, 'x-supplyflow-rfq-id') === input.trackingId) {
+          return true;
+        }
+        const referencedMessageIds = replyHeaders
+          .split(/\s+/)
+          .map((messageId) => messageId.replace(/[<>]/g, ''));
+        if (
+          expectedMessageIds.some((messageId) =>
+            referencedMessageIds.includes(messageId.replace(/[<>]/g, '')),
+          )
+        ) {
+          return true;
+        }
+        return false;
+      };
+      for (const uid of matchingUids) {
+        if (await matchesCandidate(uid)) {
+          return true;
+        }
+      }
+      if (searchRejected) {
+        const sentUids = await this.search({
+          receivedAfter: input.sentAfter,
+          limit: Number.MAX_SAFE_INTEGER,
+        });
+        for (const uid of sentUids.reverse()) {
+          if (!matchingUids.has(uid) && (await matchesCandidate(uid))) {
+            return true;
+          }
+        }
       }
     }
-    for (const uid of matchingUids) {
-      const result = await this.command(
-        `UID FETCH ${uid} (UID INTERNALDATE BODY.PEEK[HEADER])`,
-      );
-      if (!result.literals[0]) {
-        continue;
-      }
-      if (
-        parseInternalDate(result.text).getTime() < input.sentAfter.getTime()
-      ) {
-        continue;
-      }
-      const headers = parseMimePart(result.literals[0]).headers;
-      const replyHeaders =
-        `${getHeader(headers, 'in-reply-to')} ${getHeader(headers, 'references')}`.toLowerCase();
-      const referencedMessageIds = replyHeaders
-        .split(/\s+/)
-        .map((messageId) => messageId.replace(/[<>]/g, ''));
-      if (
-        expectedMessageIds.some((messageId) =>
-          referencedMessageIds.includes(messageId.replace(/[<>]/g, '')),
-        )
-      ) {
-        return true;
-      }
+    if (selectedFolders === 0 && folderError) {
+      throw folderError;
     }
     return false;
   }
@@ -535,7 +644,9 @@ class ImapConnection {
               `${this.provider === 'aol' ? 'AOL' : 'Yahoo'} IMAP authentication failed: ${line}`,
             );
           }
-          throw new Error(`Yahoo IMAP command failed: ${line}`);
+          throw new ImapCommandError(
+            `${this.provider === 'aol' ? 'AOL' : 'Yahoo'} IMAP command failed: ${line}`,
+          );
         }
       }
     }
@@ -743,6 +854,9 @@ const createImapDraftMessage = (
     `To: ${formatSmtpAddress(input.to)}`,
     `Subject: ${encodeMimeHeader(input.subject)}`,
     `Message-ID: <${crypto.randomUUID()}@supplyflow.app>`,
+    ...(isReply && 'trackingId' in input && input.trackingId
+      ? [`X-SupplyFlow-RFQ-ID: ${input.trackingId}`]
+      : []),
     ...(isReply && 'originalMessageId' in input && input.originalMessageId
       ? [
           `In-Reply-To: ${input.originalMessageId}`,

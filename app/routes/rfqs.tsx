@@ -4,6 +4,7 @@ import {
   Link,
   redirect,
   useFetcher,
+  useRevalidator,
   useSearchParams,
 } from 'react-router';
 import {
@@ -250,6 +251,7 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
   const mutation = useFetcher<ApiResponse>();
   const formMutation = useFetcher<ApiResponse>();
   const pdfUpload = useFetcher<ApiResponse>();
+  const revalidator = useRevalidator();
   const handledFormResponse = useRef<ApiResponse | null>(null);
   const handledPdfResponse = useRef<ApiResponse | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -260,6 +262,23 @@ const RfqsPage = ({ loaderData }: Route.ComponentProps) => {
   const [deleteTarget, setDeleteTarget] = useState<RfqRecord | null>(null);
   const selectedRfq = rfqs.find((rfq) => rfq.id === searchParams.get('id'));
   const isUploadingPdf = pdfUpload.state !== 'idle';
+
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (
+        document.visibilityState === 'visible' &&
+        revalidator.state === 'idle'
+      ) {
+        revalidator.revalidate();
+      }
+    };
+    const interval = window.setInterval(refreshWhenVisible, 60_000);
+    window.addEventListener('focus', refreshWhenVisible);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refreshWhenVisible);
+    };
+  }, [revalidator]);
 
   useEffect(() => {
     if (pdfUpload.data && handledPdfResponse.current === pdfUpload.data) {

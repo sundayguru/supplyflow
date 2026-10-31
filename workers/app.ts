@@ -18,13 +18,19 @@ const requestHandler = createRequestHandler(
   import.meta.env.MODE,
 );
 
-export const executeScheduleMethods = async (env: Env) => {
+export const executeScheduleMethods = async (
+  env: Env,
+  organizationId?: string,
+) => {
   const errors: unknown[] = [];
   let summary = {};
+  let rfqDraftStatus: Awaited<
+    ReturnType<typeof runRfqDraftSentStatusSync>
+  > | null = null;
   let mailboxes: Awaited<ReturnType<typeof loadScheduledMailboxes>> = [];
 
   try {
-    mailboxes = await loadScheduledMailboxes(env);
+    mailboxes = await loadScheduledMailboxes(env, organizationId);
   } catch (error) {
     errors.push(error);
     console.error(
@@ -36,7 +42,7 @@ export const executeScheduleMethods = async (env: Env) => {
   }
 
   try {
-    await runRfqDraftSentStatusSync(mailboxes);
+    rfqDraftStatus = await runRfqDraftSentStatusSync(mailboxes, organizationId);
   } catch (error) {
     errors.push(error);
     console.error(
@@ -121,7 +127,7 @@ export const executeScheduleMethods = async (env: Env) => {
   if (errors.length) {
     throw errors[0];
   }
-  return summary;
+  return { ...summary, rfqDraftStatus };
 };
 
 export default {

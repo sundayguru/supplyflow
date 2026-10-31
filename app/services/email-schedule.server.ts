@@ -200,14 +200,34 @@ const loadMailbox = async (
 
   const emailClient = await createConnectedEmailClient(account, env);
   const startOfToday = getStartOfUtcDay(startedAt);
-  const messages = (
-    await emailClient.listMessages({
-      receivedAfter: startOfToday,
-      limit: SCHEDULED_UNREAD_MESSAGE_LIMIT,
-      folder: account.emailFolder || organization.emailFolder || 'INBOX',
-      unread: true,
-    })
-  ).filter((message) => message.receivedAt.getTime() >= startOfToday.getTime());
+  let messages: EmailMessage[] = [];
+  let loadError: string | undefined;
+  try {
+    messages = (
+      await emailClient.listMessages({
+        receivedAfter: startOfToday,
+        limit: SCHEDULED_UNREAD_MESSAGE_LIMIT,
+        folder: account.emailFolder || organization.emailFolder || 'INBOX',
+        unread: true,
+      })
+    ).filter(
+      (message) => message.receivedAt.getTime() >= startOfToday.getTime(),
+    );
+  } catch (error) {
+    if (isEmailAuthenticationError(error, account.provider)) {
+      await markAccountNeedsReconnect(account);
+    }
+    loadError =
+      error instanceof Error ? error.message : 'Unknown account error';
+    console.error(
+      JSON.stringify({
+        event: 'scheduled_mailbox_message_load_failed',
+        accountId: account.id,
+        provider: account.provider,
+        error: loadError,
+      }),
+    );
+  }
 
   return {
     account,
@@ -216,6 +236,7 @@ const loadMailbox = async (
     messages,
     classification: emptyMailboxClassification(),
     startedAt,
+    ...(loadError ? { loadError } : {}),
   };
 };
 

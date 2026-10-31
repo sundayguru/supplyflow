@@ -168,6 +168,7 @@ export const action = async ({
     const draftInput = {
       originalMessageId: source.threadId ?? source.externalId,
       threadId: source.threadId,
+      trackingId: rfq.id,
       accountEmail: source.accountEmail,
       to: recipient!,
       subject: source.subject ?? rfq.reference,
