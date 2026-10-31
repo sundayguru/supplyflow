@@ -9,6 +9,7 @@ import type {
   CreateDraftReplyInput,
   UpdateDraftReplyInput,
   SendReplyInput,
+  DraftSentStatusInput,
 } from './types';
 
 export type YahooClientConfig = {
@@ -336,6 +337,78 @@ class ImapConnection {
     } catch {
       return null;
     }
+  }
+
+  async findSentFolder() {
+    try {
+      const result = await this.command('LIST "" "*"');
+      const mailboxes = result.text
+        .split(CRLF)
+        .map(parseImapListMailbox)
+        .filter((entry) => entry !== null);
+      return (
+        mailboxes.find((entry) => entry.attributes.includes('\\SENT'))?.name ??
+        mailboxes.find((entry) => entry.name.toLowerCase() === 'sent')?.name ??
+        'Sent'
+      );
+    } catch {
+      return 'Sent';
+    }
+  }
+
+  async hasSentReply(input: DraftSentStatusInput) {
+    if (!input.threadId && !input.originalMessageId) {
+      return false;
+    }
+    await this.select(await this.findSentFolder());
+    const expectedMessageIds = [input.threadId, input.originalMessageId]
+      .filter((messageId): messageId is string => Boolean(messageId))
+      .map((messageId) => messageId.toLowerCase());
+    const matchingUids = new Set<string>();
+    for (const messageId of expectedMessageIds) {
+      for (const header of ['In-Reply-To', 'References']) {
+        const result = await this.command(
+          `UID SEARCH SINCE ${formatImapDate(input.sentAfter)} HEADER ${quoteImapString(header)} ${quoteImapString(messageId)}`,
+        );
+        const searchLine = result.text
+          .split(CRLF)
+          .find((line) => line.startsWith('* SEARCH'));
+        for (const uid of searchLine
+          ?.replace('* SEARCH', '')
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean) ?? []) {
+          matchingUids.add(uid);
+        }
+      }
+    }
+    for (const uid of matchingUids) {
+      const result = await this.command(
+        `UID FETCH ${uid} (UID INTERNALDATE BODY.PEEK[HEADER])`,
+      );
+      if (!result.literals[0]) {
+        continue;
+      }
+      if (
+        parseInternalDate(result.text).getTime() < input.sentAfter.getTime()
+      ) {
+        continue;
+      }
+      const headers = parseMimePart(result.literals[0]).headers;
+      const replyHeaders =
+        `${getHeader(headers, 'in-reply-to')} ${getHeader(headers, 'references')}`.toLowerCase();
+      const referencedMessageIds = replyHeaders
+        .split(/\s+/)
+        .map((messageId) => messageId.replace(/[<>]/g, ''));
+      if (
+        expectedMessageIds.some((messageId) =>
+          referencedMessageIds.includes(messageId.replace(/[<>]/g, '')),
+        )
+      ) {
+        return true;
+      }
+    }
+    return false;
   }
 
   async appendDraft(folder: string, message: Uint8Array) {
@@ -1114,6 +1187,29 @@ export const createYahooClient = (config: YahooClientConfig): EmailClient => ({
   },
   async updateDraftReply(input: UpdateDraftReplyInput) {
     return await saveYahooDraft(config, input, true, input.draftId);
+  },
+  async isDraftSent(input) {
+    const connection = await ImapConnection.open(
+      config.imapHost ??
+        (config.provider === 'aol' ? 'imap.aol.com' : YAHOO_IMAP_HOST),
+      config.provider ?? 'yahoo',
+    );
+    try {
+      if (config.authType === 'app_password' && config.appPassword) {
+        await connection.authenticatePassword(
+          config.accountEmail,
+          config.appPassword,
+        );
+      } else {
+        await connection.authenticate(
+          config.accountEmail,
+          await getAccessToken(config),
+        );
+      }
+      return await connection.hasSentReply(input);
+    } finally {
+      await connection.close();
+    }
   },
 });
 

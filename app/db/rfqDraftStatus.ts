@@ -16,6 +16,7 @@ export const listRfqsWithDraftedEmails = (limit = 50) => {
       draftUpdatedAt: rfqs.generatedReplyDraftUpdatedAt,
       rfqUpdatedAt: rfqs.updatedAt,
       threadId: emailIngestions.threadId,
+      originalMessageId: emailIngestions.externalId,
       accountId: connectedEmailAccounts.id,
       accountProvider: connectedEmailAccounts.provider,
       accountEmail: connectedEmailAccounts.email,

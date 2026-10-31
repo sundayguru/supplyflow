@@ -68,6 +68,7 @@ export type DraftReplyResult = {
 export type DraftSentStatusInput = {
   draftId: string;
   threadId: string | null;
+  originalMessageId?: string;
   sentAfter: Date;
 };
 

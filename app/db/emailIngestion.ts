@@ -269,6 +269,7 @@ export const getEmailSourceForRfq = async (
       threadId: emailIngestions.threadId,
       subject: emailIngestions.subject,
       fromAddress: emailIngestions.fromAddress,
+      messageText: emailIngestions.messageText,
       accountEmail: connectedEmailAccounts.email,
       accountProvider: connectedEmailAccounts.provider,
       authType: connectedEmailAccounts.authType,

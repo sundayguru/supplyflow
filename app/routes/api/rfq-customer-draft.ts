@@ -166,7 +166,7 @@ export const action = async ({
       : null;
     const pdf = await generateRfqPdf(rfq, template, organization);
     const draftInput = {
-      originalMessageId: source.externalId,
+      originalMessageId: source.threadId ?? source.externalId,
       threadId: source.threadId,
       accountEmail: source.accountEmail,
       to: recipient!,

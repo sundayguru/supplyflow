@@ -4,6 +4,8 @@ import {
 } from '~/db/rfqDraftStatus';
 import { markConnectedEmailAccountNeedsReconnect } from '~/db/connectedEmailAccounts';
 import { isGmailAuthenticationError } from '~/services/email/gmail.server';
+import { isYahooAuthenticationError } from '~/services/email/yahoo.server';
+import { isAolAuthenticationError } from '~/services/email/aol.server';
 import {
   indexMailboxesByAccountId,
   type ScheduledMailbox,
@@ -31,7 +33,7 @@ export const runRfqDraftSentStatusSync = async (
   let failed = 0;
 
   for (const draftedRfq of draftedRfqs) {
-    if (!draftedRfq.draftId || draftedRfq.accountProvider !== 'gmail') {
+    if (!draftedRfq.draftId) {
       continue;
     }
 
@@ -46,6 +48,7 @@ export const runRfqDraftSentStatusSync = async (
       const isSent = await emailClient.isDraftSent({
         draftId: draftedRfq.draftId,
         threadId: draftedRfq.threadId,
+        originalMessageId: draftedRfq.originalMessageId,
         sentAfter: sentAfterDate(
           draftedRfq.draftUpdatedAt,
           draftedRfq.rfqUpdatedAt,
@@ -60,10 +63,16 @@ export const runRfqDraftSentStatusSync = async (
         sent += 1;
       }
     } catch (error) {
-      if (isGmailAuthenticationError(error)) {
+      const isAuthenticationError =
+        draftedRfq.accountProvider === 'gmail'
+          ? isGmailAuthenticationError(error)
+          : draftedRfq.accountProvider === 'yahoo'
+            ? isYahooAuthenticationError(error)
+            : isAolAuthenticationError(error);
+      if (isAuthenticationError) {
         await markConnectedEmailAccountNeedsReconnect(
           draftedRfq.accountId,
-          'Gmail access expired. Reconnect this account to resume inbox checks.',
+          `${draftedRfq.accountProvider === 'aol' ? 'AOL' : draftedRfq.accountProvider === 'yahoo' ? 'Yahoo' : 'Gmail'} access expired. Reconnect this account to resume inbox checks.`,
         );
       }
       failed += 1;
