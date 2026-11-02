@@ -47,8 +47,12 @@ const activeStatuses: PurchaseOrderStatus[] = [
   'acknowledged',
   'awaiting_payment',
   'partial_payment',
+  'partially_shipped',
+  'shipped',
   'partially_received',
   'received',
+  'partially_delivered',
+  'delivered',
 ];
 
 const formatCombinedValue = (records: PurchaseOrderRecord[]) => {

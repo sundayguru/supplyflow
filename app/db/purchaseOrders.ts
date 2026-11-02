@@ -10,6 +10,7 @@ import type { RfqItemRecord } from '~/types/rfq';
 import { calculatePurchaseOrderTotals } from '~/utils/purchaseOrder';
 import { getDb } from './connection';
 import { appendStatusChange } from '~/utils/statusHistory';
+import { statusAfterItemChanges } from '~/utils/orderItemStatus';
 import {
   emailIngestions,
   purchaseOrderItems,
@@ -290,11 +291,34 @@ export const updatePurchaseOrder = async (
   const db = getDb();
   const { items, ...purchaseOrderInput } = input;
   const updatedAt = new Date().toISOString();
+  const changes = items.map((item, position) => ({
+    previous: existing.items[position]?.status,
+    next: item.status,
+  }));
+  const itemStatus = statusAfterItemChanges(items, changes);
+  const derivedStatus = itemStatus === 'accepted' ? null : itemStatus;
+  const changedItem = items.find(
+    (item, position) => item.status !== existing.items[position]?.status,
+  );
 
   await db.batch([
     db
       .update(purchaseOrders)
-      .set({ ...purchaseOrderInput, updatedAt })
+      .set({
+        ...purchaseOrderInput,
+        status: derivedStatus ?? purchaseOrderInput.status,
+        statusReason:
+          derivedStatus && derivedStatus !== existing.status
+            ? appendStatusChange(existing.statusReason, {
+                fromStatus: existing.status,
+                toStatus: derivedStatus,
+                reason:
+                  changedItem?.statusReason?.trim() || 'Item status changed',
+                changedAt: updatedAt,
+              })
+            : existing.statusReason,
+        updatedAt,
+      })
       .where(
         and(
           eq(purchaseOrders.id, id),
@@ -579,6 +603,48 @@ export const getOrganizationPurchaseOrderItem = async (
   return item ?? null;
 };
 
+export const syncPurchaseOrderItemStatus = async (
+  purchaseOrderId: string,
+  organizationId: string,
+  changes: { previous: string | undefined; next: string }[],
+  reason: string | null | undefined,
+) => {
+  const db = getDb();
+  const order = await db.query.purchaseOrders.findFirst({
+    where: and(
+      eq(purchaseOrders.id, purchaseOrderId),
+      eq(purchaseOrders.organizationId, organizationId),
+    ),
+    with: { items: true },
+  });
+  if (!order || !order.items.length) {
+    return;
+  }
+  const status = statusAfterItemChanges(order.items, changes);
+  if (!status || status === 'accepted' || status === order.status) {
+    return;
+  }
+  const updatedAt = new Date().toISOString();
+  await db
+    .update(purchaseOrders)
+    .set({
+      status,
+      statusReason: appendStatusChange(order.statusReason, {
+        fromStatus: order.status,
+        toStatus: status,
+        reason: reason?.trim() || 'Item status changed',
+        changedAt: updatedAt,
+      }),
+      updatedAt,
+    })
+    .where(
+      and(
+        eq(purchaseOrders.id, purchaseOrderId),
+        eq(purchaseOrders.organizationId, organizationId),
+      ),
+    );
+};
+
 export const updatePurchaseOrderItem = async (
   id: string,
   organizationId: string,
@@ -607,6 +673,12 @@ export const updatePurchaseOrderItem = async (
         ),
       ),
   ]);
+  await syncPurchaseOrderItemStatus(
+    existing.purchaseOrderId,
+    organizationId,
+    [{ previous: existing.status, next: input.status }],
+    input.statusReason,
+  );
   return getPurchaseOrder(existing.purchaseOrderId, organizationId, vatRate);
 };
 
@@ -648,6 +720,12 @@ export const updatePurchaseOrderItemStatus = async (
         ),
       ),
   ]);
+  await syncPurchaseOrderItemStatus(
+    existing.purchaseOrderId,
+    organizationId,
+    [{ previous: existing.status, next: status }],
+    statusReason,
+  );
   return getPurchaseOrder(existing.purchaseOrderId, organizationId, vatRate);
 };
 

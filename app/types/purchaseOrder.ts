@@ -9,8 +9,12 @@ export const purchaseOrderStatuses = [
   'awaiting_payment',
   'partial_payment',
   'payment_confirmed',
+  'partially_shipped',
+  'shipped',
   'partially_received',
   'received',
+  'partially_delivered',
+  'delivered',
   'cancelled',
 ] as const;
 

@@ -7,6 +7,8 @@ import type {
 } from '~/types/vendorPurchaseOrderAcknowledgement';
 import { getDb } from './connection';
 import { appendStatusChange } from '~/utils/statusHistory';
+import { statusAfterItemChanges } from '~/utils/orderItemStatus';
+import { syncPurchaseOrderItemStatus } from './purchaseOrders';
 import {
   vendorPurchaseOrderAcknowledgementItems,
   vendorPurchaseOrderAcknowledgements,
@@ -17,53 +19,6 @@ import {
 
 const createReference = () =>
   `VPOA-${new Date().getFullYear()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
-
-const shippingStatus = (items: { status: string }[]) =>
-  items.every((item) =>
-    ['shipped', 'delivered', 'received'].includes(item.status),
-  )
-    ? 'shipped'
-    : 'partially_shipped';
-
-const statusAfterItemChanges = (
-  items: { status: string }[],
-  changedStatuses: { previous: string | undefined; next: string }[],
-) => {
-  if (
-    changedStatuses.some(
-      ({ previous, next }) => previous !== next && next === 'received',
-    )
-  ) {
-    return items.every((item) => item.status === 'received')
-      ? 'received'
-      : 'partially_received';
-  }
-  if (
-    changedStatuses.some(
-      ({ previous, next }) => previous !== next && next === 'delivered',
-    )
-  ) {
-    return items.every((item) => item.status === 'delivered')
-      ? 'delivered'
-      : 'partially_delivered';
-  }
-  if (
-    changedStatuses.some(
-      ({ previous, next }) => previous !== next && next === 'shipped',
-    )
-  ) {
-    return shippingStatus(items);
-  }
-  if (
-    changedStatuses.some(
-      ({ previous, next }) => previous !== next && next === 'ordered',
-    ) &&
-    items.every((item) => item.status === 'ordered')
-  ) {
-    return 'accepted';
-  }
-  return null;
-};
 
 const createItemValues = (
   acknowledgementId: string,
@@ -288,6 +243,15 @@ export const updateVendorPurchaseOrderAcknowledgementItem = async (
         ...purchaseOrderUpdates,
         ...acknowledgementStatusUpdates,
       ]);
+      await syncPurchaseOrderItemStatus(
+        vendorPurchaseOrder!.purchaseOrderId,
+        organizationId,
+        matchingPurchaseOrderItems.map((item) => ({
+          previous: item.status,
+          next: input.status,
+        })),
+        input.statusReason,
+      );
     } else {
       await db.batch([...statements, ...acknowledgementStatusUpdates]);
     }
@@ -390,6 +354,14 @@ export const createVendorPurchaseOrderAcknowledgement = async (
         .set({ status: 'ordered', updatedAt: new Date().toISOString() })
         .where(inArray(purchaseOrderItems.id, matchingPurchaseOrderItemIds)),
     ]);
+    await syncPurchaseOrderItemStatus(
+      vendorPurchaseOrder!.purchaseOrderId,
+      organizationId,
+      purchaseOrderItemRecords
+        .filter((item) => matchingPurchaseOrderItemIds.includes(item.id))
+        .map((item) => ({ previous: item.status, next: 'ordered' })),
+      'Vendor purchase order acknowledged',
+    );
   } else {
     await db.batch(acknowledgementStatements);
   }
@@ -470,6 +442,7 @@ export const updateVendorPurchaseOrderAcknowledgement = async (
     );
     return matchingItems.map((purchaseOrderItem) => ({
       id: purchaseOrderItem.id,
+      previousStatus: purchaseOrderItem.status,
       status: acknowledgementItem.status,
       statusReason:
         existing.items[position]?.status !== acknowledgementItem.status &&
@@ -542,6 +515,17 @@ export const updateVendorPurchaseOrderAcknowledgement = async (
           .where(eq(purchaseOrderItems.id, itemId)),
     );
     await db.batch([...statements, ...updates]);
+    if (vendorPurchaseOrder) {
+      await syncPurchaseOrderItemStatus(
+        vendorPurchaseOrder.purchaseOrderId,
+        organizationId,
+        updatedItemStatuses.map((item) => ({
+          previous: item.previousStatus,
+          next: item.status,
+        })),
+        changedItem?.statusReason,
+      );
+    }
   } else {
     await db.batch(statements);
   }
