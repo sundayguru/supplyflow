@@ -13,6 +13,8 @@ export const vendorPurchaseOrderAcknowledgementStatuses = [
   'shipped',
   'partially_received',
   'received',
+  'partially_delivered',
+  'delivered',
 ] as const;
 
 export const vendorPurchaseOrderAcknowledgementItemStatuses =

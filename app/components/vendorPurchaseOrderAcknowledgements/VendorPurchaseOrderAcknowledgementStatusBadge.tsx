@@ -28,6 +28,8 @@ export const vendorPurchaseOrderAcknowledgementStatusLabels: Record<
   shipped: 'Shipped',
   partially_received: 'Partially received',
   received: 'Received',
+  partially_delivered: 'Partially delivered',
+  delivered: 'Delivered',
 };
 
 export const vendorPurchaseOrderAcknowledgementItemStatusLabels =
@@ -42,6 +44,8 @@ const statusStyles: Record<VendorPurchaseOrderAcknowledgementStatus, string> = {
   payment_confirmed: 'bg-teal-50 text-teal-700 ring-teal-200',
   partially_shipped: 'bg-violet-50 text-violet-700 ring-violet-200',
   shipped: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
+  partially_delivered: 'bg-blue-50 text-blue-700 ring-blue-200',
+  delivered: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
   partially_received: 'bg-cyan-50 text-cyan-700 ring-cyan-200',
 };
 

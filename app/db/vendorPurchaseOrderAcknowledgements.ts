@@ -18,6 +18,53 @@ import {
 const createReference = () =>
   `VPOA-${new Date().getFullYear()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
 
+const shippingStatus = (items: { status: string }[]) =>
+  items.every((item) =>
+    ['shipped', 'delivered', 'received'].includes(item.status),
+  )
+    ? 'shipped'
+    : 'partially_shipped';
+
+const statusAfterItemChanges = (
+  items: { status: string }[],
+  changedStatuses: { previous: string | undefined; next: string }[],
+) => {
+  if (
+    changedStatuses.some(
+      ({ previous, next }) => previous !== next && next === 'received',
+    )
+  ) {
+    return items.every((item) => item.status === 'received')
+      ? 'received'
+      : 'partially_received';
+  }
+  if (
+    changedStatuses.some(
+      ({ previous, next }) => previous !== next && next === 'delivered',
+    )
+  ) {
+    return items.every((item) => item.status === 'delivered')
+      ? 'delivered'
+      : 'partially_delivered';
+  }
+  if (
+    changedStatuses.some(
+      ({ previous, next }) => previous !== next && next === 'shipped',
+    )
+  ) {
+    return shippingStatus(items);
+  }
+  if (
+    changedStatuses.some(
+      ({ previous, next }) => previous !== next && next === 'ordered',
+    ) &&
+    items.every((item) => item.status === 'ordered')
+  ) {
+    return 'accepted';
+  }
+  return null;
+};
+
 const createItemValues = (
   acknowledgementId: string,
   items: VendorPurchaseOrderAcknowledgementItemInput[],
@@ -145,6 +192,38 @@ export const updateVendorPurchaseOrderAcknowledgementItem = async (
       .set({ ...input, statusReason, updatedAt })
       .where(eq(vendorPurchaseOrderAcknowledgementItems.id, itemId)),
   ] as const;
+  const nextItemStatus = statusAfterItemChanges(
+    parent.items.map((item) =>
+      item.id === itemId ? { status: input.status } : item,
+    ),
+    [{ previous: existing.status, next: input.status }],
+  );
+  const acknowledgementStatusUpdates =
+    nextItemStatus && nextItemStatus !== parent.status
+      ? [
+          db
+            .update(vendorPurchaseOrderAcknowledgements)
+            .set({
+              status: nextItemStatus,
+              statusReason: appendStatusChange(parent.statusReason, {
+                fromStatus: parent.status,
+                toStatus: nextItemStatus,
+                reason: input.statusReason?.trim() || 'Item status changed',
+                changedAt: updatedAt,
+              }),
+              updatedAt,
+            })
+            .where(
+              and(
+                eq(vendorPurchaseOrderAcknowledgements.id, parent.id),
+                eq(
+                  vendorPurchaseOrderAcknowledgements.organizationId,
+                  organizationId,
+                ),
+              ),
+            ),
+        ]
+      : [];
   if (existing.status !== input.status && existing.vendorPurchaseOrderItemId) {
     const vendorPurchaseOrder = await db.query.vendorPurchaseOrders.findFirst({
       where: and(
@@ -204,12 +283,16 @@ export const updateVendorPurchaseOrderAcknowledgementItem = async (
           })
           .where(eq(purchaseOrderItems.id, item.id));
       });
-      await db.batch([...statements, ...purchaseOrderUpdates]);
+      await db.batch([
+        ...statements,
+        ...purchaseOrderUpdates,
+        ...acknowledgementStatusUpdates,
+      ]);
     } else {
-      await db.batch(statements);
+      await db.batch([...statements, ...acknowledgementStatusUpdates]);
     }
   } else {
-    await db.batch(statements);
+    await db.batch([...statements, ...acknowledgementStatusUpdates]);
   }
   return await getVendorPurchaseOrderAcknowledgement(
     existing.acknowledgementId,
@@ -330,6 +413,22 @@ export const updateVendorPurchaseOrderAcknowledgement = async (
   const db = getDb();
   const { items, ...acknowledgementInput } = input;
   const updatedAt = new Date().toISOString();
+  const changedItem = items.find(
+    (item, position) =>
+      item.status !== existing.items[position]?.status &&
+      (item.status === 'shipped' ||
+        item.status === 'ordered' ||
+        item.status === 'delivered' ||
+        item.status === 'received'),
+  );
+  const derivedStatus = statusAfterItemChanges(
+    items,
+    items.map((item, position) => ({
+      previous: existing.items[position]?.status,
+      next: item.status,
+    })),
+  );
+  const nextStatus = derivedStatus ?? input.status;
   const vendorPurchaseOrder = await db.query.vendorPurchaseOrders.findFirst({
     where: and(
       eq(vendorPurchaseOrders.id, input.vendorPurchaseOrderId),
@@ -388,7 +487,21 @@ export const updateVendorPurchaseOrderAcknowledgement = async (
   const statements = [
     db
       .update(vendorPurchaseOrderAcknowledgements)
-      .set({ ...acknowledgementInput, updatedAt })
+      .set({
+        ...acknowledgementInput,
+        status: nextStatus,
+        statusReason:
+          derivedStatus && changedItem && nextStatus !== existing.status
+            ? appendStatusChange(existing.statusReason, {
+                fromStatus: existing.status,
+                toStatus: nextStatus,
+                reason:
+                  changedItem.statusReason?.trim() || 'Item status changed',
+                changedAt: updatedAt,
+              })
+            : existing.statusReason,
+        updatedAt,
+      })
       .where(
         and(
           eq(vendorPurchaseOrderAcknowledgements.id, id),

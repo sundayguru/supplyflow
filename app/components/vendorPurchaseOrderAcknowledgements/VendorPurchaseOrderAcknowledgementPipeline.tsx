@@ -48,6 +48,14 @@ const statusStyles: Record<
     column: 'border-indigo-200 bg-indigo-50/60',
     dot: 'bg-indigo-500',
   },
+  partially_delivered: {
+    column: 'border-blue-200 bg-blue-50/60',
+    dot: 'bg-blue-500',
+  },
+  delivered: {
+    column: 'border-emerald-200 bg-emerald-50/60',
+    dot: 'bg-emerald-500',
+  },
   partially_received: {
     column: 'border-cyan-200 bg-cyan-50/60',
     dot: 'bg-cyan-500',
