@@ -148,3 +148,72 @@ it('records an unreadable AOL attachment as a failed ingestion', async () => {
     expect.any(Error),
   );
 });
+
+it('detects a Yahoo vendor acknowledgement using a VPO reference in its PDF', async () => {
+  vi.mocked(extractPdfText).mockResolvedValueOnce({
+    text: 'Vendor order confirmation\nVPO-2026-ABC123\nMotor A-42 3 units',
+    truncated: false,
+  });
+  const items = [
+    {
+      vendorPurchaseOrderItemId: null,
+      quantity: 3,
+      price: 1250,
+      unit: 'piece',
+      description: 'Motor A-42',
+      manufacturerPartNumber: 'A-42',
+      deliveryDate: '2026-12-01',
+      status: 'pending',
+      notes: 'Backordered',
+    },
+  ];
+  mocks.extractAcknowledgement.mockResolvedValueOnce({
+    isAcknowledgement: true,
+    confidence: 1,
+    reason: 'Vendor confirmation',
+    vendorPurchaseOrderReference: null,
+    acknowledgement: { status: 'received', items },
+  });
+  const message: EmailMessage = {
+    id: 'message',
+    threadId: '<yahoo-reply-message@example.com>',
+    subject: 'Confirmation attached',
+    from: { name: 'Vendor', address: 'vendor@example.com' },
+    to: [],
+    receivedAt: new Date('2026-11-01T10:00:00Z'),
+    text: 'Please see our confirmation.',
+    attachments: [
+      {
+        id: 'pdf',
+        filename: 'confirmation.pdf',
+        contentType: 'application/pdf',
+        bytes: new ArrayBuffer(1),
+      },
+    ],
+  };
+
+  const result = await classifyMailboxMessages({
+    account: {
+      id: 'account',
+      userId: 'user',
+      email: 'seller@example.com',
+      provider: 'yahoo',
+    } as SelectConnectedEmailAccount,
+    organization: { id: 'org', priceMarkup: 0, currency: 'EUR' },
+    messages: [message],
+    env: {} as Env,
+    awaitingVendorAcknowledgements: [
+      { reference: 'VPO-2026-ABC123', threadId: null },
+    ],
+  });
+
+  expect(result.vendorAcknowledgements).toHaveLength(1);
+  expect(result.vendorAcknowledgements[0].extraction.searchText).toContain(
+    'VPO-2026-ABC123',
+  );
+  expect(
+    result.vendorAcknowledgements[0].extraction.result.acknowledgement.items,
+  ).toEqual(items);
+  expect(extractPdfText).toHaveBeenCalledTimes(1);
+  expect(mocks.extractPurchaseOrder).not.toHaveBeenCalled();
+});

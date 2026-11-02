@@ -1,9 +1,9 @@
 import type { EmailMessage } from '~/services/email/types';
 import {
-  buildPdfContextMessage,
+  createEmailPdfContextLoader,
   isPdfAttachment,
+  type EmailPdfContextLoader,
 } from '~/utils/emailPdf.server';
-import { extractPdfText } from '~/utils/rfqPdfExtraction.server';
 import type {
   PurchaseOrderExtractionResult,
   PurchaseOrderExtractor,
@@ -17,17 +17,14 @@ export type ExtractedMessagePurchaseOrder = {
 export const extractMessagePurchaseOrder = async (
   message: EmailMessage,
   extractor: PurchaseOrderExtractor,
+  loadPdfContext: EmailPdfContextLoader = createEmailPdfContextLoader(message),
 ): Promise<ExtractedMessagePurchaseOrder | null> => {
   let truncatedPdf: string | null = null;
   for (const attachment of message.attachments) {
     if (!isPdfAttachment(attachment)) {
       continue;
     }
-    const file = new File([attachment.bytes], attachment.filename, {
-      type: 'application/pdf',
-    });
-    const { text, truncated } = await extractPdfText(file, attachment.bytes);
-    const pdfMessage = buildPdfContextMessage(message, attachment, text);
+    const { message: pdfMessage, truncated } = await loadPdfContext(attachment);
     const result = await extractor.extract(pdfMessage);
     if (result.isPurchaseOrder) {
       if (truncated) {

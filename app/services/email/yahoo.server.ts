@@ -426,6 +426,7 @@ class ImapConnection {
         }
       };
       if (input.trackingId) {
+        await searchHeader('X-SupplyFlow-Tracking-ID', input.trackingId);
         await searchHeader('X-SupplyFlow-RFQ-ID', input.trackingId);
       }
       for (const messageId of expectedMessageIds) {
@@ -483,7 +484,12 @@ class ImapConnection {
         }
         const replyHeaders =
           `${getHeader(headers, 'in-reply-to')} ${getHeader(headers, 'references')}`.toLowerCase();
-        if (getHeader(headers, 'x-supplyflow-rfq-id') === input.trackingId) {
+        if (
+          input.trackingId &&
+          (getHeader(headers, 'x-supplyflow-tracking-id') ===
+            input.trackingId ||
+            getHeader(headers, 'x-supplyflow-rfq-id') === input.trackingId)
+        ) {
           return true;
         }
         const referencedMessageIds = replyHeaders
@@ -855,6 +861,9 @@ const createImapDraftMessage = (
     `To: ${formatSmtpAddress(input.to)}`,
     `Subject: ${encodeMimeHeader(input.subject)}`,
     `Message-ID: <${crypto.randomUUID()}@supplyflow.app>`,
+    ...(input.trackingId
+      ? [`X-SupplyFlow-Tracking-ID: ${input.trackingId}`]
+      : []),
     ...(isReply && 'trackingId' in input && input.trackingId
       ? [`X-SupplyFlow-RFQ-ID: ${input.trackingId}`]
       : []),

@@ -8,7 +8,11 @@ vi.mock('cloudflare:sockets', () => ({ connect: vi.fn() }));
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-const mockImap = (rejectSelect = false, rejectRecipientSearch = false) => {
+const mockImap = (
+  rejectSelect = false,
+  rejectRecipientSearch = false,
+  headers = 'To: buyer@example.com\r\nSubject: Re: Quote\r\n\r\n',
+) => {
   let streamController: ReadableStreamDefaultController<Uint8Array>;
   const readable = new ReadableStream<Uint8Array>({
     start(controller) {
@@ -37,7 +41,6 @@ const mockImap = (rejectSelect = false, rejectRecipientSearch = false) => {
       } else if (command.includes(' UID SEARCH ALL SINCE ')) {
         response = `* SEARCH 42\r\n${tag} OK SEARCH completed\r\n`;
       } else if (command.includes(' UID FETCH ')) {
-        const headers = 'To: buyer@example.com\r\nSubject: Re: Quote\r\n\r\n';
         response = `* 1 FETCH (UID 42 INTERNALDATE "01-Nov-2026 10:01:00 +0000" BODY[HEADER] {${encoder.encode(headers).length}}\r\n${headers})\r\n${tag} OK FETCH completed\r\n`;
       } else {
         response = `${tag} OK completed\r\n`;
@@ -97,6 +100,32 @@ it('finds a sent reply by recipient when header searches are rejected', async ()
   ).resolves.toBe(true);
 });
 
+it('finds a sent vendor draft by its tracking header when searches are rejected', async () => {
+  vi.mocked(connect).mockReturnValue(
+    mockImap(
+      false,
+      true,
+      'To: another@example.com\r\nSubject: Changed subject\r\nX-SupplyFlow-Tracking-ID: vendor-po-id\r\n\r\n',
+    ),
+  );
+  const client = createYahooClient({
+    accountEmail: 'seller@example.com',
+    authType: 'app_password',
+    appPassword: 'password',
+  });
+
+  await expect(
+    client.isDraftSent!({
+      draftId: '7',
+      threadId: null,
+      trackingId: 'vendor-po-id',
+      recipient: 'vendor@example.com',
+      subject: 'Purchase order VPO-2026-ABC123',
+      sentAfter: new Date('2026-11-01T10:00:00Z'),
+    }),
+  ).resolves.toBe(true);
+});
+
 it('reports a failed Sent mailbox selection instead of treating it as unmatched', async () => {
   vi.mocked(connect).mockReturnValue(mockImap(true));
   const client = createYahooClient({
@@ -114,6 +143,74 @@ it('reports a failed Sent mailbox selection instead of treating it as unmatched'
     }),
   ).rejects.toThrow('mailbox unavailable');
 });
+
+it.each(['yahoo', 'aol'] as const)(
+  'adds a tracking header to a new %s vendor draft',
+  async (provider) => {
+    let controller: ReadableStreamDefaultController<Uint8Array>;
+    let appendTag = '';
+    let savedMessage = '';
+    const readable = new ReadableStream<Uint8Array>({
+      start(streamController) {
+        controller = streamController;
+        controller.enqueue(encoder.encode('* OK IMAP ready\r\n'));
+      },
+    });
+    const writable = new WritableStream<Uint8Array>({
+      write(bytes) {
+        const command = decoder.decode(bytes);
+        const tag = command.split(' ')[0];
+        if (command.includes(' LIST ')) {
+          controller.enqueue(
+            encoder.encode(
+              `* LIST (\\Drafts) "/" "Draft"\r\n${tag} OK LIST completed\r\n`,
+            ),
+          );
+        } else if (command.includes(' APPEND ')) {
+          appendTag = tag;
+          controller.enqueue(encoder.encode('+ Ready for draft\r\n'));
+        } else if (command.startsWith('From: ')) {
+          savedMessage = command;
+          controller.enqueue(
+            encoder.encode(`${appendTag} OK [APPENDUID 1 42] saved\r\n`),
+          );
+        } else {
+          controller.enqueue(encoder.encode(`${tag} OK completed\r\n`));
+        }
+      },
+    });
+    vi.mocked(connect).mockReturnValue({
+      opened: Promise.resolve(),
+      readable,
+      writable,
+      close: () => Promise.resolve(),
+    } as unknown as ReturnType<typeof connect>);
+    const client = createYahooClient({
+      provider,
+      accountEmail: 'seller@example.com',
+      authType: 'app_password',
+      appPassword: 'password',
+    });
+
+    const draft = await client.createDraftEmail!({
+      trackingId: 'vendor-po-id',
+      accountEmail: 'seller@example.com',
+      to: 'vendor@example.com',
+      subject: 'Purchase order VPO-2026-ABC123',
+      bodyText: 'Please confirm.',
+      attachment: {
+        filename: 'order.pdf',
+        contentType: 'application/pdf',
+        bytes: encoder.encode('pdf'),
+      },
+    });
+
+    expect(draft.id).toBe('42');
+    expect(savedMessage).toContain(
+      'X-SupplyFlow-Tracking-ID: vendor-po-id\r\n',
+    );
+  },
+);
 
 it.each([
   { provider: 'yahoo', filename: "filename*=UTF-8''customer%20order.pdf" },

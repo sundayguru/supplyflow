@@ -149,7 +149,10 @@ export const createConnectedEmailClient = async (
   );
 };
 
-const isEmailAuthenticationError = (error: unknown, provider: EmailProvider) =>
+export const isEmailAuthenticationError = (
+  error: unknown,
+  provider: EmailProvider,
+) =>
   provider === 'gmail'
     ? isGmailAuthenticationError(error)
     : provider === 'yahoo'

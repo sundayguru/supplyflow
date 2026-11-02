@@ -13,11 +13,13 @@ import {
   markVendorPurchaseOrderAcknowledged,
 } from '~/db/vendorPurchaseOrderAcknowledgements';
 import {
-  extractVendorPurchaseOrderReferences,
-  normalizeVendorPurchaseOrderReference,
   shouldSkipStoredEmail,
   type ExtractedMessageVendorPurchaseOrderAcknowledgement,
 } from '~/services/email-classification.server';
+import {
+  extractVendorPurchaseOrderReferences,
+  normalizeVendorPurchaseOrderReference,
+} from '~/utils/vendorPurchaseOrderReferences';
 import { isGmailAuthenticationError } from '~/services/email/gmail.server';
 import type { EmailClient, EmailMessage } from '~/services/email/types';
 import type { ScheduledMailbox } from '~/services/email-schedule.server';
@@ -63,6 +65,24 @@ const resolveAwaitingVendorPurchaseOrder = ({
     >[number]
   >;
 }) => {
+  const pdfReferences = classified.extraction.pdfText
+    ? extractVendorPurchaseOrderReferences({
+        ...classified.message,
+        subject: '',
+        text: classified.extraction.pdfText,
+      })
+    : [];
+  if (pdfReferences.length > 0) {
+    if (pdfReferences.length !== 1) {
+      return null;
+    }
+    return (
+      awaitingByReference.get(
+        awaitingAcknowledgementReferenceKey(accountId, pdfReferences[0]),
+      ) ?? null
+    );
+  }
+
   const threadId = classified.message.threadId;
   if (threadId) {
     const byThread = awaitingByThread.get(
@@ -76,6 +96,10 @@ const resolveAwaitingVendorPurchaseOrder = ({
   const candidateReferences = [
     classified.extraction.result.vendorPurchaseOrderReference,
     ...extractVendorPurchaseOrderReferences(classified.message),
+    ...extractVendorPurchaseOrderReferences({
+      ...classified.message,
+      text: classified.extraction.searchText,
+    }),
   ]
     .filter((reference): reference is string => Boolean(reference?.trim()))
     .map(normalizeVendorPurchaseOrderReference);
@@ -327,8 +351,19 @@ export const runVendorPurchaseOrderAcknowledgementSync = async (
         awaitingByThread,
         awaitingByReference,
       });
+      if (!awaiting?.organizationId) {
+        skipped += 1;
+        console.warn(
+          JSON.stringify({
+            event: 'vendor_po_acknowledgement_unmatched',
+            accountId: mailbox.account.id,
+            messageId: classified.message.id,
+            hasPdf: Boolean(classified.extraction.pdfText),
+          }),
+        );
+        continue;
+      }
       if (
-        !awaiting?.organizationId ||
         acknowledgedVendorPurchaseOrderIds.has(awaiting.vendorPurchaseOrderId)
       ) {
         skipped += 1;

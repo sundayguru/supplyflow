@@ -12,40 +12,31 @@ import type {
   RfqExtractor,
 } from '~/services/rfq-extraction/types';
 import { createVendorPurchaseOrderAcknowledgementExtractor } from '~/services/vendor-purchase-order-acknowledgement-extraction/index.server';
-import type {
-  VendorPurchaseOrderAcknowledgementExtractionResult,
-  VendorPurchaseOrderAcknowledgementExtractor,
-} from '~/services/vendor-purchase-order-acknowledgement-extraction/types';
+import {
+  extractMessageVendorPurchaseOrderAcknowledgement,
+  type ExtractedMessageVendorPurchaseOrderAcknowledgement,
+} from '~/services/vendor-purchase-order-acknowledgement-extraction/message.server';
 import type { SelectConnectedEmailAccount } from '~/db/schemas';
 import type { EmailAttachment, EmailMessage } from '~/services/email/types';
 import { getOpenAICompatibleAiConfig } from '~/utils/organization-ai.server';
-import { extractRfqPdfText } from '~/utils/rfqPdfExtraction.server';
 import {
-  buildPdfContextMessage,
+  createEmailPdfContextLoader,
   isPdfAttachment,
+  type EmailPdfContextLoader,
 } from '~/utils/emailPdf.server';
+import {
+  extractVendorPurchaseOrderReferences,
+  normalizeVendorPurchaseOrderReference,
+} from '~/utils/vendorPurchaseOrderReferences';
 
 export type { ExtractedMessagePurchaseOrder } from '~/services/purchase-order-extraction/message.server';
+export type { ExtractedMessageVendorPurchaseOrderAcknowledgement } from '~/services/vendor-purchase-order-acknowledgement-extraction/message.server';
 
 const STALE_PROCESSING_MS = 10 * 60 * 1000;
-
-const VPO_REFERENCE_PATTERN = /VPO-\d{4}-[A-Z0-9]{6}/gi;
 
 export type AwaitingVendorPurchaseOrderAcknowledgement = {
   reference: string;
   threadId: string | null;
-};
-
-export const normalizeVendorPurchaseOrderReference = (reference: string) =>
-  reference.trim().toUpperCase();
-
-export const extractVendorPurchaseOrderReferences = (message: EmailMessage) => {
-  const haystack = `${message.subject}\n${message.text}`;
-  const references = new Set<string>();
-  for (const match of haystack.matchAll(VPO_REFERENCE_PATTERN)) {
-    references.add(normalizeVendorPurchaseOrderReference(match[0]));
-  }
-  return [...references];
 };
 
 export const isAwaitingVendorAcknowledgementCandidate = (
@@ -74,14 +65,6 @@ export const isAwaitingVendorAcknowledgementCandidate = (
 export type ExtractedMessageRfq = {
   result: Extract<RfqExtractionResult, { isRfq: true }>;
   sourcePdf: EmailAttachment | null;
-};
-
-export type ExtractedMessageVendorPurchaseOrderAcknowledgement = {
-  result: Extract<
-    VendorPurchaseOrderAcknowledgementExtractionResult,
-    { isAcknowledgement: true }
-  >;
-  searchText: string;
 };
 
 export type ClassifiedRfqMessage = {
@@ -152,18 +135,14 @@ const isOwnOutboundMessage = (message: EmailMessage, accountEmail: string) => {
 const extractPdfAttachmentRfq = async (
   message: EmailMessage,
   extractor: RfqExtractor,
+  loadPdfContext: EmailPdfContextLoader,
 ): Promise<ExtractedMessageRfq | null> => {
   for (const attachment of message.attachments) {
     if (!isPdfAttachment(attachment)) {
       continue;
     }
-    const file = new File([attachment.bytes], attachment.filename, {
-      type: 'application/pdf',
-    });
-    const text = await extractRfqPdfText(file, attachment.bytes);
-    const result = await extractor.extract(
-      buildPdfContextMessage(message, attachment, text),
-    );
+    const context = await loadPdfContext(attachment);
+    const result = await extractor.extract(context.message);
     if (result.isRfq) {
       return { result, sourcePdf: attachment };
     }
@@ -174,65 +153,20 @@ const extractPdfAttachmentRfq = async (
 const extractMessageRfq = async (
   message: EmailMessage,
   extractor: RfqExtractor,
+  loadPdfContext: EmailPdfContextLoader,
 ): Promise<ExtractedMessageRfq | null> => {
   try {
     const result = await extractor.extract(message);
     if (result.isRfq) {
       return { result, sourcePdf: null };
     }
-    return await extractPdfAttachmentRfq(message, extractor);
+    return await extractPdfAttachmentRfq(message, extractor, loadPdfContext);
   } catch (error) {
-    const pdfResult = await extractPdfAttachmentRfq(message, extractor);
-    if (pdfResult) {
-      return pdfResult;
-    }
-    throw error;
-  }
-};
-
-const extractPdfAttachmentVendorPurchaseOrderAcknowledgement = async (
-  message: EmailMessage,
-  extractor: VendorPurchaseOrderAcknowledgementExtractor,
-): Promise<ExtractedMessageVendorPurchaseOrderAcknowledgement | null> => {
-  for (const attachment of message.attachments) {
-    if (!isPdfAttachment(attachment)) {
-      continue;
-    }
-    const file = new File([attachment.bytes], attachment.filename, {
-      type: 'application/pdf',
-    });
-    const text = await extractRfqPdfText(file, attachment.bytes);
-    const pdfMessage = buildPdfContextMessage(message, attachment, text);
-    const result = await extractor.extract(pdfMessage);
-    if (result.isAcknowledgement) {
-      return { result, searchText: pdfMessage.text };
-    }
-  }
-  return null;
-};
-
-const extractMessageVendorPurchaseOrderAcknowledgement = async (
-  message: EmailMessage,
-  extractor: VendorPurchaseOrderAcknowledgementExtractor,
-): Promise<ExtractedMessageVendorPurchaseOrderAcknowledgement | null> => {
-  try {
-    const result = await extractor.extract(message);
-    if (result.isAcknowledgement) {
-      return {
-        result,
-        searchText: `${message.subject}\n${message.text}`,
-      };
-    }
-    return await extractPdfAttachmentVendorPurchaseOrderAcknowledgement(
+    const pdfResult = await extractPdfAttachmentRfq(
       message,
       extractor,
+      loadPdfContext,
     );
-  } catch (error) {
-    const pdfResult =
-      await extractPdfAttachmentVendorPurchaseOrderAcknowledgement(
-        message,
-        extractor,
-      );
     if (pdfResult) {
       return pdfResult;
     }
@@ -283,16 +217,34 @@ export const classifyMailboxMessages = async ({
         continue;
       }
 
-      if (
-        isAwaitingVendorAcknowledgementCandidate(
-          message,
-          awaitingVendorAcknowledgements,
-        )
-      ) {
+      const loadPdfContext = createEmailPdfContextLoader(message);
+      let isVendorAcknowledgement = isAwaitingVendorAcknowledgementCandidate(
+        message,
+        awaitingVendorAcknowledgements,
+      );
+      if (!isVendorAcknowledgement && awaitingVendorAcknowledgements.length) {
+        for (const attachment of message.attachments) {
+          if (!isPdfAttachment(attachment)) {
+            continue;
+          }
+          const context = await loadPdfContext(attachment);
+          if (
+            isAwaitingVendorAcknowledgementCandidate(
+              context.message,
+              awaitingVendorAcknowledgements,
+            )
+          ) {
+            isVendorAcknowledgement = true;
+            break;
+          }
+        }
+      }
+      if (isVendorAcknowledgement) {
         const extraction =
           await extractMessageVendorPurchaseOrderAcknowledgement(
             message,
             vendorAcknowledgementExtractor,
+            loadPdfContext,
           );
         if (extraction) {
           classification.vendorAcknowledgements.push({ message, extraction });
@@ -306,7 +258,11 @@ export const classifyMailboxMessages = async ({
         hasPurchaseOrderSubject(message) ||
         message.attachments.some(isPdfAttachment);
       const purchaseOrderExtraction = purchaseOrderFirst
-        ? await extractMessagePurchaseOrder(message, purchaseOrderExtractor)
+        ? await extractMessagePurchaseOrder(
+            message,
+            purchaseOrderExtractor,
+            loadPdfContext,
+          )
         : null;
       if (purchaseOrderExtraction) {
         classification.purchaseOrders.push({
@@ -316,7 +272,11 @@ export const classifyMailboxMessages = async ({
         continue;
       }
 
-      const rfqExtraction = await extractMessageRfq(message, rfqExtractor);
+      const rfqExtraction = await extractMessageRfq(
+        message,
+        rfqExtractor,
+        loadPdfContext,
+      );
       if (rfqExtraction) {
         classification.rfqs.push({ message, extraction: rfqExtraction });
         continue;
@@ -324,7 +284,11 @@ export const classifyMailboxMessages = async ({
 
       const fallbackPurchaseOrderExtraction = purchaseOrderFirst
         ? null
-        : await extractMessagePurchaseOrder(message, purchaseOrderExtractor);
+        : await extractMessagePurchaseOrder(
+            message,
+            purchaseOrderExtractor,
+            loadPdfContext,
+          );
       if (fallbackPurchaseOrderExtraction) {
         classification.purchaseOrders.push({
           message,

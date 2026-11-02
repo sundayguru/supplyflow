@@ -186,6 +186,7 @@ export const action = async ({
       organization,
     );
     const draft = await emailClient.createDraftEmail({
+      trackingId: vendorPurchaseOrder.id,
       accountEmail: account.email,
       to: vendorPurchaseOrder.vendorEmail!,
       subject: `Purchase order ${vendorPurchaseOrder.reference}`,

@@ -54,7 +54,7 @@ Return exactly one JSON object with this shape:
       "price": non-negative integer in the smallest currency unit, default 0,
       "unit": string such as "unit" or "piece",
       "description": string,
-      "status": "ordered",
+      "status": "pending",
       "manufacturerId": null,
       "manufacturerPartNumber": string or null,
       "specifications": string or null
@@ -124,7 +124,7 @@ export const parsePurchaseOrderExtractionResponse = (
             Array.isArray(envelope.purchaseOrder.items)
               ? envelope.purchaseOrder.items.map((item) =>
                   typeof item === 'object' && item !== null
-                    ? { ...item, status: 'ordered', manufacturerId: null }
+                    ? { ...item, status: 'pending', manufacturerId: null }
                     : item,
                 )
               : [],

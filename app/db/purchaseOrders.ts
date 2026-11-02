@@ -264,7 +264,13 @@ export const createPurchaseOrder = async (
       reference: createReference(),
       validationSummary: options.validationSummary ?? null,
     }),
-    db.insert(purchaseOrderItems).values(createItemValues(id, items)),
+    db.insert(purchaseOrderItems).values(
+      createItemValues(id, items).map((item) => ({
+        ...item,
+        status: 'pending' as const,
+        statusReason: null,
+      })),
+    ),
   ]);
 
   return getPurchaseOrder(id, organizationId, vatRate);

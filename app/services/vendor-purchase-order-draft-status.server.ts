@@ -3,9 +3,10 @@ import {
   listVendorPurchaseOrdersWithDraftedEmails,
   markVendorPurchaseOrderDraftSent,
 } from '~/db/vendorPurchaseOrderDraftStatus';
-import { isGmailAuthenticationError } from '~/services/email/gmail.server';
+import { getEmailProviderMetadata } from '~/services/email/providers';
 import {
   indexMailboxesByAccountId,
+  isEmailAuthenticationError,
   type ScheduledMailbox,
 } from '~/services/email-schedule.server';
 
@@ -32,10 +33,7 @@ export const runVendorPurchaseOrderDraftSentStatusSync = async (
   let failed = 0;
 
   for (const vendorPurchaseOrder of draftedVendorPurchaseOrders) {
-    if (
-      !vendorPurchaseOrder.draftId ||
-      vendorPurchaseOrder.accountProvider !== 'gmail'
-    ) {
+    if (!vendorPurchaseOrder.draftId) {
       continue;
     }
 
@@ -50,6 +48,9 @@ export const runVendorPurchaseOrderDraftSentStatusSync = async (
       const isSent = await emailClient.isDraftSent({
         draftId: vendorPurchaseOrder.draftId,
         threadId: vendorPurchaseOrder.threadId,
+        trackingId: vendorPurchaseOrder.vendorPurchaseOrderId,
+        recipient: vendorPurchaseOrder.vendorEmail ?? undefined,
+        subject: `Purchase order ${vendorPurchaseOrder.reference}`,
         sentAfter: sentAfterDate(
           vendorPurchaseOrder.draftUpdatedAt,
           vendorPurchaseOrder.vendorPurchaseOrderUpdatedAt,
@@ -61,15 +62,19 @@ export const runVendorPurchaseOrderDraftSentStatusSync = async (
 
       const updated = await markVendorPurchaseOrderDraftSent(
         vendorPurchaseOrder.vendorPurchaseOrderId,
+        vendorPurchaseOrder.draftId,
       );
       if (updated) {
         sent += 1;
       }
     } catch (error) {
-      if (isGmailAuthenticationError(error)) {
+      if (
+        isEmailAuthenticationError(error, vendorPurchaseOrder.accountProvider)
+      ) {
         await markConnectedEmailAccountNeedsReconnect(
           vendorPurchaseOrder.accountId,
-          'Gmail access expired. Reconnect this account to resume inbox checks.',
+          getEmailProviderMetadata(vendorPurchaseOrder.accountProvider)
+            .reconnectMessage,
         );
       }
       failed += 1;

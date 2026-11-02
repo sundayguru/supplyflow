@@ -62,7 +62,7 @@ const toPurchaseOrderItemFromRfqItem = (
     price: Math.round(amounts.lineTotal / item.quantity),
     unit: item.unit,
     description: item.description,
-    status: 'ordered',
+    status: 'pending',
     manufacturerId: item.manufacturerId,
     manufacturerPartNumber: item.manufacturerPartNumber,
     specifications: item.specifications,

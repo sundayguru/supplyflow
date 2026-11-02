@@ -8,6 +8,7 @@ export const listVendorPurchaseOrdersWithDraftedEmails = (limit = 50) => {
     .select({
       vendorPurchaseOrderId: vendorPurchaseOrders.id,
       reference: vendorPurchaseOrders.reference,
+      vendorEmail: vendorPurchaseOrders.vendorEmail,
       draftId: vendorPurchaseOrders.generatedEmailDraftId,
       draftUpdatedAt: vendorPurchaseOrders.generatedEmailDraftUpdatedAt,
       vendorPurchaseOrderUpdatedAt: vendorPurchaseOrders.updatedAt,
@@ -38,13 +39,20 @@ export const listVendorPurchaseOrdersWithDraftedEmails = (limit = 50) => {
 
 export const markVendorPurchaseOrderDraftSent = async (
   vendorPurchaseOrderId: string,
+  draftId: string,
 ) => {
   const db = getDb();
   const sentAt = new Date().toISOString();
   const [updated] = await db
     .update(vendorPurchaseOrders)
     .set({ status: 'sent', updatedAt: sentAt })
-    .where(eq(vendorPurchaseOrders.id, vendorPurchaseOrderId))
+    .where(
+      and(
+        eq(vendorPurchaseOrders.id, vendorPurchaseOrderId),
+        eq(vendorPurchaseOrders.status, 'review_email'),
+        eq(vendorPurchaseOrders.generatedEmailDraftId, draftId),
+      ),
+    )
     .returning({ id: vendorPurchaseOrders.id });
   return updated ?? null;
 };
