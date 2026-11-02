@@ -1,4 +1,5 @@
 import { connect } from 'cloudflare:sockets';
+import { splitMimeMultipart } from '~/utils/splitMimeMultipart';
 import type {
   EmailAddress,
   EmailAttachment,
@@ -1039,25 +1040,9 @@ const parseMimePart = (raw: Uint8Array): MimePart => {
   const boundary = contentType.parameters.get('boundary');
   const children =
     boundary && contentType.value.startsWith('multipart/')
-      ? splitMultipartBody(body, boundary).map(parseMimePart)
+      ? splitMimeMultipart(body, boundary).map(parseMimePart)
       : [];
   return { headers, body, children };
-};
-
-const splitMultipartBody = (body: Uint8Array, boundary: string) => {
-  const text = textDecoder.decode(body);
-  const delimiter = `--${boundary}`;
-  const parts: Uint8Array[] = [];
-  for (const segment of text.split(delimiter).slice(1)) {
-    if (segment.startsWith('--')) {
-      break;
-    }
-    const trimmed = segment.replace(/^\r?\n/, '').replace(/\r?\n$/, '');
-    if (trimmed) {
-      parts.push(textEncoder.encode(trimmed));
-    }
-  }
-  return parts;
 };
 
 const decodeTransferBody = (part: MimePart) => {
@@ -1140,11 +1125,37 @@ const getFilename = (part: MimePart) => {
   const contentType = parseHeaderParameters(
     getHeader(part.headers, 'content-type'),
   );
-  return (
-    disposition.parameters.get('filename') ??
-    contentType.parameters.get('name') ??
-    null
-  );
+  const filename =
+    getMimeFilename(disposition.parameters, 'filename') ??
+    getMimeFilename(contentType.parameters, 'name');
+  return filename ? decodeMimeHeader(filename) : null;
+};
+
+const getMimeFilename = (parameters: Map<string, string>, name: string) => {
+  const plain = parameters.get(name);
+  let extended = parameters.get(`${name}*`);
+  if (!extended) {
+    const segments: string[] = [];
+    for (let index = 0; ; index += 1) {
+      const segment =
+        parameters.get(`${name}*${index}*`) ??
+        parameters.get(`${name}*${index}`);
+      if (segment === undefined) {
+        break;
+      }
+      segments.push(segment);
+    }
+    extended = segments.length > 0 ? segments.join('') : undefined;
+  }
+  if (!extended) {
+    return plain ?? null;
+  }
+  const encoded = extended.replace(/^[^']*'[^']*'/, '');
+  try {
+    return decodeURIComponent(encoded);
+  } catch {
+    return plain ?? encoded;
+  }
 };
 
 const parseRawMessage = (

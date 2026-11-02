@@ -1,9 +1,11 @@
-import { getEmailIngestionAttempt } from '~/db/emailIngestion';
+import {
+  claimEmail,
+  failEmailIngestion,
+  getEmailIngestionAttempt,
+} from '~/db/emailIngestion';
 import { createPurchaseOrderExtractor } from '~/services/purchase-order-extraction/index.server';
-import type {
-  PurchaseOrderExtractionResult,
-  PurchaseOrderExtractor,
-} from '~/services/purchase-order-extraction/types';
+import type { ExtractedMessagePurchaseOrder } from '~/services/purchase-order-extraction/message.server';
+import { extractMessagePurchaseOrder } from '~/services/purchase-order-extraction/message.server';
 import { createRfqExtractor } from '~/services/rfq-extraction/index.server';
 import type {
   RfqExtractionResult,
@@ -18,6 +20,12 @@ import type { SelectConnectedEmailAccount } from '~/db/schemas';
 import type { EmailAttachment, EmailMessage } from '~/services/email/types';
 import { getOpenAICompatibleAiConfig } from '~/utils/organization-ai.server';
 import { extractRfqPdfText } from '~/utils/rfqPdfExtraction.server';
+import {
+  buildPdfContextMessage,
+  isPdfAttachment,
+} from '~/utils/emailPdf.server';
+
+export type { ExtractedMessagePurchaseOrder } from '~/services/purchase-order-extraction/message.server';
 
 const STALE_PROCESSING_MS = 10 * 60 * 1000;
 
@@ -68,11 +76,6 @@ export type ExtractedMessageRfq = {
   sourcePdf: EmailAttachment | null;
 };
 
-export type ExtractedMessagePurchaseOrder = {
-  result: Extract<PurchaseOrderExtractionResult, { isPurchaseOrder: true }>;
-  searchText: string;
-};
-
 export type ExtractedMessageVendorPurchaseOrderAcknowledgement = {
   result: Extract<
     VendorPurchaseOrderAcknowledgementExtractionResult,
@@ -113,10 +116,6 @@ type ClassificationOrganization = {
 const normalizeEmail = (value: string | null | undefined) =>
   value?.trim().toLowerCase() ?? '';
 
-const isPdfAttachment = (attachment: EmailAttachment) =>
-  attachment.contentType === 'application/pdf' ||
-  attachment.filename.toLowerCase().endsWith('.pdf');
-
 const hasPurchaseOrderSubject = (message: EmailMessage) =>
   /\b(?:purchase\s+order|p\.?\s*o\.?|po\s*(?:#|number|no\.?))\b/i.test(
     message.subject,
@@ -149,27 +148,6 @@ const isOwnOutboundMessage = (message: EmailMessage, accountEmail: string) => {
   const fromAddress = normalizeEmail(message.from.address);
   return fromAddress.length > 0 && fromAddress === normalizeEmail(accountEmail);
 };
-
-const buildPdfContextMessage = (
-  message: EmailMessage,
-  attachment: EmailAttachment,
-  text: string,
-): EmailMessage => ({
-  ...message,
-  id: `${message.id}:${attachment.id}`,
-  subject: message.subject,
-  text: [
-    `PDF attachment: ${attachment.filename}`,
-    `Email subject: ${message.subject}`,
-    `Email body:`,
-    message.text,
-    '',
-    `PDF filename: ${attachment.filename}`,
-    `PDF text:`,
-    text,
-  ].join('\n'),
-  attachments: [],
-});
 
 const extractPdfAttachmentRfq = async (
   message: EmailMessage,
@@ -205,52 +183,6 @@ const extractMessageRfq = async (
     return await extractPdfAttachmentRfq(message, extractor);
   } catch (error) {
     const pdfResult = await extractPdfAttachmentRfq(message, extractor);
-    if (pdfResult) {
-      return pdfResult;
-    }
-    throw error;
-  }
-};
-
-const extractPdfAttachmentPurchaseOrder = async (
-  message: EmailMessage,
-  extractor: PurchaseOrderExtractor,
-): Promise<ExtractedMessagePurchaseOrder | null> => {
-  for (const attachment of message.attachments) {
-    if (!isPdfAttachment(attachment)) {
-      continue;
-    }
-    const file = new File([attachment.bytes], attachment.filename, {
-      type: 'application/pdf',
-    });
-    const text = await extractRfqPdfText(file, attachment.bytes);
-    const pdfMessage = buildPdfContextMessage(message, attachment, text);
-    const result = await extractor.extract(pdfMessage);
-    if (result.isPurchaseOrder) {
-      return { result, searchText: pdfMessage.text };
-    }
-  }
-  return null;
-};
-
-const extractMessagePurchaseOrder = async (
-  message: EmailMessage,
-  extractor: PurchaseOrderExtractor,
-): Promise<ExtractedMessagePurchaseOrder | null> => {
-  try {
-    const result = await extractor.extract(message);
-    if (result.isPurchaseOrder) {
-      return {
-        result,
-        searchText: `${message.subject}\n${message.text}`,
-      };
-    }
-    return await extractPdfAttachmentPurchaseOrder(message, extractor);
-  } catch (error) {
-    const pdfResult = await extractPdfAttachmentPurchaseOrder(
-      message,
-      extractor,
-    );
     if (pdfResult) {
       return pdfResult;
     }
@@ -370,7 +302,9 @@ export const classifyMailboxMessages = async ({
         continue;
       }
 
-      const purchaseOrderFirst = hasPurchaseOrderSubject(message);
+      const purchaseOrderFirst =
+        hasPurchaseOrderSubject(message) ||
+        message.attachments.some(isPdfAttachment);
       const purchaseOrderExtraction = purchaseOrderFirst
         ? await extractMessagePurchaseOrder(message, purchaseOrderExtractor)
         : null;
@@ -400,8 +334,39 @@ export const classifyMailboxMessages = async ({
       }
 
       classification.ignored += 1;
-    } catch {
+    } catch (error) {
       classification.failed += 1;
+      console.error(
+        JSON.stringify({
+          event: 'email_message_classification_failed',
+          accountId: account.id,
+          messageId: message.id,
+          provider: account.provider,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }),
+      );
+      try {
+        const ingestionId = await claimEmail(
+          account.id,
+          account.provider,
+          message,
+        );
+        if (ingestionId) {
+          await failEmailIngestion(ingestionId, error);
+        }
+      } catch (recordError) {
+        console.error(
+          JSON.stringify({
+            event: 'email_classification_failure_record_failed',
+            accountId: account.id,
+            messageId: message.id,
+            error:
+              recordError instanceof Error
+                ? recordError.message
+                : 'Unknown error',
+          }),
+        );
+      }
     }
   }
 
