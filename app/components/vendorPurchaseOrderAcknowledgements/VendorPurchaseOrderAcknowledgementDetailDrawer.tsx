@@ -21,11 +21,15 @@ import { StatusChangeReasonDetails } from '~/components/status/StatusChangeReaso
 import { StatusMenu } from '~/components/status/StatusMenu';
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
 import {
-  VendorPurchaseOrderAcknowledgementItemStatusBadge,
   getVendorPurchaseOrderAcknowledgementStatusBadgeClassName,
+  vendorPurchaseOrderAcknowledgementItemStatusLabels,
   vendorPurchaseOrderAcknowledgementStatusLabels,
 } from './VendorPurchaseOrderAcknowledgementStatusBadge';
-import { vendorPurchaseOrderAcknowledgementStatuses } from '~/types/vendorPurchaseOrderAcknowledgement';
+import {
+  vendorPurchaseOrderAcknowledgementItemStatuses,
+  vendorPurchaseOrderAcknowledgementStatuses,
+} from '~/types/vendorPurchaseOrderAcknowledgement';
+import { getPurchaseOrderItemStatusBadgeClassName } from '~/components/purchaseOrders/PurchaseOrderStatusBadge';
 import { VendorPurchaseOrderAcknowledgementItemEditModal } from './VendorPurchaseOrderAcknowledgementItemEditModal';
 
 type ItemUpdateResponse = { success: true } | { error: string };
@@ -243,8 +247,22 @@ export const VendorPurchaseOrderAcknowledgementDetailDrawer = ({
                             )}
                           </p>
                         </div>
-                        <VendorPurchaseOrderAcknowledgementItemStatusBadge
+                        <StatusMenu
+                          id={item.id}
+                          action='/api/vendor-purchase-order-acknowledgement-items'
+                          extraFields={{
+                            acknowledgementId: acknowledgement.id,
+                          }}
                           status={item.status}
+                          statuses={
+                            vendorPurchaseOrderAcknowledgementItemStatuses
+                          }
+                          statusLabels={
+                            vendorPurchaseOrderAcknowledgementItemStatusLabels
+                          }
+                          getBadgeClassName={
+                            getPurchaseOrderItemStatusBadgeClassName
+                          }
                         />
                         <button
                           type='button'

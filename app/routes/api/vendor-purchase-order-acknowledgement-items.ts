@@ -35,10 +35,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
       { status: 400 },
     );
   }
-  const parsed = parseVendorPurchaseOrderAcknowledgementItemInput(body);
-  if (!parsed.success) {
-    return data({ error: parsed.error }, { status: 400 });
-  }
   const parentId =
     'acknowledgementId' in body && typeof body.acknowledgementId === 'string'
       ? body.acknowledgementId
@@ -49,6 +45,18 @@ export const action = async ({ request }: Route.ActionArgs) => {
   const previousItem = previous?.items.find((item) => item.id === body.id);
   if (!previous || !previousItem) {
     return data({ error: 'Acknowledgement item not found' }, { status: 404 });
+  }
+  const parsed = parseVendorPurchaseOrderAcknowledgementItemInput(
+    'intent' in body && body.intent === 'updateStatus'
+      ? {
+          ...previousItem,
+          status: 'status' in body ? body.status : undefined,
+          statusReason: 'statusReason' in body ? body.statusReason : undefined,
+        }
+      : body,
+  );
+  if (!parsed.success) {
+    return data({ error: parsed.error }, { status: 400 });
   }
   if (
     previousItem.status !== parsed.value.status &&

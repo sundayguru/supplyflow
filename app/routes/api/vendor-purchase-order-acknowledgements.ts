@@ -141,7 +141,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
         const input = {
           vendorPurchaseOrderId: vendorPurchaseOrder.id,
           acknowledgementReference: null,
-          status: 'received' as const,
+          status: 'new' as const,
           acknowledgedAt,
           notes: null,
           items: vendorPurchaseOrder.items.map((item) => ({

@@ -22,7 +22,7 @@ Return exactly one JSON object with this shape:
   "vendorPurchaseOrderReference": string or null,
   "acknowledgement": null or {
     "acknowledgementReference": string or null,
-    "status": "received" or "accepted" or "exception",
+    "status": "new",
     "acknowledgedAt": "YYYY-MM-DD" or null,
     "notes": string or null,
     "items": [{
@@ -89,6 +89,7 @@ export const parseVendorPurchaseOrderAcknowledgementExtractionResponse = (
     envelope.acknowledgement !== null
       ? {
           ...envelope.acknowledgement,
+          status: 'new',
           vendorPurchaseOrderId: 'placeholder',
           items:
             'items' in envelope.acknowledgement &&

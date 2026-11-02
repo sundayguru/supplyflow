@@ -11,6 +11,7 @@ type StatusMenuProps<Status extends string> = {
   statuses: readonly Status[];
   statusLabels: Record<Status, string>;
   getBadgeClassName: (status: Status) => string;
+  extraFields?: Record<string, string>;
 };
 
 export const StatusMenu = <Status extends string>({
@@ -20,6 +21,7 @@ export const StatusMenu = <Status extends string>({
   statuses,
   statusLabels,
   getBadgeClassName,
+  extraFields,
 }: StatusMenuProps<Status>) => {
   const fetcher = useFetcher();
   const [isOpen, setIsOpen] = useState(false);
@@ -78,6 +80,7 @@ export const StatusMenu = <Status extends string>({
     }
     fetcher.submit(
       {
+        ...extraFields,
         id,
         status: pendingStatus,
         statusReason: reason,

@@ -2,17 +2,12 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
 import {
   vendorPurchaseOrderAcknowledgementItemStatuses,
-  vendorPurchaseOrderAcknowledgementStatuses,
   type VendorPurchaseOrderAcknowledgementInput,
   type VendorPurchaseOrderAcknowledgementItemInput,
   type VendorPurchaseOrderAcknowledgementItemStatus,
-  type VendorPurchaseOrderAcknowledgementStatus,
 } from '~/types/vendorPurchaseOrderAcknowledgement';
 import type { VendorPurchaseOrderRecord } from '~/types/vendorPurchaseOrder';
-import {
-  vendorPurchaseOrderAcknowledgementItemStatusLabels,
-  vendorPurchaseOrderAcknowledgementStatusLabels,
-} from './VendorPurchaseOrderAcknowledgementStatusBadge';
+import { vendorPurchaseOrderAcknowledgementItemStatusLabels } from './VendorPurchaseOrderAcknowledgementStatusBadge';
 
 export type VendorPurchaseOrderAcknowledgementFormValue =
   VendorPurchaseOrderAcknowledgementInput & {
@@ -68,10 +63,7 @@ export const VendorPurchaseOrderAcknowledgementFormModal = ({
   const [acknowledgementReference, setAcknowledgementReference] = useState(
     initialValue?.acknowledgementReference ?? '',
   );
-  const [status, setStatus] =
-    useState<VendorPurchaseOrderAcknowledgementStatus>(
-      initialValue?.status ?? 'received',
-    );
+  const status = initialValue?.status ?? 'new';
   const [acknowledgedAt, setAcknowledgedAt] = useState(
     initialValue?.acknowledgedAt ?? '',
   );
@@ -212,27 +204,6 @@ export const VendorPurchaseOrderAcknowledgementFormModal = ({
                 placeholder='ACK-12345'
               />
             </label>
-            {!initialValue && (
-              <label className='text-sm font-semibold text-slate-700'>
-                Status
-                <select
-                  value={status}
-                  onChange={(event) =>
-                    setStatus(
-                      event.target
-                        .value as VendorPurchaseOrderAcknowledgementStatus,
-                    )
-                  }
-                  className={inputClass}
-                >
-                  {vendorPurchaseOrderAcknowledgementStatuses.map((value) => (
-                    <option key={value} value={value}>
-                      {vendorPurchaseOrderAcknowledgementStatusLabels[value]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
             <label className='text-sm font-semibold text-slate-700'>
               Acknowledged date
               <input

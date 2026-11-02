@@ -288,6 +288,7 @@ export const createVendorPurchaseOrderAcknowledgement = async (
   const acknowledgementStatements = [
     db.insert(vendorPurchaseOrderAcknowledgements).values({
       ...acknowledgementInput,
+      status: 'new',
       id,
       userId,
       organizationId,
