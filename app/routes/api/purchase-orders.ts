@@ -13,9 +13,12 @@ import {
   updatePurchaseOrder,
   updatePurchaseOrderValidation,
   updatePurchaseOrderStatus,
+  updatePurchaseOrderItem,
 } from '~/db/purchaseOrders';
 import { getRfqPdfTemplate } from '~/db/rfqPdfTemplates';
-import { getRfq } from '~/db/rfqs';
+import { getRfq, updateRfqItem } from '~/db/rfqs';
+import { validatePurchaseOrderItems } from '~/utils/purchaseOrderItemValidation';
+import { calculateRfqItemAmounts } from '~/utils/rfq';
 import { getOrganizationForUser } from '~/db/organizations';
 import { getUserFromRequest } from '~/utils/session.server';
 import { parsePurchaseOrderInput } from '~/utils/purchaseOrder.server';
@@ -213,6 +216,150 @@ export const action = async ({ request }: Route.ActionArgs) => {
               actionUrl: `/purchase-orders?id=${purchaseOrder.id}`,
             },
             user.id,
+          );
+        }
+        return data({ success: true, purchaseOrder });
+      }
+      if ('intent' in body && body.intent === 'matchItem') {
+        if (
+          !('itemId' in body) ||
+          typeof body.itemId !== 'string' ||
+          !('rfqItemId' in body) ||
+          typeof body.rfqItemId !== 'string' ||
+          !('direction' in body) ||
+          (body.direction !== 'poToRfq' && body.direction !== 'rfqToPo')
+        ) {
+          return data(
+            { error: 'Select a valid item and matching direction' },
+            { status: 400 },
+          );
+        }
+        const order = await getPurchaseOrder(
+          body.id,
+          organization.id,
+          organization.vat,
+        );
+        if (!order?.rfqId) {
+          return data(
+            { error: 'Linked purchase order not found' },
+            { status: 404 },
+          );
+        }
+        const rfq = await getRfq(
+          order.rfqId,
+          organization.id,
+          organization.vat,
+        );
+        const item = order.items.find(
+          (candidate) => candidate.id === body.itemId,
+        );
+        const quoted = rfq?.items.find(
+          (candidate) => candidate.id === body.rfqItemId,
+        );
+        const issue =
+          rfq &&
+          validatePurchaseOrderItems(order.items, rfq.items).find(
+            (candidate) =>
+              candidate.purchaseOrderItemId === body.itemId &&
+              candidate.rfqItemId === body.rfqItemId,
+          );
+        if (!rfq || !item || !quoted || !issue) {
+          return data(
+            { error: 'Item mismatch is no longer available' },
+            { status: 409 },
+          );
+        }
+        if (body.direction === 'rfqToPo') {
+          const amounts = calculateRfqItemAmounts(quoted);
+          const price = Math.round(
+            amounts.lineBeforeDiscount / quoted.quantity,
+          );
+          const adjustment =
+            Math.round(price * quoted.quantity) - amounts.lineBeforeDiscount;
+          await updatePurchaseOrderItem(
+            item.id,
+            organization.id,
+            {
+              ...item,
+              quantity: quoted.quantity,
+              price,
+              unit: quoted.unit,
+              description: quoted.description,
+              manufacturerId: quoted.manufacturerId,
+              manufacturerPartNumber: quoted.manufacturerPartNumber,
+              specifications: quoted.specifications,
+              discountType: 'fixed',
+              discountValue: amounts.lineDiscount + Math.max(0, adjustment),
+              shippingCost: amounts.lineShipping + Math.max(0, -adjustment),
+            },
+            organization.vat,
+          );
+        } else {
+          await updateRfqItem(
+            quoted.id,
+            organization.id,
+            {
+              ...quoted,
+              quantity: item.quantity,
+              price: item.price,
+              priceMarkup: 0,
+              unit: item.unit,
+              description: item.description,
+              manufacturerId: item.manufacturerId,
+              manufacturerPartNumber: item.manufacturerPartNumber,
+              specifications: item.specifications,
+              discountType: item.discountType ?? 'percentage',
+              discountValue: item.discountValue ?? 0,
+              shippingCost: item.shippingCost ?? 0,
+            },
+            organization.vat,
+          );
+        }
+        const updated = await getPurchaseOrder(
+          order.id,
+          organization.id,
+          organization.vat,
+        );
+        const updatedRfq = await getRfq(
+          rfq.id,
+          organization.id,
+          organization.vat,
+        );
+        if (!updated) {
+          return data({ error: 'Purchase order not found' }, { status: 404 });
+        }
+        const validation = validatePurchaseOrderAgainstRfq(updated, updatedRfq);
+        const purchaseOrder = await updatePurchaseOrderValidation(
+          order.id,
+          organization.id,
+          validation.status,
+          validation.summary,
+          organization.vat,
+        );
+        if (purchaseOrder) {
+          await logUpdatedActivity(
+            {
+              organizationId: organization.id,
+              actorUserId: user.id,
+              sourceType: 'purchase_order',
+              sourceId: order.id,
+              sourceReference: order.reference,
+            },
+            order as unknown as Record<string, unknown>,
+            purchaseOrder as unknown as Record<string, unknown>,
+          );
+        }
+        if (body.direction === 'poToRfq' && updatedRfq) {
+          await logUpdatedActivity(
+            {
+              organizationId: organization.id,
+              actorUserId: user.id,
+              sourceType: 'rfq',
+              sourceId: rfq.id,
+              sourceReference: rfq.reference,
+            },
+            rfq as unknown as Record<string, unknown>,
+            updatedRfq as unknown as Record<string, unknown>,
           );
         }
         return data({ success: true, purchaseOrder });

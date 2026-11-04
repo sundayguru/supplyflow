@@ -35,6 +35,7 @@ import type {
 import type { RfqPdfTemplateOption } from '~/types/rfqPdfTemplate';
 import { findManufacturerName } from '~/utils/manufacturers';
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
+import { validatePurchaseOrderItems } from '~/utils/purchaseOrderItemValidation';
 import { ConfirmModal } from '../ConfirmModal';
 import { PurchaseOrderItemEditModal } from './PurchaseOrderItemEditModal';
 import { PurchaseOrderItemStatusMenu } from './PurchaseOrderItemStatusMenu';
@@ -102,6 +103,12 @@ export const PurchaseOrderDetailDrawer = ({
   const navigate = useNavigate();
   const itemMutation = useFetcher<ItemMutationResponse>();
   const validationMutation = useFetcher<ValidationMutationResponse>();
+  const itemValidation = purchaseOrder.linkedRfq
+    ? validatePurchaseOrderItems(
+        purchaseOrder.items,
+        purchaseOrder.linkedRfq.items,
+      )
+    : [];
   const proformaDraft = useFetcher<ProformaDraftResponse>();
   const paymentMutation = useFetcher<PaymentMutationResponse>();
   const vendorPurchaseOrderMutation =
@@ -689,7 +696,7 @@ export const PurchaseOrderDetailDrawer = ({
               {purchaseOrder.items.map((item, index) => (
                 <article
                   key={item.id}
-                  className='rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'
+                  className={`rounded-2xl border p-5 shadow-sm ${itemValidation.some((issue) => issue.purchaseOrderItemId === item.id) ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-white'}`}
                 >
                   <div className='flex items-start gap-4'>
                     <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-500'>
@@ -743,6 +750,74 @@ export const PurchaseOrderDetailDrawer = ({
                       <p className='mt-3 text-sm leading-6 whitespace-pre-wrap text-slate-700'>
                         {item.description}
                       </p>
+                      {itemValidation
+                        .filter(
+                          (issue) => issue.purchaseOrderItemId === item.id,
+                        )
+                        .map((issue) => (
+                          <div
+                            key={issue.purchaseOrderItemId}
+                            className='mt-3 rounded-xl border border-rose-200 bg-white p-3 text-sm text-rose-700'
+                          >
+                            <p>{issue.errors.join(' · ')}</p>
+                            {issue.rfqItemId && (
+                              <div className='mt-3 flex flex-wrap gap-2'>
+                                <button
+                                  type='button'
+                                  disabled={validationMutation.state !== 'idle'}
+                                  onClick={() =>
+                                    validationMutation.submit(
+                                      {
+                                        id: purchaseOrder.id,
+                                        intent: 'matchItem',
+                                        itemId: item.id,
+                                        rfqItemId: issue.rfqItemId,
+                                        direction: 'rfqToPo',
+                                      },
+                                      {
+                                        method: 'patch',
+                                        action: '/api/purchase-orders',
+                                        encType: 'application/json',
+                                      },
+                                    )
+                                  }
+                                  className='rounded-lg border border-rose-300 px-3 py-2 font-semibold disabled:opacity-50'
+                                >
+                                  Match PO item to RFQ
+                                </button>
+                                <button
+                                  type='button'
+                                  disabled={validationMutation.state !== 'idle'}
+                                  onClick={() =>
+                                    validationMutation.submit(
+                                      {
+                                        id: purchaseOrder.id,
+                                        intent: 'matchItem',
+                                        itemId: item.id,
+                                        rfqItemId: issue.rfqItemId,
+                                        direction: 'poToRfq',
+                                      },
+                                      {
+                                        method: 'patch',
+                                        action: '/api/purchase-orders',
+                                        encType: 'application/json',
+                                      },
+                                    )
+                                  }
+                                  className='rounded-lg border border-rose-300 px-3 py-2 font-semibold disabled:opacity-50'
+                                >
+                                  Match RFQ item to PO
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      {validationMutation.data &&
+                        'error' in validationMutation.data && (
+                          <p className='mt-2 text-sm text-rose-700'>
+                            {validationMutation.data.error}
+                          </p>
+                        )}
                       {item.discountValue || item.shippingCost ? (
                         <p className='mt-2 text-sm text-slate-600'>
                           Discount:{' '}
