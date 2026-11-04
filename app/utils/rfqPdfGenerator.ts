@@ -17,6 +17,7 @@ import type {
   VendorPurchaseOrderRecord,
 } from '~/types/vendorPurchaseOrder';
 import { calculateRfqItemAmounts } from './rfq';
+import { calculatePurchaseOrderItemTotal } from './purchaseOrder';
 import { richTextToPlainText } from './richText';
 import { createMockRfqForTemplate } from './rfqPdfMock';
 
@@ -631,7 +632,7 @@ export const generateProformaInvoicePdf = async (
       y = PAGE_HEIGHT - (headerBanner ? 112 : 80);
       drawTableHeader();
     }
-    const lineTotal = item.quantity * item.price;
+    const lineTotal = calculatePurchaseOrderItemTotal(item);
     const vatLabel = purchaseOrder.applyVat ? `${organization.vat}%` : '-';
     const itemStatus = item.status
       .replaceAll('_', ' ')

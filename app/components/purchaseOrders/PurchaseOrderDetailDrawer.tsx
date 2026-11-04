@@ -743,6 +743,22 @@ export const PurchaseOrderDetailDrawer = ({
                       <p className='mt-3 text-sm leading-6 whitespace-pre-wrap text-slate-700'>
                         {item.description}
                       </p>
+                      {item.discountValue || item.shippingCost ? (
+                        <p className='mt-2 text-sm text-slate-600'>
+                          Discount:{' '}
+                          {item.discountType === 'fixed'
+                            ? formatPurchaseOrderMoney(
+                                item.discountValue ?? 0,
+                                purchaseOrder.currency,
+                              )
+                            : `${item.discountValue ?? 0}%`}{' '}
+                          · Shipping:{' '}
+                          {formatPurchaseOrderMoney(
+                            item.shippingCost ?? 0,
+                            purchaseOrder.currency,
+                          )}
+                        </p>
+                      ) : null}
                       {(() => {
                         const manufacturerName = findManufacturerName(
                           manufacturers,

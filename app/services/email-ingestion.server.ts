@@ -59,7 +59,10 @@ const toPurchaseOrderItemFromRfqItem = (
   const amounts = calculateRfqItemAmounts(item);
   return {
     quantity: item.quantity,
-    price: Math.round(amounts.lineTotal / item.quantity),
+    price: item.price + Math.round((item.price * item.priceMarkup) / 100),
+    discountType: 'fixed',
+    discountValue: amounts.lineDiscount,
+    shippingCost: amounts.lineShipping,
     unit: item.unit,
     description: item.description,
     status: 'pending',

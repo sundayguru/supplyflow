@@ -34,6 +34,9 @@ export type PurchaseOrderItemStatus =
 export type PurchaseOrderItemInput = {
   quantity: number;
   price: number;
+  discountType?: 'percentage' | 'fixed';
+  discountValue?: number;
+  shippingCost?: number;
   unit: string;
   description: string;
   status: PurchaseOrderItemStatus;

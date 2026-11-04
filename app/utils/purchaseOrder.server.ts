@@ -32,6 +32,9 @@ export const parsePurchaseOrderItemInput = (
 
   const quantity = Number(value.quantity);
   const price = value.price === undefined ? 0 : Number(value.price);
+  const discountType = value.discountType === 'fixed' ? 'fixed' : 'percentage';
+  const discountValue = Number(value.discountValue ?? 0);
+  const shippingCost = Number(value.shippingCost ?? 0);
   const unit = typeof value.unit === 'string' ? value.unit.trim() : '';
   const description =
     typeof value.description === 'string' ? value.description.trim() : '';
@@ -47,6 +50,17 @@ export const parsePurchaseOrderItemInput = (
     return { success: false, error: 'Item price must be zero or more' };
   }
   if (
+    !Number.isFinite(discountValue) ||
+    discountValue < 0 ||
+    (discountType === 'percentage' && discountValue > 100) ||
+    (discountType === 'fixed' && !Number.isInteger(discountValue))
+  ) {
+    return { success: false, error: 'Enter a valid item discount' };
+  }
+  if (!Number.isInteger(shippingCost) || shippingCost < 0) {
+    return { success: false, error: 'Item shipping cost must be zero or more' };
+  }
+  if (
     typeof status !== 'string' ||
     !purchaseOrderItemStatuses.includes(status as PurchaseOrderItemStatus)
   ) {
@@ -58,6 +72,9 @@ export const parsePurchaseOrderItemInput = (
     value: {
       quantity,
       price,
+      discountType,
+      discountValue,
+      shippingCost,
       unit,
       description,
       status: status as PurchaseOrderItemStatus,

@@ -77,6 +77,8 @@ export const PurchaseOrderItemEditModal = ({
             value={value}
             canRemove={false}
             showStatus={false}
+            showDiscount
+            showShipping
             manufacturers={manufacturers}
             onChange={setValue}
             onRemove={onClose}

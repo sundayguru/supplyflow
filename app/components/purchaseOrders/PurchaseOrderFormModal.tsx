@@ -216,6 +216,8 @@ export const PurchaseOrderFormModal = ({
                   value={item}
                   canRemove={items.length > 1}
                   showStatus={!initialValue}
+                  showDiscount
+                  showShipping
                   manufacturers={manufacturers}
                   onChange={(nextItem) =>
                     setItems((current) =>

@@ -22,6 +22,7 @@ type PurchaseOrderItemFieldsProps = {
   onChange: (value: PurchaseOrderItemFormValue) => void;
   onRemove: () => void;
   showDiscount?: boolean;
+  showShipping?: boolean;
   showStatus?: boolean;
 };
 
@@ -33,6 +34,7 @@ export const PurchaseOrderItemFields = ({
   onChange,
   onRemove,
   showDiscount = false,
+  showShipping = false,
   showStatus = true,
 }: PurchaseOrderItemFieldsProps) => {
   const inputClass =
@@ -186,6 +188,25 @@ export const PurchaseOrderItemFields = ({
             />
           </label>
         </div>
+      )}
+      {showShipping && (
+        <label className='mt-4 block text-sm font-semibold text-slate-700'>
+          Shipping cost
+          <input
+            type='number'
+            min='0'
+            step='0.01'
+            value={value.shippingCost ? value.shippingCost / 100 : ''}
+            onChange={(event) =>
+              update(
+                'shippingCost',
+                Math.round(Number(event.target.value || 0) * 100),
+              )
+            }
+            className={inputClass}
+            placeholder='0.00'
+          />
+        </label>
       )}
 
       <label className='mt-4 block text-sm font-semibold text-slate-700'>

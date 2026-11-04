@@ -1,7 +1,10 @@
 import type { PurchaseOrderInput } from '~/types/purchaseOrder';
 import type { RfqRecord } from '~/types/rfq';
 import { calculateRfqItemAmounts } from '~/utils/rfq';
-import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
+import {
+  calculatePurchaseOrderItemTotal,
+  formatPurchaseOrderMoney,
+} from '~/utils/purchaseOrder';
 
 type ValidationStatus = 'validated' | 'exception';
 
@@ -164,9 +167,7 @@ export const validatePurchaseOrderAgainstRfq = (
     }
 
     const amounts = calculateRfqItemAmounts(rfqItem);
-    const poLineTotal = Math.round(
-      purchaseOrderItem.price * purchaseOrderItem.quantity,
-    );
+    const poLineTotal = calculatePurchaseOrderItemTotal(purchaseOrderItem);
     if (poLineTotal !== amounts.lineTotal) {
       differences.push(
         [
