@@ -43,7 +43,7 @@ Return exactly one JSON object with this shape:
     "status": "new",
     "orderDate": "YYYY-MM-DD" or null,
     "expectedDate": "YYYY-MM-DD" or null,
-    "applyVat": false,
+    "applyVat": boolean,
     "currency": three-letter ISO code, default "EUR",
     "incoterms": string or null,
     "deliveryTerms": string or null,
@@ -66,6 +66,8 @@ Return exactly one JSON object with this shape:
 }
 
 A purchase order is a committed order for goods or services from a customer/buyer, usually with a PO number, buyer/seller details, item quantities, and prices. A customer message accepting a quote, approving a quotation, or confirming they want to proceed with an RFQ as quoted is also a purchase order even when no line items are repeated in the message. Do not classify RFQs, invoices, shipping notices, newsletters, or casual sales messages as purchase orders. Do not classify vendor purchase order acknowledgements, vendor order confirmations, promise dates, backorder notices, or replies to an outbound vendor PO (VPO-YYYY-XXXXXX). Those belong to the vendor PO acknowledgement process, not this customer PO process. If the source mentions an RFQ reference such as RFQ-2026-ABC123, put the exact RFQ reference in rfqReference.
+
+Set applyVat to true when the purchase order shows VAT or sales tax charged, included in the prices, or added to the total. Set it to false for explicitly exempt, zero-rated, or tax-free orders, and when no tax treatment is stated. A VAT registration number or tax ID alone does not mean VAT is charged. Use the purchase order document itself for its tax treatment when extracting a PDF.
 
 When PDF text is provided, classify the PDF itself and extract its line items from the PDF only; the email is context and must not supply or replace the PDF's line items. If the PDF is not a purchase order, return isPurchaseOrder false. Extract every line in its original order, including repeated or similar lines; do not merge, omit, invent, or substitute products. Preserve the exact quantities, units, descriptions, part numbers, and specifications shown. Price is the unit price in the smallest currency unit, not the extended line total. Extract each line's discount and shipping as shown; fixed discount and shipping are line amounts in the smallest currency unit, not per-unit amounts. Do not assign order-level adjustments to individual lines without evidence. If the source is only a quote/RFQ acceptance with no repeated line items, return an empty items array.`;
 

@@ -14,6 +14,31 @@ export type ExtractedMessagePurchaseOrder = {
   searchText: string;
 };
 
+const pdfShowsChargedVat = (text: string) =>
+  text.split(/\r?\n/).some((line) => {
+    if (!/\b(?:vat|sales\s+tax|value[ -]added\s+tax)\b/i.test(line)) {
+      return false;
+    }
+    if (
+      /\b(?:exempt|tax[ -]?free|zero[ -]?rated|excluded|not\s+included|registration|reg\.?|number|no\.?|id)\b/i.test(
+        line,
+      )
+    ) {
+      return false;
+    }
+    if (/\b(?:included|inclusive)\b/i.test(line)) {
+      return !/\b0(?:[.,]0+)?\s*%/.test(line);
+    }
+    const rate = line.match(/\b(\d+(?:[.,]\d+)?)\s*%/);
+    if (rate) {
+      return Number(rate[1].replace(',', '.')) > 0;
+    }
+    const amount = line.match(
+      /\b(?:vat|sales\s+tax|value[ -]added\s+tax)\b\s*[:=]?\s*(?:[$€£]\s*)?(\d+(?:[.,]\d+)?)/i,
+    );
+    return !!amount && Number(amount[1].replace(',', '.')) > 0;
+  });
+
 export const extractMessagePurchaseOrder = async (
   message: EmailMessage,
   extractor: PurchaseOrderExtractor,
@@ -24,7 +49,11 @@ export const extractMessagePurchaseOrder = async (
     if (!isPdfAttachment(attachment)) {
       continue;
     }
-    const { message: pdfMessage, truncated } = await loadPdfContext(attachment);
+    const {
+      message: pdfMessage,
+      text: pdfText,
+      truncated,
+    } = await loadPdfContext(attachment);
     const result = await extractor.extract(pdfMessage);
     if (result.isPurchaseOrder) {
       if (truncated) {
@@ -37,7 +66,17 @@ export const extractMessagePurchaseOrder = async (
           `Purchase order PDF "${attachment.filename}" contains no extracted line items`,
         );
       }
-      return { result, searchText: pdfMessage.text };
+      return {
+        result: {
+          ...result,
+          purchaseOrder: {
+            ...result.purchaseOrder,
+            applyVat:
+              result.purchaseOrder.applyVat || pdfShowsChargedVat(pdfText),
+          },
+        },
+        searchText: pdfMessage.text,
+      };
     }
     if (truncated) {
       truncatedPdf = attachment.filename;
