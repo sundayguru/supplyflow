@@ -4,6 +4,42 @@ import { getDb } from './connection';
 import { appendStatusChange } from '~/utils/statusHistory';
 import { purchaseOrders, rfqItems, rfqs } from './schemas';
 import { calculateRfqTotals } from '~/utils/rfq';
+import { validatePurchaseOrderAgainstRfq } from '~/services/purchase-order-validation.server';
+
+const refreshLinkedPurchaseOrderValidation = async (
+  rfq: RfqRecord | null,
+  organizationId: string,
+) => {
+  if (!rfq) {
+    return;
+  }
+  const db = getDb();
+  const orders = await db.query.purchaseOrders.findMany({
+    where: and(
+      eq(purchaseOrders.rfqId, rfq.id),
+      eq(purchaseOrders.organizationId, organizationId),
+      inArray(purchaseOrders.status, ['validated', 'exception']),
+    ),
+    with: { items: true },
+  });
+  for (const order of orders) {
+    const validation = validatePurchaseOrderAgainstRfq(order, rfq);
+    await db
+      .update(purchaseOrders)
+      .set({
+        status: validation.status,
+        validationSummary: validation.summary,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(
+        and(
+          eq(purchaseOrders.id, order.id),
+          eq(purchaseOrders.organizationId, organizationId),
+          inArray(purchaseOrders.status, ['validated', 'exception']),
+        ),
+      );
+  }
+};
 
 const createReference = () =>
   `RFQ-${new Date().getFullYear()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
@@ -207,7 +243,9 @@ export const updateRfq = async (
     ),
   ]);
 
-  return getRfq(id, organizationId, vatRate);
+  const updatedRfq = await getRfq(id, organizationId, vatRate);
+  await refreshLinkedPurchaseOrderValidation(updatedRfq, organizationId);
+  return updatedRfq;
 };
 
 export const updateRfqStatus = async (
@@ -328,6 +366,7 @@ export const updateRfqItem = async (
       ),
   ]);
   const updatedRfq = await getRfq(existing.rfqId, organizationId, vatRate);
+  await refreshLinkedPurchaseOrderValidation(updatedRfq, organizationId);
   if (updatedRfq && !['sent', 'won', 'lost'].includes(updatedRfq.status)) {
     const nextStatus = updatedRfq.items.every((item) => item.price > 0)
       ? 'quoted'
@@ -387,6 +426,7 @@ export const deleteRfqItem = async (
       and(eq(rfqs.id, existing.rfqId), eq(rfqs.organizationId, organizationId)),
     );
   const updatedRfq = await getRfq(existing.rfqId, organizationId, vatRate);
+  await refreshLinkedPurchaseOrderValidation(updatedRfq, organizationId);
   return updatedRfq
     ? { status: 'deleted', rfq: updatedRfq }
     : { status: 'not-found' };

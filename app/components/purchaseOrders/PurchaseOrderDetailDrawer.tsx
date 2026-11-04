@@ -182,8 +182,7 @@ export const PurchaseOrderDetailDrawer = ({
     setDeleteItem(null);
   };
 
-  const canValidate =
-    purchaseOrder.status !== 'validated' && purchaseOrder.linkedRfq !== null;
+  const canValidate = purchaseOrder.linkedRfq !== null;
   const canGenerateProforma =
     purchaseOrder.status === 'validated' ||
     purchaseOrder.status === 'review_email' ||

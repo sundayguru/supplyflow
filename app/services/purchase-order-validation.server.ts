@@ -1,6 +1,7 @@
 import type { PurchaseOrderInput } from '~/types/purchaseOrder';
 import type { RfqRecord } from '~/types/rfq';
 import { calculateRfqItemAmounts } from '~/utils/rfq';
+import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
 
 type ValidationStatus = 'validated' | 'exception';
 
@@ -13,11 +14,6 @@ const normalizeText = (value: string | null | undefined) =>
   (value ?? '').trim().toLowerCase();
 
 const formatQuantity = (value: number, unit: string) => `${value} ${unit}`;
-
-const quotedUnitPrice = (item: RfqRecord['items'][number]) => {
-  const amounts = calculateRfqItemAmounts(item);
-  return Math.round(amounts.lineTotal / item.quantity);
-};
 
 const describeRfqItem = (item: RfqRecord['items'][number]) =>
   `${formatQuantity(item.quantity, item.unit)} × ${item.description}`;
@@ -97,6 +93,12 @@ export const validatePurchaseOrderAgainstRfq = (
     );
   }
 
+  if (purchaseOrder.applyVat !== rfq.applyVat) {
+    differences.push(
+      `VAT treatment mismatch:\nQuoted: ${rfq.applyVat ? 'VAT applies' : 'No VAT'}\nCustomer PO: ${purchaseOrder.applyVat ? 'VAT applies' : 'No VAT'}`,
+    );
+  }
+
   if (normalizeText(purchaseOrder.incoterms) !== normalizeText(rfq.incoterms)) {
     differences.push(
       [
@@ -161,13 +163,16 @@ export const validatePurchaseOrderAgainstRfq = (
       );
     }
 
-    const expectedUnitPrice = quotedUnitPrice(rfqItem);
-    if (purchaseOrderItem.price !== expectedUnitPrice) {
+    const amounts = calculateRfqItemAmounts(rfqItem);
+    const poLineTotal = Math.round(
+      purchaseOrderItem.price * purchaseOrderItem.quantity,
+    );
+    if (poLineTotal !== amounts.lineTotal) {
       differences.push(
         [
-          'Unit price mismatch:',
-          `Quoted: ${expectedUnitPrice}`,
-          `Customer PO: ${purchaseOrderItem.price}`,
+          `Line total mismatch: ${rfqItem.description}`,
+          `Quoted: ${formatPurchaseOrderMoney(amounts.lineTotal, rfq.currency)} (including ${formatPurchaseOrderMoney(amounts.lineDiscount, rfq.currency)} discount and ${formatPurchaseOrderMoney(amounts.lineShipping, rfq.currency)} shipping)`,
+          `Customer PO: ${formatPurchaseOrderMoney(poLineTotal, purchaseOrder.currency)}`,
         ].join('\n'),
       );
     }
