@@ -13,10 +13,14 @@ export const listPurchaseOrdersWithDraftedProformaInvoices = (limit = 50) => {
       purchaseOrderId: purchaseOrders.id,
       organizationId: purchaseOrders.organizationId,
       reference: purchaseOrders.reference,
+      customerEmail: purchaseOrders.supplierEmail,
       draftId: purchaseOrders.proformaInvoiceDraftId,
       draftUpdatedAt: purchaseOrders.proformaInvoiceDraftUpdatedAt,
       purchaseOrderUpdatedAt: purchaseOrders.updatedAt,
       threadId: emailIngestions.threadId,
+      originalMessageId: emailIngestions.externalId,
+      subject: emailIngestions.subject,
+      recipient: emailIngestions.fromAddress,
       accountId: connectedEmailAccounts.id,
       accountProvider: connectedEmailAccounts.provider,
       accountEmail: connectedEmailAccounts.email,
@@ -44,6 +48,7 @@ export const listPurchaseOrdersWithDraftedProformaInvoices = (limit = 50) => {
 
 export const markPurchaseOrderProformaInvoiceSent = async (
   purchaseOrderId: string,
+  draftId: string,
 ) => {
   const db = getDb();
   const sentAt = new Date().toISOString();
@@ -54,7 +59,13 @@ export const markPurchaseOrderProformaInvoiceSent = async (
       proformaInvoiceSentAt: sentAt,
       updatedAt: sentAt,
     })
-    .where(eq(purchaseOrders.id, purchaseOrderId))
+    .where(
+      and(
+        eq(purchaseOrders.id, purchaseOrderId),
+        eq(purchaseOrders.status, 'review_email'),
+        eq(purchaseOrders.proformaInvoiceDraftId, draftId),
+      ),
+    )
     .returning({ id: purchaseOrders.id });
   return updated ?? null;
 };

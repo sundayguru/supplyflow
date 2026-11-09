@@ -209,6 +209,7 @@ export const action = async ({
     const draft = await emailClient.createDraftReply({
       originalMessageId: source.externalId,
       threadId: source.threadId,
+      trackingId: purchaseOrder.id,
       accountEmail: source.accountEmail,
       to: recipient!,
       subject: source.subject ?? purchaseOrder.reference,

@@ -3,9 +3,10 @@ import {
   listPurchaseOrdersWithDraftedProformaInvoices,
   markPurchaseOrderProformaInvoiceSent,
 } from '~/db/purchaseOrderDraftStatus';
-import { isGmailAuthenticationError } from '~/services/email/gmail.server';
+import { getEmailProviderMetadata } from '~/services/email/providers';
 import {
   indexMailboxesByAccountId,
+  isEmailAuthenticationError,
   type ScheduledMailbox,
 } from '~/services/email-schedule.server';
 
@@ -31,10 +32,7 @@ export const runPurchaseOrderDraftSentStatusSync = async (
   let sent = 0;
   let failed = 0;
   for (const draftedPurchaseOrder of draftedPurchaseOrders) {
-    if (
-      !draftedPurchaseOrder.draftId ||
-      draftedPurchaseOrder.accountProvider !== 'gmail'
-    ) {
+    if (!draftedPurchaseOrder.draftId) {
       continue;
     }
 
@@ -49,6 +47,13 @@ export const runPurchaseOrderDraftSentStatusSync = async (
       const isSent = await emailClient.isDraftSent({
         draftId: draftedPurchaseOrder.draftId,
         threadId: draftedPurchaseOrder.threadId,
+        originalMessageId: draftedPurchaseOrder.originalMessageId,
+        trackingId: draftedPurchaseOrder.purchaseOrderId,
+        recipient:
+          draftedPurchaseOrder.recipient ??
+          draftedPurchaseOrder.customerEmail ??
+          undefined,
+        subject: draftedPurchaseOrder.subject ?? draftedPurchaseOrder.reference,
         sentAfter: sentAfterDate(
           draftedPurchaseOrder.draftUpdatedAt,
           draftedPurchaseOrder.purchaseOrderUpdatedAt,
@@ -60,15 +65,19 @@ export const runPurchaseOrderDraftSentStatusSync = async (
 
       const updated = await markPurchaseOrderProformaInvoiceSent(
         draftedPurchaseOrder.purchaseOrderId,
+        draftedPurchaseOrder.draftId,
       );
       if (updated) {
         sent += 1;
       }
     } catch (error) {
-      if (isGmailAuthenticationError(error)) {
+      if (
+        isEmailAuthenticationError(error, draftedPurchaseOrder.accountProvider)
+      ) {
         await markConnectedEmailAccountNeedsReconnect(
           draftedPurchaseOrder.accountId,
-          'Gmail access expired. Reconnect this account to resume inbox checks.',
+          getEmailProviderMetadata(draftedPurchaseOrder.accountProvider)
+            .reconnectMessage,
         );
       }
       failed += 1;
