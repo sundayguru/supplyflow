@@ -12,9 +12,10 @@ import {
   type VendorPurchaseOrderAcknowledgementStatus,
 } from '~/types/vendorPurchaseOrderAcknowledgement';
 import {
+  getVendorPurchaseOrderAcknowledgementStatusBadgeClassName,
   vendorPurchaseOrderAcknowledgementStatusLabels,
-  VendorPurchaseOrderAcknowledgementStatusBadge,
 } from './VendorPurchaseOrderAcknowledgementStatusBadge';
+import { StatusMenu } from '~/components/status/StatusMenu';
 
 type AcknowledgementPipelineProps = {
   acknowledgements: VendorPurchaseOrderAcknowledgementRecord[];
@@ -91,8 +92,15 @@ export const VendorPurchaseOrderAcknowledgementPipeline = ({
         itemCount={acknowledgement.items.length}
         date={acknowledgement.acknowledgedAt}
         statusControl={
-          <VendorPurchaseOrderAcknowledgementStatusBadge
+          <StatusMenu
+            id={acknowledgement.id}
+            action='/api/vendor-purchase-order-acknowledgements'
             status={acknowledgement.status}
+            statuses={vendorPurchaseOrderAcknowledgementStatuses}
+            statusLabels={vendorPurchaseOrderAcknowledgementStatusLabels}
+            getBadgeClassName={
+              getVendorPurchaseOrderAcknowledgementStatusBadgeClassName
+            }
           />
         }
       />

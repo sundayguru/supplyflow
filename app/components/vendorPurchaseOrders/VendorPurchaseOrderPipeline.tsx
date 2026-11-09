@@ -12,9 +12,10 @@ import {
   type VendorPurchaseOrderStatus,
 } from '~/types/vendorPurchaseOrder';
 import { formatPurchaseOrderMoney } from '~/utils/purchaseOrder';
+import { StatusMenu } from '~/components/status/StatusMenu';
 import {
+  getVendorPurchaseOrderStatusBadgeClassName,
   vendorPurchaseOrderStatusLabels,
-  VendorPurchaseOrderStatusBadge,
 } from './VendorPurchaseOrderStatusBadge';
 
 type VendorPurchaseOrderPipelineProps = {
@@ -69,7 +70,14 @@ export const VendorPurchaseOrderPipeline = ({
           vendorPurchaseOrder.currency,
         )}
         statusControl={
-          <VendorPurchaseOrderStatusBadge status={vendorPurchaseOrder.status} />
+          <StatusMenu
+            id={vendorPurchaseOrder.id}
+            action='/api/vendor-purchase-orders'
+            status={vendorPurchaseOrder.status}
+            statuses={vendorPurchaseOrderStatuses}
+            statusLabels={vendorPurchaseOrderStatusLabels}
+            getBadgeClassName={getVendorPurchaseOrderStatusBadgeClassName}
+          />
         }
       />
     )}
