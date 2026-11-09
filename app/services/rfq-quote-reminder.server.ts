@@ -5,9 +5,10 @@ import {
   listDueRfqQuoteReminders,
   markRfqQuoteReminderSent,
 } from '~/db/rfqQuoteReminders';
-import { isGmailAuthenticationError } from '~/services/email/gmail.server';
+import { getEmailProviderMetadata } from '~/services/email/providers';
 import {
   indexMailboxesByAccountId,
+  isEmailAuthenticationError,
   type ScheduledMailbox,
 } from '~/services/email-schedule.server';
 
@@ -32,14 +33,29 @@ export const runRfqQuoteReminderSync = async (
 
   for (const reminder of reminders) {
     const recipient = reminder.fromAddress ?? reminder.customerEmail;
-    if (!recipient || reminder.accountProvider !== 'gmail') {
+    if (!recipient) {
       skipped += 1;
       continue;
     }
 
-    const emailClient = mailboxesByAccountId.get(
-      reminder.accountId,
-    )?.emailClient;
+    const mailbox = mailboxesByAccountId.get(reminder.accountId);
+    const emailClient = mailbox?.emailClient;
+    if (
+      mailbox &&
+      mailbox.account.provider !== 'gmail' &&
+      mailbox.account.authType !== 'app_password'
+    ) {
+      skipped += 1;
+      console.warn(
+        JSON.stringify({
+          event: 'rfq_quote_reminder_unavailable',
+          rfqId: reminder.rfqId,
+          provider: reminder.accountProvider,
+          reason: 'Sending requires an app password connection',
+        }),
+      );
+      continue;
+    }
     if (!emailClient?.sendReply) {
       skipped += 1;
       continue;
@@ -70,10 +86,10 @@ export const runRfqQuoteReminderSync = async (
         sent += 1;
       }
     } catch (error) {
-      if (isGmailAuthenticationError(error)) {
+      if (isEmailAuthenticationError(error, reminder.accountProvider)) {
         await markConnectedEmailAccountNeedsReconnect(
           reminder.accountId,
-          'Gmail access expired. Reconnect this account to resume quote reminders.',
+          getEmailProviderMetadata(reminder.accountProvider).reconnectMessage,
         );
       }
       failed += 1;

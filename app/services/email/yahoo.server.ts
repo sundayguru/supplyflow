@@ -840,7 +840,11 @@ const sendYahooReply = async (
   const connection = await SmtpConnection.open(host);
   try {
     await connection.authenticate(config.accountEmail, config.appPassword);
-    await connection.send({ ...input, from: config.accountEmail });
+    await connection.send({
+      ...input,
+      originalMessageId: input.threadId ?? input.originalMessageId,
+      from: config.accountEmail,
+    });
   } finally {
     await connection.close();
   }

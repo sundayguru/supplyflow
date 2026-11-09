@@ -15,8 +15,11 @@ import {
   shouldSkipStoredEmail,
   type ExtractedMessagePurchaseOrder,
 } from '~/services/email-classification.server';
-import { isGmailAuthenticationError } from '~/services/email/gmail.server';
-import type { ScheduledMailbox } from '~/services/email-schedule.server';
+import { getEmailProviderMetadata } from '~/services/email/providers';
+import {
+  isEmailAuthenticationError,
+  type ScheduledMailbox,
+} from '~/services/email-schedule.server';
 import { validatePurchaseOrderAgainstRfq } from '~/services/purchase-order-validation.server';
 import type { EmailClient, EmailMessage } from '~/services/email/types';
 import type { RfqRecord } from '~/types/rfq';
@@ -285,10 +288,12 @@ const processAccount = async (
           template: organization.purchaseOrderAcknowledgementTemplate,
         });
       } catch (acknowledgementError) {
-        if (isGmailAuthenticationError(acknowledgementError)) {
+        if (
+          isEmailAuthenticationError(acknowledgementError, account.provider)
+        ) {
           await markConnectedEmailAccountNeedsReconnect(
             account.id,
-            'Gmail access expired. Reconnect this account to resume inbox checks.',
+            getEmailProviderMetadata(account.provider).reconnectMessage,
           );
         }
         console.warn(
@@ -368,10 +373,12 @@ const processAccount = async (
           template: organization.rfqAcknowledgementTemplate,
         });
       } catch (acknowledgementError) {
-        if (isGmailAuthenticationError(acknowledgementError)) {
+        if (
+          isEmailAuthenticationError(acknowledgementError, account.provider)
+        ) {
           await markConnectedEmailAccountNeedsReconnect(
             account.id,
-            'Gmail access expired. Reconnect this account to resume inbox checks.',
+            getEmailProviderMetadata(account.provider).reconnectMessage,
           );
         }
         console.warn(
@@ -421,10 +428,10 @@ export const runEmailIngestion = async (mailboxes: ScheduledMailbox[]) => {
     try {
       results.push(await processAccount(mailbox));
     } catch (error) {
-      if (isGmailAuthenticationError(error)) {
+      if (isEmailAuthenticationError(error, mailbox.account.provider)) {
         await markConnectedEmailAccountNeedsReconnect(
           mailbox.account.id,
-          'Gmail access expired. Reconnect this account to resume inbox checks.',
+          getEmailProviderMetadata(mailbox.account.provider).reconnectMessage,
         );
       }
       results.push({

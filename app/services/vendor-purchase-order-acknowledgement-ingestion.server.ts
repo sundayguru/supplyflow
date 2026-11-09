@@ -20,7 +20,11 @@ import {
   extractVendorPurchaseOrderReferences,
   normalizeVendorPurchaseOrderReference,
 } from '~/utils/vendorPurchaseOrderReferences';
-import { isGmailAuthenticationError } from '~/services/email/gmail.server';
+import {
+  getEmailProviderMetadata,
+  type EmailProvider,
+} from '~/services/email/providers';
+import { isEmailAuthenticationError } from '~/services/email-schedule.server';
 import type { EmailClient, EmailMessage } from '~/services/email/types';
 import type { ScheduledMailbox } from '~/services/email-schedule.server';
 import type { VendorPurchaseOrderAcknowledgementItemInput } from '~/types/vendorPurchaseOrderAcknowledgement';
@@ -216,6 +220,7 @@ const resolveVendorPurchaseOrderAcknowledgementItems = (
 
 const processClassifiedAcknowledgement = async ({
   accountId,
+  accountProvider,
   emailClient,
   extraction,
   message,
@@ -224,6 +229,7 @@ const processClassifiedAcknowledgement = async ({
   vendorPurchaseOrder,
 }: {
   accountId: string;
+  accountProvider: EmailProvider;
   emailClient: EmailClient;
   extraction: ExtractedMessageVendorPurchaseOrderAcknowledgement;
   message: EmailMessage;
@@ -287,10 +293,10 @@ const processClassifiedAcknowledgement = async ({
     if (ingestionId) {
       await failEmailIngestion(ingestionId, error);
     }
-    if (isGmailAuthenticationError(error)) {
+    if (isEmailAuthenticationError(error, accountProvider)) {
       await markConnectedEmailAccountNeedsReconnect(
         accountId,
-        'Gmail access expired. Reconnect this account to resume inbox checks.',
+        getEmailProviderMetadata(accountProvider).reconnectMessage,
       );
     }
     throw error;
@@ -382,6 +388,7 @@ export const runVendorPurchaseOrderAcknowledgementSync = async (
 
         const outcome = await processClassifiedAcknowledgement({
           accountId: mailbox.account.id,
+          accountProvider: mailbox.account.provider,
           emailClient,
           extraction: classified.extraction,
           message: classified.message,
@@ -398,10 +405,10 @@ export const runVendorPurchaseOrderAcknowledgementSync = async (
         }
         skipped += 1;
       } catch (error) {
-        if (isGmailAuthenticationError(error)) {
+        if (isEmailAuthenticationError(error, mailbox.account.provider)) {
           await markConnectedEmailAccountNeedsReconnect(
             mailbox.account.id,
-            'Gmail access expired. Reconnect this account to resume inbox checks.',
+            getEmailProviderMetadata(mailbox.account.provider).reconnectMessage,
           );
         }
         failed += 1;

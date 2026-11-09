@@ -67,14 +67,11 @@ export const action = async ({
     return data({ error: 'PDF template not found' }, { status: 404 });
   }
 
-  const [account] = (await listActiveConnectedEmailAccounts(organization.id))
-    .filter(
-      (candidate) =>
-        candidate.authType === 'app_password' || candidate.provider === 'gmail',
-    )
-    .sort((left, right) =>
-      left.userId === user.id ? -1 : right.userId === user.id ? 1 : 0,
-    );
+  const [account] = (
+    await listActiveConnectedEmailAccounts(organization.id)
+  ).sort((left, right) =>
+    left.userId === user.id ? -1 : right.userId === user.id ? 1 : 0,
+  );
   if (!account && !textOnly) {
     return data(
       {
