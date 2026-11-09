@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 
 type StatusChangeReasonDialogProps = {
   statusLabel: string;
@@ -13,12 +14,16 @@ export const StatusChangeReasonDialog = ({
 }: StatusChangeReasonDialogProps) => {
   const [reason, setReason] = useState('');
 
-  return (
-    <div className='fixed inset-0 z-[150] flex items-center justify-center bg-slate-950/40 p-4'>
+  return createPortal(
+    <div
+      className='fixed inset-0 z-[150] flex items-center justify-center bg-slate-950/40 p-4'
+      onClick={(event) => event.stopPropagation()}
+    >
       <form
         className='w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl'
         onSubmit={(event) => {
           event.preventDefault();
+          event.stopPropagation();
           const trimmedReason = reason.trim();
           if (trimmedReason) {
             onConfirm(trimmedReason);
@@ -58,6 +63,7 @@ export const StatusChangeReasonDialog = ({
           </button>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body,
   );
 };
